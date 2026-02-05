@@ -9,6 +9,7 @@ struct VideoRowView: View {
     var isSelected: Bool = false
     @State private var thumbnail: UIImage?
     @State private var resolvedTitle: String? = nil
+    @State private var vlcLoader: VLCThumbnailHelper? // Retain the loader
     var onMenuAction: (() -> Void)? = nil
 
     var body: some View {
@@ -133,6 +134,20 @@ struct VideoRowView: View {
                 let asset = AVAsset(url: url)
                 let generator = AVAssetImageGenerator(asset: asset)
                 generator.appliesPreferredTrackTransform = true
+                
+                // Check for VLC Format
+                if ["mkv", "avi", "wmv", "flv", "webm", "3gp"].contains(url.pathExtension.lowercased()) {
+                    let loader = VLCThumbnailHelper()
+                    await MainActor.run {
+                        self.vlcLoader = loader // Retain it
+                        loader.generate(for: url) { image in
+                            self.thumbnail = image
+                            self.vlcLoader = nil // Release
+                        }
+                    }
+                    return
+                }
+                
                 if let cgImage = try? generator.copyCGImage(at: .zero, actualTime: nil) {
                     let uiImage = UIImage(cgImage: cgImage)
                     await MainActor.run { self.thumbnail = uiImage }

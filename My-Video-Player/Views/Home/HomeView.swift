@@ -5,7 +5,10 @@ struct HomeView: View {
     @Binding var paddingBottom: CGFloat
     
     @State private var selectedTab: String = "Video"
-    let tabs = ["Video", "Album", "Folder", "Music"]
+    let tabs = ["Video", "Album", "Folder"]
+    @AppStorage("isGridView") private var isGridView: Bool = true
+    @State private var showSortSheet: Bool = false
+    @State private var showSearch: Bool = false
     
     init(viewModel: DashboardViewModel, paddingBottom: Binding<CGFloat>) {
         self.viewModel = viewModel
@@ -19,23 +22,20 @@ struct HomeView: View {
         ZStack {
             VStack(spacing: 0) {
                 // Top Tab Bar
-                if !viewModel.isSelectionMode && !viewModel.isHeaderExpanded {
+                if !viewModel.isSelectionMode {
                     topTabBar
                 }
                 
                 // Content
                 ZStack {
                     if selectedTab == "Video" {
-                        VideoSectionView(viewModel: viewModel, paddingBottom: $paddingBottom, isHeaderExpanded: $viewModel.isHeaderExpanded)
+                        VideoSectionView(viewModel: viewModel, paddingBottom: $paddingBottom)
                             .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .trailing)), removal: .opacity))
                     } else if selectedTab == "Album" {
                         AlbumSectionView(viewModel: viewModel)
                             .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .trailing)), removal: .opacity))
                     } else if selectedTab == "Folder" {
                         FolderSectionView(viewModel: viewModel)
-                            .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .trailing)), removal: .opacity))
-                    } else if selectedTab == "Music" {
-                        MusicView()
                             .transition(.asymmetric(insertion: .opacity.combined(with: .move(edge: .trailing)), removal: .opacity))
                     }
                 }
@@ -118,21 +118,41 @@ struct HomeView: View {
             }
             
             if selectedTab == "Video" {
-                Button(action: {
-                    withAnimation(.spring()) {
-                        viewModel.isHeaderExpanded.toggle()
+                HStack(spacing: 16) {
+                    Button(action: { showSearch = true }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.blue)
                     }
-                }) {
-                    Image(systemName: viewModel.isHeaderExpanded ? "chevron.right" : "chevron.left")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 32, height: 32)
-                        .background(Color.orange)
-                        .clipShape(Circle())
+                    .navigationDestination(isPresented: $showSearch) {
+                        SearchView(viewModel: viewModel, contextTitle: "Videos")
+                    }
+                    
+                    Menu {
+                        Button(action: { showSortSheet = true }) {
+                            Label("Sort by", systemImage: "arrow.up.arrow.down")
+                        }
+                        
+                        Button(action: { isGridView.toggle() }) {
+                            Label(isGridView ? "List View" : "Grid View", systemImage: isGridView ? "list.bullet" : "square.grid.2x2")
+                        }
+                        
+                        Button(action: { viewModel.isSelectionMode = true }) {
+                            Label("Select", systemImage: "checkmark.circle")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .rotationEffect(.degrees(90))
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.blue)
+                    }
                 }
                 .padding(.trailing, 16)
                 .transition(.opacity)
             }
+        }
+        .sheet(isPresented: $showSortSheet) {
+            CustomSortingView(sortOptionRaw: $viewModel.sortOptionRaw, title: "Videos")
         }
         .frame(height: 44)
         .padding(.vertical, 8)

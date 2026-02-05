@@ -451,17 +451,7 @@ struct FolderDetailView: View {
         VStack {
             Spacer()
             HStack(spacing: 0) {
-                selectionBarItem(icon: "text.badge.plus", title: "AddtoPlaylist", action: { 
-                    // Dummy for now
-                    print("Add to Playlist dummy")
-                })
-                
                 selectionBarItem(icon: "trash", title: "Delete", action: { deleteSelected() })
-                
-                selectionBarItem(icon: "music.note.list", title: "Get Mp3", action: {
-                    // Dummy for now
-                    print("Get Mp3 dummy")
-                })
                 
                 selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { showShareSheet = true })
             }
@@ -556,10 +546,6 @@ struct FolderDetailView: View {
         if video.asset != nil {
             // Album Video
             return [
-                CustomActionItem(title: "Get MP3", icon: "music.note", role: nil, action: {
-                    // Get MP3 stub - logic to convert or extract audio
-                    print("Get MP3 for album video: \(video.title)")
-                }),
                 CustomActionItem(title: "Share", icon: "square.and.arrow.up", role: nil, action: {
                     viewModel.shareVideo(item: video)
                 }),

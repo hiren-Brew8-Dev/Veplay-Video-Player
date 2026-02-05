@@ -10,6 +10,6 @@ target 'My-Video-Player' do
 pod 'MobileVLCKit'
 pod 'SSZipArchive'
 pod 'SwiftSoup'
-pod 'Alamofire'
+# pod 'Alamofire' # Removed because it's already in SPM, causing duplicate class errors
 
 end

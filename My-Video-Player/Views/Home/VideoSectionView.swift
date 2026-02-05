@@ -13,19 +13,8 @@ struct VideoSectionView: View {
     @State private var showDeleteVideoAlert = false
     @State private var newVideoName = ""
     
-    // Selection State
-    @State private var selectedVideoIds = Set<UUID>()
-    @State private var showShareSheet = false
-    
-    
-    
-    var isAllSelected: Bool {
-        return !viewModel.importedVideos.isEmpty && selectedVideoIds.count == viewModel.importedVideos.count
-    }
-    
     @AppStorage("isGridView") private var isGridView: Bool = true
     @State private var showSortSheet: Bool = false
-    @Binding var isHeaderExpanded: Bool
     @State private var showSearch = false
 
     var body: some View {
@@ -36,8 +25,6 @@ struct VideoSectionView: View {
                 // Header
                 if viewModel.isSelectionMode {
                     selectionHeader
-                } else if isHeaderExpanded {
-                    expandedHeader
                 }
                 
                 ScrollView {
@@ -81,10 +68,6 @@ struct VideoSectionView: View {
                 .transition(.opacity)
             }
         }
-        .sheet(isPresented: $showShareSheet) {
-            let items = viewModel.importedVideos.filter { selectedVideoIds.contains($0.id) }.compactMap { $0.url }
-            ShareSheet(activityItems: items)
-        }
         .background(Color.themeBackground)
         .sheet(isPresented: $showSortSheet) {
             CustomSortingView(sortOptionRaw: $viewModel.sortOptionRaw, title: "Videos")
@@ -111,6 +94,10 @@ struct VideoSectionView: View {
         }
     }
     
+    var isAllSelected: Bool {
+        return !viewModel.importedVideos.isEmpty && viewModel.selectedVideoIds.count == viewModel.importedVideos.count
+    }
+    
     // MARK: - Headers
     
     private var expandedHeader: some View {
@@ -121,13 +108,7 @@ struct VideoSectionView: View {
             
             Spacer()
             
-            HStack(spacing: 16) {
-                Button(action: { viewModel.isSelectionMode = true }) {
-                    Image(systemName: "checkmark.circle")
-                        .font(.system(size: 18))
-                        .foregroundColor(.orange)
-                }
-                
+            HStack(spacing: 20) {
                 Button(action: { showSearch = true }) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 20))
@@ -137,29 +118,23 @@ struct VideoSectionView: View {
                     SearchView(viewModel: viewModel, contextTitle: "Videos")
                 }
                 
-                Button(action: { showSortSheet = true }) {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 18))
-                        .foregroundColor(.orange)
-                }
-                
-                Button(action: { isGridView.toggle() }) {
-                    Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
-                        .font(.system(size: 18))
-                        .foregroundColor(.orange)
-                }
-                
-                Button(action: {
-                    withAnimation(.spring()) {
-                        isHeaderExpanded.toggle()
+                Menu {
+                    Button(action: { showSortSheet = true }) {
+                        Label("Sort by", systemImage: "arrow.up.arrow.down")
                     }
-                }) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 32, height: 32)
-                        .background(Color.orange)
-                        .clipShape(Circle())
+                    
+                    Button(action: { isGridView.toggle() }) {
+                        Label(isGridView ? "List View" : "Grid View", systemImage: isGridView ? "list.bullet" : "square.grid.2x2")
+                    }
+                    
+                    Button(action: { viewModel.isSelectionMode = true }) {
+                        Label("Select", systemImage: "checkmark.circle")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .rotationEffect(.degrees(90))
+                        .font(.system(size: 20))
+                        .foregroundColor(.blue)
                 }
             }
         }
@@ -171,10 +146,11 @@ struct VideoSectionView: View {
     private var selectionHeader: some View {
         HStack {
             Button(action: {
+                let allVideos = viewModel.importedVideos + viewModel.allGalleryVideos
                 if isAllSelected {
-                    selectedVideoIds.removeAll()
+                    viewModel.selectedVideoIds.removeAll()
                 } else {
-                    selectedVideoIds = Set(viewModel.importedVideos.map { $0.id })
+                    viewModel.selectedVideoIds = Set(allVideos.map { $0.id })
                 }
             }) {
                 ZStack {
@@ -196,7 +172,7 @@ struct VideoSectionView: View {
             
             Spacer()
             
-            Text("Selected (\(selectedVideoIds.count)/\(viewModel.importedVideos.count))")
+            Text("Selected (\(viewModel.selectedVideoIds.count)/\(viewModel.importedVideos.count + viewModel.allGalleryVideos.count))")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.white)
             
@@ -204,7 +180,7 @@ struct VideoSectionView: View {
             
             Button("Done") {
                 viewModel.isSelectionMode = false
-                selectedVideoIds.removeAll()
+                viewModel.selectedVideoIds.removeAll()
             }
             .font(.system(size: 16, weight: .bold))
             .foregroundColor(.orange)
@@ -219,17 +195,9 @@ struct VideoSectionView: View {
         VStack {
             Spacer()
             HStack(spacing: 0) {
-                selectionBarItem(icon: "text.badge.plus", title: "AddtoPlaylist", action: { 
-                    print("Add to Playlist dummy")
-                })
-                
                 selectionBarItem(icon: "trash", title: "Delete", action: { deleteSelected() })
                 
-                selectionBarItem(icon: "music.note.list", title: "Get Mp3", action: {
-                     print("Get Mp3 dummy")
-                })
-                
-                selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { showShareSheet = true })
+                selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareSelectedVideos() })
             }
             .padding(.top, 12)
             .padding(.bottom, 25)
@@ -253,8 +221,8 @@ struct VideoSectionView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .disabled(selectedVideoIds.isEmpty)
-        .opacity(selectedVideoIds.isEmpty ? 0.5 : 1.0)
+        .disabled(viewModel.selectedVideoIds.isEmpty)
+        .opacity(viewModel.selectedVideoIds.isEmpty ? 0.5 : 1.0)
     }
     
     // MARK: - Subviews
@@ -350,16 +318,21 @@ struct VideoSectionView: View {
     }
 
     
+    @ViewBuilder
     private func sectionHeader(for date: Date) -> some View {
-        HStack {
-            Text(formattedSectionDate(date))
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.gray)
-                .padding(.vertical, 10)
-                .padding(.horizontal)
-            Spacer()
+        if date == .distantPast {
+            EmptyView()
+        } else {
+            HStack {
+                Text(formattedSectionDate(date))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.gray)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal)
+                Spacer()
+            }
+            .background(Color.themeBackground)
         }
-        .background(Color.themeBackground)
     }
     
     private func formattedSectionDate(_ date: Date) -> String {
@@ -383,7 +356,7 @@ struct VideoSectionView: View {
                 video: video,
                 viewModel: viewModel,
                 isSelectionMode: viewModel.isSelectionMode,
-                isSelected: selectedVideoIds.contains(video.id),
+                isSelected: viewModel.selectedVideoIds.contains(video.id),
                 onMenuAction: {
                     triggerActionSheet(for: video)
                 }
@@ -400,7 +373,7 @@ struct VideoSectionView: View {
                 video: video,
                 viewModel: viewModel,
                 isSelectionMode: viewModel.isSelectionMode,
-                isSelected: selectedVideoIds.contains(video.id),
+                isSelected: viewModel.selectedVideoIds.contains(video.id),
                 onMenuAction: {
                     triggerActionSheet(for: video)
                 }
@@ -429,10 +402,10 @@ struct VideoSectionView: View {
     
     private func handleVideoTap(_ video: VideoItem) {
         if viewModel.isSelectionMode {
-            if selectedVideoIds.contains(video.id) {
-                selectedVideoIds.remove(video.id)
+            if viewModel.selectedVideoIds.contains(video.id) {
+                viewModel.selectedVideoIds.remove(video.id)
             } else {
-                selectedVideoIds.insert(video.id)
+                viewModel.selectedVideoIds.insert(video.id)
             }
         } else {
             // Setup playlist context: All imported videos
@@ -442,12 +415,13 @@ struct VideoSectionView: View {
     }
     
     private func deleteSelected() {
-        let selectedVideos = viewModel.importedVideos.filter { selectedVideoIds.contains($0.id) }
+        let allVideos = viewModel.importedVideos + viewModel.allGalleryVideos
+        let selectedVideos = allVideos.filter { viewModel.selectedVideoIds.contains($0.id) }
         for video in selectedVideos {
             viewModel.deleteVideo(video)
         }
         viewModel.isSelectionMode = false
-        selectedVideoIds.removeAll()
+        viewModel.selectedVideoIds.removeAll()
     }
     
 }

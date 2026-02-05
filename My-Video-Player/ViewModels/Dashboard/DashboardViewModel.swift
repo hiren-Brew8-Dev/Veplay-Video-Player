@@ -43,6 +43,8 @@ class DashboardViewModel: ObservableObject {
     // Global UI State
     @Published var showCreateFolderAlert = false
     @Published var showPhotoPicker = false
+    @Published var selectedVideoIds = Set<UUID>()
+    @Published var isSharing: Bool = false
     @Published var showFileImporter = false
     @Published var newFolderName = ""
     @Published var activeImportFolderURL: URL? = nil
@@ -57,46 +59,74 @@ class DashboardViewModel: ObservableObject {
     }
     
     func shareVideo(item: VideoItem) {
+        getURL(for: item) { url in
+            if let url = url {
+                DispatchQueue.main.async {
+                    self.shareVideo(url)
+                }
+            }
+        }
+    }
+    
+    func shareSelectedVideos() {
+        let selectedItems = (importedVideos + allGalleryVideos).filter { selectedVideoIds.contains($0.id) }
+        guard !selectedItems.isEmpty else { return }
+        
+        isSharing = true
+        var urls: [URL] = []
+        let group = DispatchGroup()
+        
+        for item in selectedItems {
+            group.enter()
+            getURL(for: item) { url in
+                if let url = url {
+                    urls.append(url)
+                }
+                group.leave()
+            }
+        }
+        
+        group.notify(queue: .main) {
+            self.isSharing = false
+            if !urls.isEmpty {
+                self.activityItems = urls
+                self.showShareSheetGlobal = true
+            }
+        }
+    }
+    
+    @Published var activityItems: [Any] = []
+    
+    private func getURL(for item: VideoItem, completion: @escaping (URL?) -> Void) {
         if let url = item.url {
-            self.shareVideo(url)
+            completion(url)
         } else if let asset = item.asset {
-            // It's a PHAsset from the library
             let options = PHVideoRequestOptions()
             options.isNetworkAccessAllowed = true
             
             PHImageManager.default().requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
                 if let urlAsset = avAsset as? AVURLAsset {
-                    DispatchQueue.main.async {
-                        self.shareVideo(urlAsset.url)
-                    }
+                    completion(urlAsset.url)
                 } else {
-                    // Handle cases where it's not a direct URL (e.g. slow-mo or high-res that needs export)
-                    // For now, try to get the first resource URL
                     let resources = PHAssetResource.assetResources(for: asset)
                     if let firstResource = resources.first {
                         let tempDir = FileManager.default.temporaryDirectory
                         let outputURL = tempDir.appendingPathComponent(firstResource.originalFilename)
                         
-                        // If file already exists return it, or delete if you want fresh
                         if FileManager.default.fileExists(atPath: outputURL.path) {
-                            DispatchQueue.main.async {
-                                self.shareVideo(outputURL)
-                            }
-                            return
-                        }
-                        
-                        PHAssetResourceManager.default().writeData(for: firstResource, toFile: outputURL, options: nil) { error in
-                            DispatchQueue.main.async {
-                                if error == nil {
-                                    self.shareVideo(outputURL)
-                                } else {
-                                    print("Error exporting PHAssetResource for sharing: \(error?.localizedDescription ?? "unknown")")
-                                }
+                            completion(outputURL)
+                        } else {
+                            PHAssetResourceManager.default().writeData(for: firstResource, toFile: outputURL, options: nil) { error in
+                                completion(error == nil ? outputURL : nil)
                             }
                         }
+                    } else {
+                        completion(nil)
                     }
                 }
             }
+        } else {
+            completion(nil)
         }
     }
     
@@ -144,25 +174,27 @@ class DashboardViewModel: ObservableObject {
     }
     
     private func setupGroupedVideosObserver() {
-        // Master videos list observer: combines all sources
-        Publishers.CombineLatest($importedVideos, $allGalleryVideos)
-            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
-            .sink { [weak self] imported, gallery in
-                self?.videos = (imported + gallery).sorted(by: { $0.creationDate > $1.creationDate })
-            }
-            .store(in: &cancellables)
-
         Publishers.CombineLatest($importedVideos, $sortOptionRaw)
             .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
             .sink { [weak self] _, _ in
                 self?.updateGroupedVideos()
             }
             .store(in: &cancellables)
+            
+        // Master videos list remains a combination for other views (like Search)
+        // but we'll ensure it respects sorting.
+        Publishers.CombineLatest3($importedVideos, $allGalleryVideos, $sortOptionRaw)
+            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
+            .sink { [weak self] imported, gallery, _ in
+                guard let self = self else { return }
+                let all = (imported + gallery)
+                self.videos = self.sortVideos(all)
+            }
+            .store(in: &cancellables)
     }
     
-    private func updateGroupedVideos() {
-        let calendar = Calendar.current
-        let sorted = importedVideos.sorted {
+    private func sortVideos(_ items: [VideoItem]) -> [VideoItem] {
+        return items.sorted {
             switch sortOption {
             case .dateDesc: return $0.creationDate > $1.creationDate
             case .dateAsc: return $0.creationDate < $1.creationDate
@@ -174,18 +206,29 @@ class DashboardViewModel: ObservableObject {
             case .durationAsc: return $0.duration < $1.duration
             }
         }
+    }
+    
+    private func updateGroupedVideos() {
+        let calendar = Calendar.current
+        let sorted = sortVideos(importedVideos)
         
-        let grouped = Dictionary(grouping: sorted) { video -> Date in
-            calendar.startOfDay(for: video.creationDate)
-        }
-        
-        let sortedDates = grouped.keys.sorted(by: { 
-            sortOption == .dateAsc ? $0 < $1 : $0 > $1 
-        })
-        
-        self.groupedImportedVideos = sortedDates.map { date in
-            let videosInDate = grouped[date] ?? []
-            return VideoSection(date: date, videos: videosInDate)
+        switch sortOption {
+        case .dateDesc, .dateAsc:
+            let grouped = Dictionary(grouping: sorted) { video -> Date in
+                calendar.startOfDay(for: video.creationDate)
+            }
+            
+            let sortedDates = grouped.keys.sorted(by: { 
+                sortOption == .dateAsc ? $0 < $1 : $0 > $1 
+            })
+            
+            self.groupedImportedVideos = sortedDates.map { date in
+                let videosInDate = grouped[date] ?? []
+                return VideoSection(date: date, videos: videosInDate)
+            }
+        default:
+            // Non-date sorting: provide a single section with a sentinel date for a flat list
+            self.groupedImportedVideos = [VideoSection(date: .distantPast, videos: sorted)]
         }
     }
     

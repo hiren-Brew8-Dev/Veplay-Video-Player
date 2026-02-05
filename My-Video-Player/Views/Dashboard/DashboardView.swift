@@ -108,8 +108,15 @@ struct DashboardView: View {
             }
         }
         .sheet(isPresented: $viewModel.showShareSheetGlobal) {
-            if let url = viewModel.shareURL {
+            if !viewModel.activityItems.isEmpty {
+                ShareSheet(activityItems: viewModel.activityItems)
+            } else if let url = viewModel.shareURL {
                 ShareSheet(activityItems: [url])
+            }
+        }
+        .overlay {
+            if viewModel.isSharing {
+                sharingOverlay
             }
         }
         .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
@@ -118,6 +125,27 @@ struct DashboardView: View {
             } else {
                 viewModel.isTabBarHidden = false
             }
+        }
+    }
+    
+    private var sharingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.6)
+                .edgesIgnoringSafeArea(.all)
+            
+            VStack(spacing: 16) {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .orange))
+                    .scaleEffect(1.5)
+                
+                Text("Sharing...")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            .padding(40)
+            .background(Color.themeSurface)
+            .cornerRadius(20)
+            .shadow(radius: 20)
         }
     }
     
@@ -156,12 +184,6 @@ struct CustomTabBarOverlay: View {
                     HStack {
                         Spacer()
                         tabBarItem(index: 0, icon: "house.fill", title: "Home")
-                        Spacer()
-                        tabBarItem(index: 1, icon: "play.square.fill", title: "Playlist")
-                        Spacer()
-                        Spacer().frame(width: 60)
-                        Spacer()
-                        tabBarItem(index: 2, icon: "square.grid.2x2", title: "Youtube")
                         Spacer()
                         tabBarItem(index: 3, icon: "gearshape.fill", title: "Settings")
                         Spacer()

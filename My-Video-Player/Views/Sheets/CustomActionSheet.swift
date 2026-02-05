@@ -91,7 +91,7 @@ struct CustomActionSheet: View {
                 .transition(.move(edge: .bottom))
             }
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isPresented)
+        .animation(.spring(response: 0.45, dampingFraction: 0.85, blendDuration: 0), value: isPresented)
     }
     
     @ViewBuilder

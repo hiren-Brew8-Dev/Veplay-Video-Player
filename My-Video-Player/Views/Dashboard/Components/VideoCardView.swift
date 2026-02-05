@@ -25,8 +25,9 @@ struct VideoCardView: View {
                     Image(uiImage: thumb)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: thumbnailSize, height: thumbnailSize)
+                        .frame(width: thumbnailSize - 16, height: thumbnailSize - 16) // Subtracted padding from size
                         .clipped()
+                        .cornerRadius(10)
                     
                 } else {
                     ZStack {
@@ -35,8 +36,9 @@ struct VideoCardView: View {
                             .foregroundColor(.white.opacity(0.15))
                             .font(.system(size: 30))
                     }
-                    .frame(width: thumbnailSize, height: thumbnailSize)
+                    .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
                     .clipped()
+                    .cornerRadius(10)
                 }
                 
                 // Duration Overlay
@@ -47,7 +49,7 @@ struct VideoCardView: View {
                     .padding(.vertical, 3)
                     .background(Color.black.opacity(0.7))
                     .cornerRadius(4)
-                    .padding(8)
+                    .padding(14) // Adjusted for thumbnail internal padding
                 
                 // Selection Overlay
                 if isSelectionMode {
@@ -69,13 +71,15 @@ struct VideoCardView: View {
                                         .frame(width: 24, height: 24)
                                 }
                             }
-                            .padding(8)
+                            .padding(14) // Adjusted for thumbnail internal padding
                         }
                         Spacer()
                     }
                 }
             }
-            .cornerRadius(12)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 8)
+            .padding(.horizontal, 8) // This gives equal spacing on both sides
             
             // 2. Info Section
             HStack(alignment: .top, spacing: 0) {
@@ -101,17 +105,23 @@ struct VideoCardView: View {
                 Button(action: {
                     onMenuAction?()
                 }) {
-                    Image(systemName: "ellipsis")
-                        .rotationEffect(.degrees(90))
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.gray.opacity(0.6))
-                        .padding(6)
-                        .contentShape(Rectangle())
+                    ZStack {
+                        Circle()
+                            .fill(Color.black.opacity(0.3))
+                            .frame(width: 32, height: 32)
+                        
+                        Image(systemName: "ellipsis")
+                            .rotationEffect(.degrees(90))
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 44, height: 44) // Increased touch area
+                    .contentShape(Rectangle())
                 }
-                .offset(x: 4, y: -4) // Push slightly right to align with edge
+                .offset(x: 4, y: -4)
             }
-            .padding(.horizontal, 4)
-            .padding(.bottom, 4)
+            .padding(.horizontal, 12) // Match the 8px + 4px alignment
+            .padding(.bottom, 8)
         }
         //.padding(padding) // Removed to fix spacing
         .background(Color.themeSurface.opacity(0.4))

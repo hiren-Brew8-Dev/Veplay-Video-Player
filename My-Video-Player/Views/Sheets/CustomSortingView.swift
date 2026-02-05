@@ -42,15 +42,15 @@ struct CustomSortingView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // Drag Handle
+            Capsule()
+                .fill(Color.gray.opacity(0.4))
+                .frame(width: 36, height: 5)
+                .padding(.top, 10)
+                .padding(.bottom, 10)
+            
             // Header
             HStack {
-                Button("Cancel") {
-                    presentationMode.wrappedValue.dismiss()
-                }
-                .foregroundColor(.blue)
-                
-                Spacer()
-                
                 Text("Sort by")
                     .font(.headline)
                     .foregroundColor(.white)
@@ -61,11 +61,15 @@ struct CustomSortingView: View {
                     applySort()
                     presentationMode.wrappedValue.dismiss()
                 }
-                .font(.headline)
+                .font(.system(size: 15, weight: .bold))
                 .foregroundColor(.blue)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(20)
             }
-            .padding()
-            .background(Color.themeBackground)
+            .padding(.horizontal)
+            .padding(.bottom, 16)
             
             ScrollView {
                 VStack(spacing: 24) {
@@ -73,34 +77,39 @@ struct CustomSortingView: View {
                     VStack(spacing: 0) {
                         ForEach(availableCriteria, id: \.self) { criteria in
                             sortRow(title: criteria.rawValue, isSelected: selectedCriteria == criteria) {
-                                selectedCriteria = criteria
+                                withAnimation {
+                                    selectedCriteria = criteria
+                                }
                             }
                             if criteria != availableCriteria.last {
-                                Divider().padding(.leading, 20)
+                                Divider().background(Color.gray.opacity(0.2)).padding(.leading, 16)
                             }
                         }
                     }
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(12)
+                    .background(Color(UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0)))
+                    .cornerRadius(16)
                     
                     // Order Section
                     VStack(spacing: 0) {
                         ForEach(SortOrder.allCases, id: \.self) { order in
                             sortRow(title: order.title(for: selectedCriteria), isSelected: selectedOrder == order) {
-                                selectedOrder = order
+                                withAnimation {
+                                    selectedOrder = order
+                                }
                             }
                             if order != SortOrder.allCases.last {
-                                Divider().padding(.leading, 20)
+                                Divider().background(Color.gray.opacity(0.2)).padding(.leading, 16)
                             }
                         }
                     }
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(12)
+                    .background(Color(UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0)))
+                    .cornerRadius(16)
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.bottom, 40)
             }
         }
-        .background(Color.themeBackground.edgesIgnoringSafeArea(.all))
+        .background(Color(UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)).edgesIgnoringSafeArea(.all))
         .onAppear {
             mapCurrentState()
         }
@@ -111,20 +120,21 @@ struct CustomSortingView: View {
             HStack {
                 Text(title)
                     .foregroundColor(.white)
-                    .font(.body)
+                    .font(.system(size: 15))
                 Spacer()
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color.blue : Color.gray, lineWidth: 2)
+                        .stroke(isSelected ? Color.orange : Color.gray.opacity(0.5), lineWidth: 2)
                         .frame(width: 22, height: 22)
                     if isSelected {
                         Circle()
-                            .fill(Color.blue)
+                            .fill(Color.orange)
                             .frame(width: 12, height: 12)
                     }
                 }
             }
-            .padding()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
