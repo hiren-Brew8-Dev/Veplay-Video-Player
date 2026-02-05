@@ -1,0 +1,237 @@
+import SwiftUI
+import PhotosUI
+import UIKit
+
+struct DashboardView: View {
+    @StateObject private var viewModel = DashboardViewModel()
+    @AppStorage("isDarkMode") private var isDarkMode = true
+    
+    @State private var selectedPhotoItems = [PhotosPickerItem]()
+    
+    init() {
+        UITabBar.appearance().barTintColor = UIColor(Color.themeSurface)
+        UITabBar.appearance().unselectedItemTintColor = UIColor.gray
+        UITabBar.appearance().isHidden = false
+    }
+    
+    var body: some View {
+        ZStack {
+            NavigationStack {
+                ZStack {
+                    switch viewModel.selectedTab {
+                    case 0:
+                        HomeView(viewModel: viewModel, paddingBottom: .constant(80))
+                    case 1:
+                        PlaylistView()
+                    case 2:
+                        BrowseView()
+                    case 3:
+                        SettingsView()
+                    default:
+                        HomeView(viewModel: viewModel, paddingBottom: .constant(80))
+                    }
+                }
+                .navigationBarHidden(true)
+            }
+            .fullScreenCover(item: $viewModel.playingVideo) { video in
+                PlayerView(
+                    video: video,
+                    playlist: viewModel.currentPlaylist,
+                    onPlaybackEnded: {
+                        viewModel.playingVideo = nil
+                    }
+                )
+                .environmentObject(viewModel)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            if viewModel.isImporting {
+                importingOverlay
+            }
+            
+            if viewModel.showActionSheet {
+                CustomActionSheet(
+                    target: viewModel.actionSheetTarget,
+                    items: viewModel.actionSheetItems,
+                    isPresented: $viewModel.showActionSheet
+                )
+                .zIndex(200)
+            }
+            
+            if !viewModel.isHeaderExpanded && !viewModel.isTabBarHidden && !viewModel.showActionSheet && viewModel.playingVideo == nil {
+                CustomTabBarOverlay(viewModel: viewModel)
+            }
+        }
+        .environmentObject(viewModel)
+        .preferredColorScheme(isDarkMode ? .dark : .light)
+        .alert("Create New Folder", isPresented: $viewModel.showCreateFolderAlert) {
+            TextField("Folder Name", text: $viewModel.newFolderName)
+            Button("Cancel", role: .cancel) { viewModel.newFolderName = "" }
+            Button("Create") {
+                viewModel.createFolder(name: viewModel.newFolderName)
+                viewModel.newFolderName = ""
+            }
+        } message: {
+            Text("Enter a name for the new folder")
+        }
+        .fileImporter(
+            isPresented: $viewModel.showFileImporter,
+            allowedContentTypes: [.movie, .video],
+            allowsMultipleSelection: true
+        ) { result in
+            switch result {
+            case .success(let urls):
+                viewModel.importVideos(from: urls)
+            case .failure(let error):
+                print("File import failed: \(error.localizedDescription)")
+            }
+        }
+        .photosPicker(
+            isPresented: $viewModel.showPhotoPicker,
+            selection: $selectedPhotoItems,
+            matching: .videos
+        )
+        .onChange(of: selectedPhotoItems) { oldItems, newItems in
+            guard !newItems.isEmpty else { return }
+            viewModel.isImporting = true
+            Task {
+                var importedURLs = [URL]()
+                for item in newItems {
+                    if let movie = try? await item.loadTransferable(type: VideoTransferable.self) {
+                        importedURLs.append(movie.url)
+                    }
+                }
+                await MainActor.run {
+                    viewModel.importVideos(from: importedURLs)
+                    selectedPhotoItems.removeAll()
+                }
+            }
+        }
+        .sheet(isPresented: $viewModel.showShareSheetGlobal) {
+            if let url = viewModel.shareURL {
+                ShareSheet(activityItems: [url])
+            }
+        }
+        .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
+            if newVideo != nil {
+                viewModel.isTabBarHidden = true
+            } else {
+                viewModel.isTabBarHidden = false
+            }
+        }
+    }
+    
+    private var importingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .edgesIgnoringSafeArea(.all)
+            
+            VStack(spacing: 16) {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.2)
+                
+                Text("Syncing...")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 40)
+            .padding(.vertical, 30)
+            .background(Material.ultraThinMaterial)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
+        }
+        .zIndex(100)
+    }
+}
+
+struct CustomTabBarOverlay: View {
+    @ObservedObject var viewModel: DashboardViewModel
+    
+    var body: some View {
+        if !viewModel.isSelectionMode {
+            VStack {
+                Spacer()
+                ZStack(alignment: .top) {
+                    HStack {
+                        Spacer()
+                        tabBarItem(index: 0, icon: "house.fill", title: "Home")
+                        Spacer()
+                        tabBarItem(index: 1, icon: "play.square.fill", title: "Playlist")
+                        Spacer()
+                        Spacer().frame(width: 60)
+                        Spacer()
+                        tabBarItem(index: 2, icon: "square.grid.2x2", title: "Youtube")
+                        Spacer()
+                        tabBarItem(index: 3, icon: "gearshape.fill", title: "Settings")
+                        Spacer()
+                    }
+                    .padding(.top, 10)
+                    .padding(.bottom, 30)
+                    .background(Color.themeSurface)
+                    .cornerRadius(30, corners: [.topLeft, .topRight])
+                    .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: -5)
+                    
+                    Button(action: {}) {
+                        Menu {
+                            Button(action: { viewModel.showCreateFolderAlert = true }) {
+                                Label("Create Folder", systemImage: "folder.badge.plus")
+                            }
+                            Button(action: { viewModel.showPhotoPicker = true }) {
+                                Label("Import from Photos", systemImage: "photo.on.rectangle")
+                            }
+                            Button(action: { viewModel.showFileImporter = true }) {
+                                Label("Add From iOS Files", systemImage: "folder.badge.plus")
+                            }
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 60, height: 60)
+                                .background(Color.orange)
+                                .clipShape(Circle())
+                                .shadow(color: Color.orange.opacity(0.4), radius: 10, x: 0, y: 5)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.themeBackground, lineWidth: 4)
+                                )
+                        }
+                    }
+                    .offset(y: -30)
+                }
+            }
+            .edgesIgnoringSafeArea(.bottom)
+        }
+    }
+    
+    private func tabBarItem(index: Int, icon: String, title: String) -> some View {
+        Button(action: {
+            viewModel.selectedTab = index
+        }) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                Text(title)
+                    .font(.caption2)
+            }
+            .foregroundColor(viewModel.selectedTab == index ? .orange : .gray)
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}

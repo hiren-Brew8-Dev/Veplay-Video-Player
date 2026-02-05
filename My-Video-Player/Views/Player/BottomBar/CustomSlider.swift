@@ -1,0 +1,74 @@
+import SwiftUI
+
+struct CustomSlider: View {
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    var step: Double? = nil
+    var onEditingChanged: (Bool) -> Void
+    
+    @State private var dragOffset: CGFloat = 0
+    @State private var isDragging: Bool = false
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                // Background Track
+                Capsule()
+                    .fill(Color.white.opacity(0.3))
+                    .frame(height: 4)
+                
+                // Progress Track
+                Capsule()
+                    .fill(Color.orange) // Specifically using orange to match user provided UI
+                    .frame(width: max(0, min(CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound)) * geometry.size.width, geometry.size.width)), height: 4)
+                
+                // Thumb
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 14, height: 14)
+                    .offset(x: max(0, min(CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound)) * geometry.size.width - 7, geometry.size.width - 14)))
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { gesture in
+                                isDragging = true
+                                onEditingChanged(true)
+                                let rawValue = Double(gesture.location.x / geometry.size.width) * (range.upperBound - range.lowerBound) + range.lowerBound
+                                let newValue: Double
+                                if let step = step {
+                                    newValue = (rawValue / step).rounded() * step
+                                } else {
+                                    newValue = rawValue
+                                }
+                                value = min(max(range.lowerBound, newValue), range.upperBound)
+                            }
+                            .onEnded { _ in
+                                isDragging = false
+                                onEditingChanged(false)
+                            }
+                    )
+            }
+            .frame(height: 14) // Total height for hit testing
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        isDragging = true
+                        onEditingChanged(true)
+                        let rawValue = Double(gesture.location.x / geometry.size.width) * (range.upperBound - range.lowerBound) + range.lowerBound
+                        let newValue: Double
+                        if let step = step {
+                            newValue = (rawValue / step).rounded() * step
+                        } else {
+                            newValue = rawValue
+                        }
+                        value = min(max(range.lowerBound, newValue), range.upperBound)
+                    }
+                    .onEnded { _ in
+                        isDragging = false
+                        onEditingChanged(false)
+                    }
+            )
+        }
+        .frame(height: 14)
+    }
+}
