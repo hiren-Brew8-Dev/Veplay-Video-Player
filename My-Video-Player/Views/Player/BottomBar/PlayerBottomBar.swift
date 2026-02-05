@@ -28,6 +28,7 @@ struct PlayerBottomBar: View {
     let hasPrevBookmark: Bool
     let hasNextBookmark: Bool
     let isAtBookmark: Bool // To styling the center button
+    let isSubtitleEnabled: Bool // For CC red dot
     
     
     @Environment(\.verticalSizeClass) var verticalSizeClass
@@ -102,15 +103,15 @@ struct PlayerBottomBar: View {
             .padding(.horizontal, 4)
             
             // 2. Control Buttons Row (Spread out)
-            HStack(spacing: 0) {
+            HStack(spacing: 20) {
+                // Left Group: Lock, CC, Aspect
                 controlButton(icon: "lock.fill", action: onLock)
-                Spacer()
-                controlButton(icon: "pip.enter", action: onPIP)
-                Spacer()
                 ccButton
-                Spacer()
                 aspectRatioMenu
-                Spacer()
+                
+                Spacer() // Pushes Rotate to the right
+                
+                // Right Group
                 controlButton(icon: "rotate.right", action: onRotate)
             }
             .padding(.top, 10)
@@ -140,7 +141,7 @@ struct PlayerBottomBar: View {
             // 2. Bottom Icon Row
             HStack(spacing: 25) {
                 controlButton(icon: "lock.fill", action: onLock)
-                controlButton(icon: "pip.enter", action: onPIP)
+                // controlButton(icon: "pip.enter", action: onPIP) // Hidden as requested "logically present, UI absent"
                 ccButton
                 aspectRatioMenu
                 controlButton(icon: "rotate.right", action: onRotate)
@@ -290,6 +291,7 @@ struct PlayerBottomBar: View {
                     .fill(Color.red)
                     .frame(width: 7, height: 7)
                     .offset(x: 2, y: -2)
+                    .opacity(isSubtitleEnabled ? 1 : 0)
             }
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())

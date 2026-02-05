@@ -105,7 +105,7 @@ struct SubtitleSettingsView: View {
                 .presentationDetents([.fraction(0.5)])
         }
         .sheet(isPresented: $showOnlineSheet) {
-            SubtitleOnlineView(isPresented: $showOnlineSheet, subtitleManager: subtitleManager)
+            SubtitleOnlineView(isPresented: $showOnlineSheet, subtitleManager: subtitleManager, isLandscape: isLandscape)
                 .presentationDetents([.large])
         }
         .fileImporter(

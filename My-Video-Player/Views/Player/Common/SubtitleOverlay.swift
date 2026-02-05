@@ -20,17 +20,21 @@ struct SubtitleOverlay: View {
                 Spacer()
                 
                 Text(text)
-                    .font(.system(size: sizeForString(subtitleSize), weight: .bold))
+                    .font(.system(size: sizeForString(subtitleSize), weight: .bold)) // Bold for reading
                     .foregroundColor(colorFromName(subtitleColor))
                     .multilineTextAlignment(.center)
                     .lineLimit(nil)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .shadow(color: .black, radius: 2, x: 1, y: 1) // Add shadow for legibility since we removed bg box toggle
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    // VLC Style: Clear background with strong shadow/outline
+                    .shadow(color: .black, radius: 2, x: 1, y: 1)
+                    .shadow(color: .black, radius: 2, x: -1, y: -1)
                     .padding(.horizontal, 40)
-                    .padding(.bottom, 120)
+                    .padding(.bottom, 60)
+                    .transition(.opacity) // Smooth fade in/out
             }
             .frame(maxWidth: .infinity)
+            .animation(.easeInOut(duration: 0.1), value: text) // Animate text changes
         }
     }
     

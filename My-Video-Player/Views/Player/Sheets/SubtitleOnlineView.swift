@@ -3,162 +3,251 @@ import SwiftUI
 struct SubtitleOnlineView: View {
     @Binding var isPresented: Bool
     @ObservedObject var subtitleManager: SubtitleManager
+    let isLandscape: Bool // Add this prop
     
-    @StateObject private var osService = OpenSubtitlesService()
+    @StateObject private var yifyService = YIFYSubtitleService()
     @State private var searchText = ""
     @State private var selectedLanguage = "en"
     @State private var showLanguagePicker = false
+    @State private var selectedMovie: YIFYSubtitle? // Track selected movie for 2-step flow
     
     // Download state tracking
-    @State private var downloadingFileIds: Set<Int> = []
-    @State private var downloadedFileIds: Set<Int> = []
+    @State private var downloadingIds: Set<UUID> = []
+    @State private var downloadedIds: Set<UUID> = []
     
     var body: some View {
         VStack(spacing: 0) {
+            // Drag Handle (Portrait)
+            if !isLandscape {
+                Capsule()
+                    .fill(Color.gray.opacity(0.4))
+                    .frame(width: 36, height: 5)
+                    .padding(.top, 10)
+                    .padding(.bottom, 20)
+            }
+            
             // Header
             HStack {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isPresented = false
+                    }
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(10)
+                }
+                
                 Spacer()
+                
                 Text("Online Search")
                     .font(.headline)
                     .foregroundColor(.white)
+                
                 Spacer()
-                Button("Done") {
-                    isPresented = false
-                }
-                .foregroundColor(.blue)
+                
+                // Invisible spacer for balance
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.clear)
+                    .padding(10)
             }
-            .padding()
-            .background(Color(UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)))
+            .padding(.horizontal)
+            
+            Divider()
+                .background(Color.gray.opacity(0.3))
+                .padding(.bottom, 16)
             
             onlineSearchView
         }
-        .background(Color.black.edgesIgnoringSafeArea(.all))
-        .preferredColorScheme(.dark)
+        .padding(.trailing, isLandscape ? 30 : 0)
+        .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
+        .if(isLandscape) { view in
+             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
+        }
+        .if(!isLandscape) { view in
+             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
+        }
         .sheet(isPresented: $showLanguagePicker) {
             LanguagePickerSheet(selectedLanguageCode: $selectedLanguage, isPresented: $showLanguagePicker)
                 .presentationDetents([.medium, .large])
         }
     }
     
+
+    
     // MARK: - Online View
+    @State private var subtitlesList: [YIFYSubtitle] = []
+    
     var onlineSearchView: some View {
         VStack(spacing: 0) {
             // Search Area
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Search subtitle from: opensubtitles.org")
-                    .foregroundColor(.orange)
-                    .font(.caption)
-                
-                Button(action: { showLanguagePicker = true }) {
-                    Text("Languages: \(languageName(for: selectedLanguage)) >")
-                        .foregroundColor(.orange)
-                        .font(.caption)
-                }
-                
+            VStack(alignment: .leading, spacing: 12) {
+                // Info Row
                 HStack {
-                    TextField("Search...", text: $searchText)
-                        .padding(8)
-                        .background(Color(UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0)))
-                        .cornerRadius(8)
-                        .foregroundColor(.white)
-                    
-                    Button("Search") {
-                        hideKeyboard()
-                        osService.search(query: searchText, language: selectedLanguage)
+                    Link(destination: URL(string: "https://yifysubtitles.org")!) {
+                        HStack(spacing: 4) {
+                            Text("Source: YIFY Subtitles")
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.caption2)
+                        }
+                        .font(.caption)
+                        .foregroundColor(.blue)
                     }
-                    .foregroundColor(.blue)
+                    Spacer()
                 }
-            }
-            .padding()
-            
-            Divider().background(Color.gray)
-            
-            // List or Loader
-            if osService.isLoading {
-                Spacer()
-                VStack {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(1.5)
-                    Text("Loading...")
-                        .foregroundColor(.gray)
-                        .padding(.top, 8)
-                }
-                Spacer()
-            } else {
-                ScrollView {
-                    VStack(spacing: 1) {
-                        ForEach(osService.searchResults) { result in
-                            // Extract title and info (Updated for OSSubtitleItem)
-                            let title = result.attributes.feature_details?.title ?? result.attributes.files?.first?.file_name ?? "Unknown"
-                            let fileId = result.attributes.files?.first?.file_id ?? 0
-                            let fileName = result.attributes.files?.first?.file_name ?? title
-                            
-                            onlineResultRow(
-                                title: title,
-                                lang: result.attributes.language,
-                                fileId: fileId,
-                                isDownloading: downloadingFileIds.contains(fileId),
-                                isDownloaded: downloadedFileIds.contains(fileId)
-                            ) {
-                                // Download Logic
-                                downloadingFileIds.insert(fileId)
-                                osService.downloadSubtitle(fileId: fileId, fileName: fileName) { url in
-                                    downloadingFileIds.remove(fileId)
-                                    if let url = url {
-                                        downloadedFileIds.insert(fileId)
-                                        subtitleManager.loadSubtitle(from: url)
-                                        
-                                        // Auto-dismiss after successful download and load
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                            isPresented = false
-                                        }
-                                    }
-                                }
+                
+                // Search Bar
+                HStack(spacing: 12) {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+                        TextField("Search movie...", text: $searchText)
+                            .foregroundColor(.white)
+                            .submitLabel(.search)
+                            .onSubmit {
+                                hideKeyboard()
+                                selectedMovie = nil
+                                yifyService.search(query: searchText)
+                            }
+                        
+                        if !searchText.isEmpty {
+                            Button(action: { searchText = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
                             }
                         }
                     }
+                    .padding(10)
+                    .background(Color(UIColor.systemGray6))
+                    .cornerRadius(10)
+                    
+                    Button("Search") {
+                        hideKeyboard()
+                        selectedMovie = nil
+                        yifyService.search(query: searchText)
+                    }
+                    .font(.headline)
+                    .foregroundColor(.blue)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 16)
+            
+            Divider().background(Color.gray.opacity(0.3))
+            
+            // Content
+            if yifyService.isLoading {
+                Spacer()
+                ProgressView().scaleEffect(1.2).padding()
+                Spacer()
+            } else if let movie = selectedMovie {
+                // Movie Selected - Show Subtitles
+                VStack(spacing: 0) {
+                    // Back Button
+                    Button(action: {
+                        withAnimation { selectedMovie = nil }
+                    }) {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                            Text("Back to Results")
+                        }
+                        .foregroundColor(.blue)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    Divider().background(Color.gray.opacity(0.3))
+                    
+                    if subtitlesList.isEmpty {
+                         Spacer()
+                         Text("No subtitles found for this movie.").foregroundColor(.gray)
+                         Spacer()
+                    } else {
+                        List {
+                            ForEach(subtitlesList) { sub in
+                                onlineResultRow(
+                                    title: sub.title,
+                                    lang: sub.language,
+                                    isDownloading: downloadingIds.contains(sub.id),
+                                    isDownloaded: downloadedIds.contains(sub.id)
+                                ) {
+                                    handleSubtitleDownload(sub)
+                                }
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.visible)
+                                .listRowSeparatorTint(.gray.opacity(0.3))
+                            }
+                        }
+                        .listStyle(.plain)
+                        .scrollContentBackground(.hidden)
+                    }
+                }
+            } else if !yifyService.searchResults.isEmpty {
+                // Show Movie Results
+                List {
+                    ForEach(yifyService.searchResults) { item in
+                        Button(action: {
+                            handleMovieTap(item)
+                        }) {
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(item.title)
+                                        .foregroundColor(.white)
+                                        .font(.headline)
+                                    Text("Select to view subtitles")
+                                        .foregroundColor(.gray)
+                                        .font(.caption)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.visible)
+                        .listRowSeparatorTint(.gray.opacity(0.3))
+                    }
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+            } else {
+                Spacer()
+                Text("Search for a movie above.").foregroundColor(.gray)
+                Spacer()
+            }
+        }
+    }
+    
+    func handleMovieTap(_ item: YIFYSubtitle) {
+        selectedMovie = item
+        yifyService.fetchSubtitles(for: item.url) { subs in
+            // Filter common languages if needed, or sort
+            self.subtitlesList = subs.sorted { $0.language < $1.language }
+        }
+    }
+    
+    func handleSubtitleDownload(_ sub: YIFYSubtitle) {
+        downloadingIds.insert(sub.id)
+        yifyService.downloadSubtitle(from: sub.url) { url in
+            downloadingIds.remove(sub.id)
+            if let url = url {
+                downloadedIds.insert(sub.id)
+                subtitleManager.loadSubtitle(from: url)
+                
+                // Show success toast or dismiss
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                     isPresented = false
                 }
             }
         }
     }
     
     // MARK: - Downloaded View
-    var downloadedListView: some View {
-        List {
-            ForEach(osService.downloadedFiles) { file in
-                Button(action: {
-                    subtitleManager.loadSubtitle(from: file.url)
-                    isPresented = false
-                }) {
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(file.name)
-                                .foregroundColor(.white)
-                                .lineLimit(1)
-                            Text(file.date.formatted())
-                                .foregroundColor(.gray)
-                                .font(.caption)
-                        }
-                        Spacer()
-                        if subtitleManager.currentSubtitle == file.name { // Simple logic if we tracked name
-                            Image(systemName: "checkmark").foregroundColor(.green)
-                        }
-                    }
-                }
-                .listRowBackground(Color.black)
-            }
-            .onDelete { indexSet in
-                osService.deleteFile(at: indexSet)
-            }
-        }
-        .listStyle(PlainListStyle())
-        .onAppear {
-            osService.refreshDownloadedFiles()
-        }
-    }
+
     
-    func onlineResultRow(title: String, lang: String, fileId: Int, isDownloading: Bool, isDownloaded: Bool, onDownload: @escaping () -> Void) -> some View {
+    func onlineResultRow(title: String, lang: String, isDownloading: Bool, isDownloaded: Bool, onDownload: @escaping () -> Void) -> some View {
         HStack {
             VStack(alignment: .leading) {
                 Text(title)
@@ -186,8 +275,7 @@ struct SubtitleOnlineView: View {
                 }
             }
         }
-        .padding()
-        .background(Color.black)
+        .padding(.vertical, 4)
     }
     
     func languageName(for code: String) -> String {

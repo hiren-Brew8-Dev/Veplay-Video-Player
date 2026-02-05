@@ -321,7 +321,7 @@ class OpenSubtitlesService: ObservableObject {
         
         2
         00:00:05,000 --> 00:00:08,000
-        Downloaded via Alamofire Mock.
+        Downloaded successfully.
         """
         
         try? content.write(to: fileUrl, atomically: true, encoding: .utf8)

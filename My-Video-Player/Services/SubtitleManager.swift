@@ -54,11 +54,28 @@ class SubtitleManager: ObservableObject {
     // MARK: - Parsing
     
     func loadSubtitle(from url: URL, trackName: String? = nil) {
+        // Fix: Permission Error (Code=257). 
+        // We must access the security scoped resource. 
+        // Best practice: Copy to temp so we own it.
+        
+        let shouldStopAccessing = url.startAccessingSecurityScopedResource()
+        defer {
+            if shouldStopAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        
         do {
             let content = try String(contentsOf: url, encoding: .utf8)
             parseSRT(content)
             
-            // Add to tracks if not present
+            // Add to tracks if not present 
+            // NOTE: We store the ORIGINAL URL for reference, but next time we load,
+            // we will need to access it again. 
+            // Ideally, we'd cache the copied temp URL, but the user might select the same file again.
+            // Since `selectTrack` calls this `loadSubtitle` method, and `startAccessing...` is here, 
+            // re-selection should work fine now.
+            
             let name = trackName ?? url.lastPathComponent
             if !availableTracks.contains(where: { $0.url == url }) {
                 let track = SubtitleTrack(name: name, url: url)
@@ -70,10 +87,12 @@ class SubtitleManager: ObservableObject {
             
         } catch {
             print("Failed to load subtitle: \(error)")
-            // Try different encoding
-            if let content = try? String(contentsOf: url, encoding: .ascii) {
+            // Try different encoding (Windows-1252 / Latin1)
+            if let content = try? String(contentsOf: url, encoding: .windowsCP1252) {
                  parseSRT(content)
-                 // Enable after successful parsing
+                 isEnabled = true
+            } else if let content = try? String(contentsOf: url, encoding: .ascii) {
+                 parseSRT(content)
                  isEnabled = true
             }
         }

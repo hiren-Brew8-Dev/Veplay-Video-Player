@@ -8,5 +8,8 @@ target 'My-Video-Player' do
   # Pods for My-Video-Player
 
 pod 'MobileVLCKit'
+pod 'SSZipArchive'
+pod 'SwiftSoup'
+pod 'Alamofire'
 
 end

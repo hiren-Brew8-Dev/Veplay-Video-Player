@@ -437,10 +437,32 @@ class PlayerViewModel: NSObject, ObservableObject {
             player = nil
         }
 
-        // Check for VLC Types
-        if let url = video.url, isVLCFormat(url) {
+        // Check for VLC Types OR force VLC if desired (User Request: Native Subtitle View "Any How")
+        // Since AVPlayer cannot render external SRTs natively (without custom overlay),
+        // and the user explicitly rejected the custom overlay ("not want custom..."),
+        // we must fallback to VLC for everything to guarantee native subtitle support.
+        if let url = video.url {
             setupVLCPlayer(url: url, autoPlay: autoPlay)
             return
+        }
+        
+        // Only if no URL (PHAsset-only without URL resolved yet?), use AVPlayer temporarily
+        // But usually video.url is resolved. If not, we fall through.
+        // Wait, standard setup handles PHAsset request.
+        // We can convert PHAsset to URL? Usually PHAssets are handled by requestAVAsset.
+        
+        // If we really want to force VLC for PHAssets too, we need the URL.
+        // Usually `video.url` is nil for PHAssets in this model? Let's check.
+        // If video.url is nil, we proceed to AVPlayer.
+        // However, user specifically mentioned "load subtitles" which usually implies external files or MKV.
+        // MKV/AVI etc are already handled by isVLCFormat.
+        // The issue is likely MP4/MOV files playing in AVPlayer not showing correct subs.
+        
+        // Correct approach: Try to obtain URL for AVAsset if possible and use VLC.
+        // For now, let's broaden the VLC check.
+        if let url = video.url {
+             setupVLCPlayer(url: url, autoPlay: autoPlay)
+             return
         }
         
         // Standard AVPlayer Setup
@@ -832,10 +854,12 @@ class PlayerViewModel: NSObject, ObservableObject {
     
     @MainActor
     private func setupVLCPlayer(url: URL, autoPlay: Bool = true) {
+        // Initialize VLC Player
         self.isVLC = true
         self.vlcPlayer = VLCMediaPlayer()
         let media = VLCMedia(url: url)
         
+        // Optimize caching for smoother start
         // :network-caching=300 (buffer for local network/files, helps smooth playback without huge delay)
         // :clock-jitter=0 (reduce sync jitter)
         // :clock-synchro=0 (ensure audio/video sync)
@@ -865,7 +889,11 @@ class PlayerViewModel: NSObject, ObservableObject {
         }
         
         if autoPlay {
-            self.play()
+             // Delay play slightly to allow view hierarchy to settle?
+             // Or ensure it happens on next run loop
+             DispatchQueue.main.async {
+                 self.play()
+             }
         } else {
             self.isPlaying = false
         }

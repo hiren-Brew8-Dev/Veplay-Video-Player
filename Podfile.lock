@@ -1,16 +1,28 @@
 PODS:
+  - Alamofire (5.11.1)
   - MobileVLCKit (3.7.2)
+  - SSZipArchive (2.6.0)
+  - SwiftSoup (2.11.3)
 
 DEPENDENCIES:
+  - Alamofire
   - MobileVLCKit
+  - SSZipArchive
+  - SwiftSoup
 
 SPEC REPOS:
   trunk:
+    - Alamofire
     - MobileVLCKit
+    - SSZipArchive
+    - SwiftSoup
 
 SPEC CHECKSUMS:
+  Alamofire: eec6cd8f73b242b59e34153a606a909eb9864b14
   MobileVLCKit: 216c67d556bed3c366ccbca21388304f25a37196
+  SSZipArchive: 8a6ee5677c8e304bebc109e39cf0da91ccef22ea
+  SwiftSoup: 959c9ac70d7053fbf476341bfac90ab228523f2a
 
-PODFILE CHECKSUM: 622b3622344585bccbdc90f494c5d2ac982b800b
+PODFILE CHECKSUM: a3716c9df4c2aab1a083b135fc7273a1365f4cab
 
 COCOAPODS: 1.16.2

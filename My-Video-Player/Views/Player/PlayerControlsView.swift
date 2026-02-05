@@ -353,7 +353,8 @@ struct PlayerControlsView: View {
                             },
                             hasPrevBookmark: viewModel.hasPreviousBookmark,
                             hasNextBookmark: viewModel.hasNextBookmark,
-                            isAtBookmark: viewModel.isAtBookmark
+                            isAtBookmark: viewModel.isAtBookmark,
+                            isSubtitleEnabled: viewModel.subtitleManager.isEnabled
                         )
                     }
                     
