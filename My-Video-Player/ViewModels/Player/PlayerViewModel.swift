@@ -108,9 +108,11 @@ class PlayerViewModel: NSObject, ObservableObject {
     private var vlcAudioIndexes: [Int32] = []
     
     // Audio Engine for AVPlayer audio delay
+    // NOTE: AVPlayerItemAudioOutput is not available in iOS SDK
+    // Audio delay only works with VLC player
     private var audioEngine: AVAudioEngine?
     private var audioPlayerNode: AVAudioPlayerNode?
-    private var audioOutput: AVPlayerItemAudioOutput?
+    // private var audioOutput: AVPlayerItemAudioOutput?
     private var audioDelayBuffer: [AVAudioPCMBuffer] = []
     private var currentAudioDelayMs: Double = 0
     
@@ -1969,105 +1971,28 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
     }
     
     private func setupAudioEngineWithDelay(for playerItem: AVPlayerItem, delayMs: Double) {
-        // Clean up existing audio engine
-        cleanupAudioEngine()
+        // AVPlayerItemAudioOutput is not available in iOS SDK
+        // Audio delay functionality only works with VLC player
+        print("Audio delay is only supported for VLC player. AVPlayer does not support audio delay.")
         
-        // Mute the original player audio since we'll route through audio engine
-        Task { @MainActor in
-            self.player?.volume = 0
-        }
-        
-        // Create audio output
-        let audioSettings: [String: Any] = [
-            AVFormatIDKey: kAudioFormatLinearPCM,
-            AVLinearPCMBitDepthKey: 16,
-            AVLinearPCMIsFloatKey: false,
-            AVLinearPCMIsNonInterleaved: false
-        ]
-        
-        let output = AVPlayerItemAudioOutput(audioSettings: audioSettings)
-        playerItem.add(output)
-        self.audioOutput = output
-        
-        // Create and configure audio engine
-        let engine = AVAudioEngine()
-        let playerNode = AVAudioPlayerNode()
-        
-        engine.attach(playerNode)
-        
-        // Connect player node to output
-        let format = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 2)!
-        engine.connect(playerNode, to: engine.mainMixerNode, format: format)
-        
-        self.audioEngine = engine
-        self.audioPlayerNode = playerNode
-        
-        // Start the engine
-        do {
-            try engine.start()
-            playerNode.play()
-            
-            // Start audio processing with delay
-            processAudioWithDelay(output: output, playerNode: playerNode, delayMs: delayMs, format: format)
-        } catch {
-            print("Failed to start audio engine: \\(error)")
-            cleanupAudioEngine()
-        }
+        // Note: For AVPlayer, audio delay would require complex AVAudioEngine setup
+        // with MTAudioProcessingTap which is beyond the scope of this implementation
     }
     
-    private func processAudioWithDelay(output: AVPlayerItemAudioOutput, playerNode: AVAudioPlayerNode, delayMs: Double, format: AVAudioFormat) {
-        // Calculate delay in samples
-        let delaySamples = Int((delayMs / 1000.0) * format.sampleRate)
-        let bufferSize: AVAudioFrameCount = 4096
-        
-        // Create delay buffer
-        var delayBufferFrames: [AVAudioPCMBuffer] = []
-        
-        // Process audio in background
-        DispatchQueue.global(qos: .userInteractive).async { [weak self] in
-            guard let self = self else { return }
-            
-            var audioTimeStamp = CMTime.zero
-            
-            while self.audioEngine != nil && self.audioOutput != nil {
-                // Get audio buffer from player
-                let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: bufferSize)!
-                
-                var itemTime = CMTime.zero
-                if output.hasNewAudioSamples(forHostTime: audioTimeStamp) {
-                    let frameCount = output.copyNextSampleBuffer()?.numSamples ?? 0
-                    
-                    if frameCount > 0 {
-                        // Add to delay buffer
-                        delayBufferFrames.append(buffer)
-                        
-                        // If we have enough delayed samples, play them
-                        if delayBufferFrames.count * Int(bufferSize) >= delaySamples {
-                            if let delayedBuffer = delayBufferFrames.first {
-                                playerNode.scheduleBuffer(delayedBuffer)
-                                delayBufferFrames.removeFirst()
-                            }
-                        }
-                    }
-                }
-                
-                // Small sleep to avoid busy loop
-                Thread.sleep(forTimeInterval: 0.01)
-            }
-        }
+    private func processAudioWithDelay(output: Any?, playerNode: AVAudioPlayerNode, delayMs: Double, format: AVAudioFormat) {
+        // This function is not implemented as AVPlayerItemAudioOutput is not available in iOS
+        // Audio delay only works with VLC player
     }
     
     private func cleanupAudioEngine() {
         audioPlayerNode?.stop()
         audioEngine?.stop()
         
-        if let output = audioOutput, let playerItem = player?.currentItem {
-            playerItem.remove(output)
-        }
+        // Note: audioOutput cleanup removed as AVPlayerItemAudioOutput is not available
         
         audioEngine = nil
         audioPlayerNode = nil
-        audioOutput = nil
+        // audioOutput = nil
         audioDelayBuffer.removeAll()
         
         // Restore player volume
