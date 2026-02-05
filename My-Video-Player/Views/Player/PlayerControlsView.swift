@@ -8,6 +8,11 @@ import MobileVLCKit
 struct PlayerControlsView: View {
     @ObservedObject var viewModel: PlayerViewModel
     @StateObject private var volumeManager = SystemVolumeManager()
+    @Environment(\.verticalSizeClass) var verticalSizeClass
+    
+    private var isLandscape: Bool {
+        verticalSizeClass == .compact
+    }
     
     let videoTitle: String
     let toggleControls: () -> Void
@@ -36,6 +41,8 @@ struct PlayerControlsView: View {
     
     // Navigation State
     @State private var returnToSettings = false
+    @State private var showBookmarkButton: Bool = false
+    @State private var showFloatingBookmarkControls = true
     
     // Sharing State
     @State private var shareInfo: ShareInfo?
@@ -130,6 +137,17 @@ struct PlayerControlsView: View {
         } message: {
             Text("Picture in Picture is not currently supported for this video format.")
         }
+        .onChange(of: viewModel.bookmarks) { _ in
+            // If bookmarks exist on load, enable the feature so indicator shows
+            if !viewModel.bookmarks.isEmpty {
+                 showBookmarkButton = true
+            }
+            // If all bookmarks removed (and feature was on), disable it (auto-hide logic)
+            // But wait, user said "if any video has not" - so this is correct.
+            else if viewModel.bookmarks.isEmpty && showBookmarkButton {
+                 showBookmarkButton = false
+            }
+        }
     }
     
     // MARK: - Subviews
@@ -182,15 +200,82 @@ struct PlayerControlsView: View {
                             }
                         )
                         
+                        // Top Left Controls (Bookmark + Sleep Timer)
+                        HStack(spacing: 12) {
+                            if showBookmarkButton {
+                                Button(action: {
+                                    withAnimation(.spring()) {
+                                        showFloatingBookmarkControls.toggle()
+                                    }
+                                    resetTimer()
+                                }) {
+                                    Image(systemName: "bookmark")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.white)
+                                        .padding(12)
+                                        .background(showFloatingBookmarkControls ? Color.orange : Color.gray.opacity(0.6))
+                                        .clipShape(Circle())
+                                }
+                                .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+                                .highPriorityGesture(TapGesture().onEnded {
+                                    withAnimation(.spring()) {
+                                        showFloatingBookmarkControls.toggle()
+                                    }
+                                    resetTimer()
+                                })
+                            }
+                            
+                            if viewModel.isSleepTimerActive {
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        returnToSettings = false
+                                        showSleepTimer = true
+                                        viewModel.isControlsVisible = false
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "timer")
+                                            .font(.system(size: 16, weight: .bold))
+                                        if let remaining = viewModel.sleepTimerRemainingString {
+                                            Text(remaining)
+                                                .font(.system(size: 14, weight: .bold))
+                                                .monospacedDigit()
+                                        }
+                                    }
+                                    .foregroundColor(.orange)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(Color.black.opacity(0.5))
+                                    .clipShape(Capsule())
+                                }
+                                .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(.leading, isLandscape ? 50 : 16)
+                        .padding(.top, 10)
+                        
                         Spacer()
+                        
+                        Spacer()
+                        
+                        // Bottom Center Navigation Controls (REMOVED - Moved to BottomBar)
+                        // This space is now just spacing
+                        // However, we still have the spacer above.
+                        // Let's ensure layout is correct.
+                        // If controls are in BottomBar, we don't need them here.
                         
                         PlayerBottomBar(
                             currentTime: Binding(
                                 get: { viewModel.currentTime },
-                                set: { val in viewModel.seek(to: val) }
+                                set: { newTime in
+                                    viewModel.seek(to: newTime)
+                                }
                             ),
                             duration: viewModel.duration,
                             isPlaying: viewModel.isPlaying,
+                            bookmarks: viewModel.bookmarks,
                             currentAspectRatio: viewModel.aspectRatio,
                             onPlayPause: {
                                 viewModel.togglePlayPause()
@@ -252,7 +337,23 @@ struct PlayerControlsView: View {
                                     showSubtitleSettings = true
                                     viewModel.isControlsVisible = false
                                 }
-                            }
+                            },
+                            showBookmarkControls: showBookmarkButton && showFloatingBookmarkControls,
+                            onSeekToPrevBookmark: {
+                                viewModel.seekToPreviousBookmark()
+                                resetTimer()
+                            },
+                            onSeekToNextBookmark: {
+                                viewModel.seekToNextBookmark()
+                                resetTimer()
+                            },
+                            onToggleBookmark: {
+                                viewModel.toggleBookmark()
+                                resetTimer()
+                            },
+                            hasPrevBookmark: viewModel.hasPreviousBookmark,
+                            hasNextBookmark: viewModel.hasNextBookmark,
+                            isAtBookmark: viewModel.isAtBookmark
                         )
                     }
                     
@@ -411,7 +512,17 @@ struct PlayerControlsView: View {
                          showSleepTimer = true
                      }
                 },
-                onBookmark: { print("Bookmark Tapped") },
+                onBookmark: { 
+                     withAnimation(.spring()) {
+                         showBookmarkButton.toggle()
+                         if showBookmarkButton {
+                             showFloatingBookmarkControls = true
+                             viewModel.isControlsVisible = true
+                             resetTimer()
+                         }
+                         showSettingsSheet = false
+                     }
+                },
                 onScreenshot: { 
                     viewModel.captureSnapshot { image in
                         if let image = image {
@@ -441,7 +552,8 @@ struct PlayerControlsView: View {
                         showSettingsSheet = false
                         showPlaybackSpeedSheet = true
                     }
-                }
+                },
+                showBookmarkButton: $showBookmarkButton
             )
         } else if showSubtitleSettings {
             SubtitleSettingsView(
@@ -698,8 +810,9 @@ struct SettingsSheetView: View {
     var onBookmark: () -> Void
     var onScreenshot: () -> Void
     var onShare: () -> Void
-    var onPlayingMode: () -> Void
-    var onPlaybackSpeed: () -> Void
+    let onPlayingMode: () -> Void
+    let onPlaybackSpeed: () -> Void
+    @Binding var showBookmarkButton: Bool
     
     var body: some View {
         VStack(spacing: 0) {
@@ -764,7 +877,7 @@ struct SettingsSheetView: View {
                     })
                     SettingsGridItem(icon: "timer", title: "Sleep Timer", isActive: viewModel.isSleepTimerActive, action: onSleepTimer)
                     
-                    SettingsGridItem(icon: "bookmark", title: "Bookmark", action: onBookmark)
+                    SettingsGridItem(icon: "bookmark", title: "Bookmark", isActive: showBookmarkButton, action: onBookmark)
                     SettingsGridItem(icon: "camera", title: "Screenshot", action: onScreenshot)
                     SettingsGridItem(icon: "square.and.arrow.up", title: "Share", action: onShare)
                 }
@@ -787,6 +900,13 @@ struct SettingsSheetView: View {
                     SettingsListItem(icon: "play.circle", title: "Playback Speed", value: String(format: "%.1fx", viewModel.playbackSpeed), action: {
                         isPresented = false
                         onPlaybackSpeed()
+                    })
+                    
+                    Divider().background(Color.gray.opacity(0.3))
+                        .padding(.leading, 50)
+
+                    SettingsListItem(icon: "bookmark.circle", title: "Floating Bookmark", value: showBookmarkButton ? "On" : "Off", action: {
+                        showBookmarkButton.toggle()
                     })
                 }
                 .padding(.horizontal)
@@ -926,6 +1046,10 @@ struct PlayingQueueView: View {
     let tabs = ["Queue", "Bookmark"]
     @Namespace private var namespace
     
+    // Rename state
+    @State private var bookmarkToRename: BookmarkItem?
+    @State private var renameText: String = ""
+    
     private var safeAreaTop: CGFloat {
         let scenes = UIApplication.shared.connectedScenes
         let windowScene = scenes.first as? UIWindowScene
@@ -945,7 +1069,8 @@ struct PlayingQueueView: View {
                 
                 Spacer()
                 
-                Text("Playing Queue")
+                
+                Text(selectedTab == "Queue" ? "Queue" : "Bookmark")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.white)
                 
@@ -1066,14 +1191,52 @@ struct PlayingQueueView: View {
     }
 
     private var bookmarkList: some View {
-        VStack {
-            Spacer()
-            Text("No Bookmarks Yet")
-                .foregroundColor(.gray)
-            Spacer()
+        List {
+            if viewModel.bookmarks.isEmpty {
+                 Text("No Bookmarks Yet")
+                    .foregroundColor(.gray)
+                    .listRowBackground(Color.black)
+                    .listRowSeparator(.hidden)
+            } else {
+                ForEach(viewModel.bookmarks) { bookmark in
+                    BookmarkRow(
+                        bookmark: bookmark,
+                        viewModel: viewModel,
+                        onTap: {
+                            viewModel.seekToBookmark(bookmark)
+                            onClose() // Close sheet to view
+                        },
+                        onRename: {
+                            renameText = bookmark.name ?? ""
+                            bookmarkToRename = bookmark
+                        },
+                        onDelete: {
+                            viewModel.deleteBookmark(bookmark)
+                        }
+                    )
+                    .listRowBackground(Color.black)
+                    .listRowSeparator(.hidden)
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .background(Color.black)
+        .alert("Change Name", isPresented: Binding(
+            get: { bookmarkToRename != nil },
+            set: { if !$0 { bookmarkToRename = nil } }
+        )) {
+            TextField("Name", text: $renameText)
+            Button("Cancel", role: .cancel) { bookmarkToRename = nil }
+            Button("Save") {
+                if let item = bookmarkToRename {
+                    viewModel.renameBookmark(item, newName: renameText)
+                }
+                bookmarkToRename = nil
+            }
+        } message: {
+             Text(bookmarkToRename?.name ?? "")
+        }
     }
 
     private func move(from source: IndexSet, to destination: Int) {
@@ -1456,3 +1619,136 @@ struct SleepTimerView: View {
     }
 }
 
+struct BookmarkThumbnailView: View {
+    let bookmark: BookmarkItem?
+    let videoURL: URL?
+    let time: Double
+    @State private var image: UIImage?
+    
+    var body: some View {
+        ZStack {
+            if let image = image {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                Color.gray.opacity(0.3)
+                Image(systemName: "photo")
+                    .foregroundColor(.white.opacity(0.5))
+            }
+        }
+        .onAppear {
+            generateThumbnail()
+        }
+    }
+    
+    private func generateThumbnail() {
+        // 1. Try to load saved snapshot (VLC accurate thumb)
+        if let bookmark = bookmark, let id = bookmark.id {
+            let cachesDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+             let path = cachesDir.appendingPathComponent("bookmarks/\(id.uuidString).jpg").path
+             if FileManager.default.fileExists(atPath: path), let uiImage = UIImage(contentsOfFile: path) {
+                 self.image = uiImage
+                 return
+             }
+        }
+        
+        guard let url = videoURL else { return }
+        
+        let fileExtension = url.pathExtension.lowercased()
+        let isSupportedByAV = ["mp4", "mov", "m4v"].contains(fileExtension)
+        
+        if isSupportedByAV {
+            DispatchQueue.global(qos: .userInitiated).async {
+                let asset = AVURLAsset(url: url)
+                let generator = AVAssetImageGenerator(asset: asset)
+                generator.appliesPreferredTrackTransform = true
+                generator.requestedTimeToleranceBefore = .zero
+                generator.requestedTimeToleranceAfter = .zero
+                
+                // Low Quality / Memory Efficient
+                let scale = UIScreen.main.scale
+                generator.maximumSize = CGSize(width: 320 * scale, height: 180 * scale)
+                
+                let cmTime = CMTime(seconds: self.time, preferredTimescale: 600)
+                
+                do {
+                    let img = try generator.copyCGImage(at: cmTime, actualTime: nil)
+                    let uiImage = UIImage(cgImage: img)
+                    DispatchQueue.main.async {
+                        self.image = uiImage
+                    }
+                } catch {
+                    print("AVThumbnail failed: \(error). Falling back to VLC.")
+                    // Fallback to VLC
+                    self.requestVLCThumbnail(url: url)
+                }
+            }
+        } else {
+            // Direct use of VLC for non-native formats
+            requestVLCThumbnail(url: url)
+        }
+    }
+    
+    private func requestVLCThumbnail(url: URL) {
+        // Use the shared manager to ensure the request completes
+        VLCThumbnailRequestManager.shared.request(for: url) { img in
+            self.image = img
+        }
+    }
+}
+
+struct BookmarkRow: View {
+    @ObservedObject var bookmark: BookmarkItem
+    @ObservedObject var viewModel: PlayerViewModel
+    let onTap: () -> Void
+    let onRename: () -> Void
+    let onDelete: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Tappable Area (Thumbnail + Info)
+            HStack(spacing: 12) {
+                // Thumbnail
+                BookmarkThumbnailView(bookmark: bookmark, videoURL: viewModel.videoURL, time: bookmark.time)
+                    .frame(width: 80, height: 48)
+                    .cornerRadius(6)
+                    .clipped()
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(bookmark.name ?? "Bookmark")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    
+                    Text(viewModel.formatTime(seconds: bookmark.time))
+                        .font(.system(size: 11))
+                        .foregroundColor(.gray)
+                }
+                
+                Spacer()
+            }
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onTap)
+            
+            // Buttons Area
+            HStack(spacing: 16) {
+                Button(action: onRename) {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 16))
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(BorderlessButtonStyle())
+                
+                Button(action: onDelete) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16))
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(BorderlessButtonStyle())
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+    }
+}

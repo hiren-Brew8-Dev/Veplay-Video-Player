@@ -72,5 +72,7 @@
 	</array>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>We need access to your photo library to save video snapshots.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>We need access to your photo library to play videos.</string>
 </dict>
 </plist>

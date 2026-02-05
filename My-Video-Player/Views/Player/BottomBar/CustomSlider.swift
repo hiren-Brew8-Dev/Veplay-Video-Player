@@ -4,6 +4,7 @@ struct CustomSlider: View {
     @Binding var value: Double
     let range: ClosedRange<Double>
     var step: Double? = nil
+    var bookmarks: [BookmarkItem] = []
     var onEditingChanged: (Bool) -> Void
     
     @State private var dragOffset: CGFloat = 0
@@ -17,10 +18,21 @@ struct CustomSlider: View {
                     .fill(Color.white.opacity(0.3))
                     .frame(height: 4)
                 
+
+                
                 // Progress Track
                 Capsule()
                     .fill(Color.orange) // Specifically using orange to match user provided UI
                     .frame(width: max(0, min(CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound)) * geometry.size.width, geometry.size.width)), height: 4)
+                
+                // Bookmarks
+                ForEach(bookmarks) { bookmark in
+                    Rectangle()
+                        .fill(Color.white)
+                        .frame(width: 2, height: 8) // Thicker and taller
+                        .shadow(radius: 1)
+                        .offset(x: max(0, min(CGFloat((bookmark.time - range.lowerBound) / (range.upperBound - range.lowerBound)) * geometry.size.width - 1, geometry.size.width - 2)))
+                }
                 
                 // Thumb
                 Circle()

@@ -91,3 +91,12 @@ iOSInjectionProject/
 
 # Mac
 .DS_Store
+
+# Logs
+*.log
+build_log.txt
+build_log_ws.txt
+build_log_ws_2.txt
+
+# Agent Data
+.agent/

@@ -53,31 +53,6 @@ struct PlayerTopBar: View {
             }
             .padding(.horizontal, isLandscape ? 50 : 8)
             
-            if viewModel.isSleepTimerActive {
-                HStack {
-                    Button(action: onSleepTimer) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "timer")
-                                .font(.system(size: 18, weight: .bold))
-                            if let remaining = viewModel.sleepTimerRemainingString {
-                                Text(remaining)
-                                    .font(.system(size: 16, weight: .bold))
-                                    .monospacedDigit()
-                            }
-                        }
-                        .foregroundColor(.orange)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.5))
-                        .clipShape(Capsule())
-                    }
-                    .padding(.leading, isLandscape ? 12 : 8)
-                    .padding(.top, 16) // Increased top padding to move it down
-                    
-                    Spacer()
-                }
-                .padding(.bottom, 8) // Add some bottom padding for the capsule
-            }
         }
         .padding(.top, isLandscape ? 20 : 40)
         .padding(.bottom, 10)

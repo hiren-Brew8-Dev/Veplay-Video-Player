@@ -4,6 +4,7 @@ struct PlayerBottomBar: View {
     @Binding var currentTime: Double
     let duration: Double
     let isPlaying: Bool
+    let bookmarks: [BookmarkItem]
     let currentAspectRatio: PlayerViewModel.VideoAspectRatio
     let onPlayPause: @MainActor () -> Void
     let onSkipBackward: @MainActor () -> Void
@@ -19,6 +20,15 @@ struct PlayerBottomBar: View {
     let onLock: @MainActor () -> Void
     let onRotate: @MainActor () -> Void
     let onCC: @MainActor () -> Void
+    // Bookmark Props
+    let showBookmarkControls: Bool
+    let onSeekToPrevBookmark: @MainActor () -> Void
+    let onSeekToNextBookmark: @MainActor () -> Void
+    let onToggleBookmark: @MainActor () -> Void
+    let hasPrevBookmark: Bool
+    let hasNextBookmark: Bool
+    let isAtBookmark: Bool // To styling the center button
+    
     
     @Environment(\.verticalSizeClass) var verticalSizeClass
     
@@ -57,10 +67,11 @@ struct PlayerBottomBar: View {
                 portraitLayout
             }
         }
+        .padding(.top, 60) // Extend hit area upwards to cover floating bookmarks
         .padding(.horizontal, isLandscape ? 50 : 14)
         .padding(.bottom, 20)
-        .background(Color.black.opacity(0.001))
-        .contentShape(Rectangle())
+        .background(Color.black.opacity(0.001)) // Transparent touch catcher
+        .contentShape(Rectangle()) // Ensure entire area captures taps
     }
     
     // MARK: - Portrait Layout (Image Reference)
@@ -73,8 +84,12 @@ struct PlayerBottomBar: View {
                     
                     HStack {
                         Text(formatTime(displayTime))
+                            .monospacedDigit()
+                            .frame(width: 65, alignment: .leading)
                         Spacer()
                         Text(formatTime(duration))
+                            .monospacedDigit()
+                            .frame(width: 65, alignment: .trailing)
                     }
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
@@ -110,12 +125,16 @@ struct PlayerBottomBar: View {
                 Text(formatTime(displayTime))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
+                    .monospacedDigit()
+                    .frame(width: 65, alignment: .leading)
                 
                 seekSlider
                 
                 Text(formatTime(duration))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
+                    .monospacedDigit()
+                    .frame(width: 65, alignment: .trailing)
             }
             
             // 2. Bottom Icon Row
@@ -156,6 +175,7 @@ struct PlayerBottomBar: View {
                 set: { newValue in dragValue = newValue }
             ),
             range: 0...max(duration, 1),
+            bookmarks: bookmarks,
             onEditingChanged: { editing in
                 if editing {
                     dragValue = currentTime
@@ -172,6 +192,80 @@ struct PlayerBottomBar: View {
                 onSmoothSeek(newVal)
             }
         }
+        .overlay(
+            GeometryReader { geo in
+                let width = geo.size.width
+                // Calculate position: (time / duration) * width
+                // Clamp to [0, width]
+                let ratio = max(0, min(1, (isDragging ? dragValue : currentTime) / max(duration, 0.001)))
+                let xOffset = CGFloat(ratio) * width
+                
+                // Movable Bookmark Controls
+                if showBookmarkControls {
+                    VStack(spacing: 0) { // No gap between cluster and line
+                        // The Control Cluster
+                        HStack(spacing: 0) {
+                            // Prev Arrow (Always present for symmetry)
+                            Button(action: onSeekToPrevBookmark) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 40, height: 40) // Fixed larger hit area
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(!hasPrevBookmark)
+                            .opacity(hasPrevBookmark ? 1 : 0.001) // Invisible but keeps layout
+
+                            // Central Toggle Button
+                            Button(action: onToggleBookmark) {
+                                Image(systemName: isAtBookmark ? "bookmark.fill" : "bookmark")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(isAtBookmark ? .orange : .white)
+                                    .padding(8)
+                                    .background(isAtBookmark ? Color.white : Color.orange)
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .highPriorityGesture(TapGesture().onEnded { onToggleBookmark() })
+                            .padding(4)
+                            .padding(.vertical, 2)
+
+                            // Next Arrow (Always present for symmetry)
+                            Button(action: onSeekToNextBookmark) {
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 40, height: 40) // Fixed larger hit area
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .disabled(!hasNextBookmark)
+                            .opacity(hasNextBookmark ? 1 : 0.001) // Invisible but keeps layout
+                        }
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(
+                            ZStack {
+                                Color.black.opacity(0.8)
+                                Button(action: {}) {
+                                    Color.clear
+                                }
+                            }
+                        )
+                        .frame(height: 38) // Reduced height from default ~50
+                        .clipShape(Capsule())
+                        
+                        // The "Dash" (vertical line) connecting to the seekbar
+                        Rectangle()
+                            .fill(Color.orange)
+                            .frame(width: 2, height: 12) // Restored dash height
+                    }
+                    .allowsHitTesting(true)
+                    .position(x: xOffset, y: -25) // Shifted down to touch thumb
+                }
+            }
+        )
     }
     
     private var playlistButton: some View {

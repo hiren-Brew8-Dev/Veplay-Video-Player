@@ -187,5 +187,69 @@ class CDManager: ObservableObject {
             print("Failed to clear search history: \(error)")
         }
     }
+    // MARK: - Bookmarks
+    
+    func fetchBookmarks(for videoIdString: String) -> [BookmarkItem] {
+        let request: NSFetchRequest<BookmarkItem> = NSFetchRequest<BookmarkItem>(entityName: "BookmarkItem")
+        request.predicate = NSPredicate(format: "videoIdString == %@", videoIdString)
+        request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: true)]
+        
+        do {
+            return try container.viewContext.fetch(request)
+        } catch {
+            print("Failed to fetch bookmarks: \(error)")
+            return []
+        }
+    }
+    
+    func saveBookmark(videoIdString: String, time: Double, name: String) -> BookmarkItem? {
+        let context = container.viewContext
+        let newItem = BookmarkItem(context: context)
+        newItem.id = UUID()
+        newItem.videoIdString = videoIdString
+        newItem.time = time
+        newItem.name = name
+        newItem.createdAt = Date()
+        
+        do {
+            try context.save()
+            
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+            return newItem
+        } catch {
+            print("Failed to save bookmark: \(error)")
+            return nil
+        }
+    }
+    
+    func updateBookmarkName(_ item: BookmarkItem, newName: String) {
+        let context = container.viewContext
+        item.name = newName
+        
+        do {
+            try context.save()
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        } catch {
+            print("Failed to update bookmark: \(error)")
+        }
+    }
+    
+    func deleteBookmark(_ item: BookmarkItem) {
+        let context = container.viewContext
+        context.delete(item)
+        
+        do {
+            try context.save()
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        } catch {
+            print("Failed to delete bookmark: \(error)")
+        }
+    }
 }
 

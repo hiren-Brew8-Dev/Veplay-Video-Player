@@ -44,6 +44,9 @@ class PlayerViewModel: NSObject, ObservableObject {
     @MainActor @Published var currentTimeString: String = "00:00"
     @MainActor @Published var totalDurationString: String = "00:00"
     
+    // VLC Seek Synchronization
+    @MainActor private var lastIntendedSeekPosition: Double? = nil
+    
     // Rotation & Brightness
     private var initialBrightness: CGFloat?
     @MainActor @Published var showBrightnessUI: Bool = false
@@ -88,11 +91,24 @@ class PlayerViewModel: NSObject, ObservableObject {
     @MainActor @Published var currentIndex: Int = 0
     @MainActor @Published var autoPlayNext: Bool = true
     
+    // Computed property to get the consistent ID string used for persistence
+    private var currentPersistenceId: String? {
+        if let video = currentVideoItem {
+             return video.asset?.localIdentifier ?? video.url?.absoluteString ?? video.title
+        }
+        return nil
+    }
+    
     // Sharing & Snapshot
     // Sharing & Snapshot
     @MainActor @Published var currentVideoItem: VideoItem?
     @MainActor @Published var currentVideoURL: URL?
+    @MainActor var videoURL: URL? { currentVideoURL }
     @MainActor @Published var showSnapshotSavedToast: Bool = false
+    
+    // Bookmarks
+    @MainActor @Published var bookmarks: [BookmarkItem] = []
+    @MainActor @Published var showBookmarkSheet: Bool = false
         
     // Skip/Seek Tracking
     @MainActor @Published var accumulatedSkipAmount: Double = 0
@@ -364,6 +380,7 @@ class PlayerViewModel: NSObject, ObservableObject {
         self.currentBrightness = Float(UIScreen.main.brightness)
         
         self.videoId = video.id.uuidString
+        self.loadBookmarks()
         self.subtitleManager.clear()
         
         // Clear VLC-specific track arrays for fresh state
@@ -693,6 +710,120 @@ class PlayerViewModel: NSObject, ObservableObject {
         completion(nil)
     }
     
+    // MARK: - Bookmark Management
+    
+    @MainActor
+    func loadBookmarks() {
+        guard let idString = currentPersistenceId else {
+            self.bookmarks = []
+            return
+        }
+        self.bookmarks = CDManager.shared.fetchBookmarks(for: idString)
+    }
+    
+    @MainActor
+    func addBookmark() {
+        guard let idString = currentPersistenceId else { return }
+        
+        // Prevent duplicates (within 0.5s)
+        if bookmarks.contains(where: { abs($0.time - currentTime) < 0.5 }) {
+            return
+        }
+        
+        // For VLC: Temporarily block time observer updates during bookmark save
+        // This prevents VLC from reverting to old position after adding bookmark
+        let wasSeekingBlocked = isSeeking
+        if isVLC && !wasSeekingBlocked {
+            isSeeking = true
+        }
+        
+        // Generate Sequential Name
+        let existingNumbers = bookmarks.compactMap { Int($0.name ?? "") }
+        let nextNumber = (existingNumbers.max() ?? 0) + 1
+        let newName = "\(nextNumber)"
+        
+        if let newBookmark = CDManager.shared.saveBookmark(videoIdString: idString, time: currentTime, name: newName) {
+            // Optimistically update list
+            self.bookmarks.append(newBookmark)
+            
+            // For VLC: Take a snapshot of the current frame for the bookmark list
+            if isVLC, let uuid = newBookmark.id {
+                takeVLCSnapshot(for: uuid)
+            }
+        }
+        
+        // Restore isSeeking state after a brief delay
+        if isVLC && !wasSeekingBlocked {
+            Task {
+                try? await Task.sleep(nanoseconds: 300_000_000) // 300ms - balanced protection
+                await MainActor.run {
+                    self.isSeeking = false
+                }
+            }
+        }
+    }
+    
+    @MainActor
+    func toggleBookmark() {
+        if let existing = bookmarks.first(where: { abs($0.time - currentTime) < 0.5 }) {
+            deleteBookmark(existing)
+        } else {
+            addBookmark()
+        }
+    }
+    
+    @MainActor
+    func deleteBookmark(_ item: BookmarkItem) {
+        CDManager.shared.deleteBookmark(item)
+        if let index = bookmarks.firstIndex(of: item) {
+            bookmarks.remove(at: index)
+        }
+    }
+    
+    @MainActor
+    func renameBookmark(_ item: BookmarkItem, newName: String) {
+        CDManager.shared.updateBookmarkName(item, newName: newName)
+        // Trigger UI update if needed (ObservedObject handles properties, but ensure list updates)
+        objectWillChange.send() 
+    }
+    
+    @MainActor
+    func seekToBookmark(_ item: BookmarkItem) {
+        seek(to: item.time)
+    }
+    
+    @MainActor
+    func seekToPreviousBookmark() {
+        // Sort effectively (bookmarks are sorted on load/add)
+        let sorted = bookmarks.sorted { $0.time < $1.time }
+        if let prev = sorted.last(where: { $0.time < currentTime - 1.0 }) {
+            seek(to: prev.time)
+        }
+    }
+    
+    @MainActor
+    func seekToNextBookmark() {
+        let sorted = bookmarks.sorted { $0.time < $1.time }
+        if let next = sorted.first(where: { $0.time > currentTime + 1.0 }) {
+            seek(to: next.time)
+        }
+    }
+    
+    @MainActor
+    var hasPreviousBookmark: Bool {
+        bookmarks.contains { $0.time < currentTime - 1.0 }
+    }
+    
+    @MainActor
+    var hasNextBookmark: Bool {
+        bookmarks.contains { $0.time > currentTime + 1.0 }
+    }
+    
+    @MainActor
+    var isAtBookmark: Bool {
+        bookmarks.contains { abs($0.time - currentTime) < 0.5 }
+    }
+
     private func isVLCFormat(_ url: URL) -> Bool {
         let ext = url.pathExtension.lowercased()
         let vlcExtensions = ["mkv", "avi", "wmv", "flv", "webm", "3gp", "vob", "mpg", "mpeg", "ts", "m2ts", "divx", "asf"]
@@ -776,17 +907,11 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     private func setupVLCTimeObserver() {
-        // Create a timer to update subtitles for VLC playback
+        // Create a timer to ensure time updates and subtitles stay in sync for VLC
         Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
             Task { @MainActor in
-                guard let self = self, self.isVLC, let player = self.vlcPlayer, !self.isSeeking else { return }
-                
-                // Track current time
-                self.currentTime = Double(player.time.intValue) / 1000.0
-                self.currentTimeString = self.formatTime(seconds: self.currentTime)
-                
-                // Update subtitles
-                self.subtitleManager.update(currentTime: self.currentTime)
+                guard let self = self, self.isVLC else { return }
+                self.updateTimeFromVLC()
             }
         }
     }
@@ -926,7 +1051,6 @@ class PlayerViewModel: NSObject, ObservableObject {
     @MainActor
     func togglePiP() {
         if isVLC {
-            // VLC PiP is not currently supported in this implementation
             showPiPError = true
             return
         }
@@ -936,14 +1060,13 @@ class PlayerViewModel: NSObject, ObservableObject {
             if !isPlaying {
                 play()
             }
-            
             isPiPActive = true
-            // Directly background the app to show the PiP player on Home screen
-            // 0.4s delay gives the system enough time to initiate the PiP transition
+            
+            // For manual toggle: automatically background the app to trigger PiP immediately
             Task {
-                try? await Task.sleep(nanoseconds: 400_000_000)
+                try? await Task.sleep(nanoseconds: 300_000_000) // Small delay for system to prep
                 await MainActor.run {
-                    if self.isPiPActive { // Check if user didn't toggle back already
+                    if self.isPiPActive {
                         UIControl().sendAction(#selector(URLSessionTask.suspend), to: UIApplication.shared, for: nil)
                     }
                 }
@@ -1338,6 +1461,7 @@ class PlayerViewModel: NSObject, ObservableObject {
     @MainActor
     func play() {
         if isVLC {
+             lastIntendedSeekPosition = nil // Clear on play
              vlcPlayer?.rate = playbackSpeed
              vlcPlayer?.play()
              isPlaying = true
@@ -1368,16 +1492,47 @@ class PlayerViewModel: NSObject, ObservableObject {
         
         if isVLC {
             isSeeking = true
+            lastIntendedSeekPosition = time // Set tracker
+            
+            // Capture current play state BEFORE seeking
+            let wasPlaying = vlcPlayer?.isPlaying ?? false
+            
+            // For VLC, we need to ensure the player updates the frame
+            // Pause first to ensure frame update happens
+            if wasPlaying {
+                vlcPlayer?.pause()
+            }
+            
             let vlcTime = VLCTime(int: Int32(time * 1000))
             vlcPlayer?.time = vlcTime
             
+            // Force VLC to process the time change
+            // Small delay to let VLC update the frame
             seekRequestID += 1
             let currentID = seekRequestID
             Task {
-                try? await Task.sleep(nanoseconds: 800_000_000)
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms for frame update
+                await MainActor.run {
+                    // Restore play state after seek
+                    if wasPlaying {
+                        self.vlcPlayer?.play()
+                        self.isPlaying = true
+                    } else {
+                        // Ensure it stays paused
+                        self.vlcPlayer?.pause()
+                        self.isPlaying = false
+                    }
+                }
+                
+                try? await Task.sleep(nanoseconds: 700_000_000) // Additional wait for stability
                 await MainActor.run {
                     if self.seekRequestID == currentID {
                         self.isSeeking = false
+                        // Final state verification
+                        if !wasPlaying && self.vlcPlayer?.isPlaying == true {
+                            self.vlcPlayer?.pause()
+                            self.isPlaying = false
+                        }
                     }
                 }
             }
@@ -1410,14 +1565,21 @@ class PlayerViewModel: NSObject, ObservableObject {
         
         if isVLC {
             isSeeking = true
+            lastIntendedSeekPosition = time // Set tracker
+            
+            // Set both time and position for best results
             let vlcTime = VLCTime(int: Int32(time * 1000))
             vlcPlayer?.time = vlcTime
+            
+            let position = Float(time / max(duration, 0.001))
+            vlcPlayer?.position = position
             
             // Auto-reset isSeeking after a short delay if no more smooth seeks come in
             seekRequestID += 1
             let currentID = seekRequestID
             Task {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                // Wait for more seeks or clear flag
+                try? await Task.sleep(nanoseconds: 400_000_000) // 400ms - balance between responsiveness and stability
                 await MainActor.run {
                     if self.seekRequestID == currentID {
                         self.isSeeking = false
@@ -1447,7 +1609,7 @@ class PlayerViewModel: NSObject, ObservableObject {
         }
     }
 
-    private func formatTime(seconds: Double) -> String {
+    func formatTime(seconds: Double) -> String {
         let total = Int(max(0, seconds))
         let h = total / 3600
         let m = (total % 3600) / 60
@@ -1603,6 +1765,9 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
                   let currentPlayer = vlcPlayer,
                   notifyingPlayer == currentPlayer else { return }
             
+            // Ignore state changes during seeking to prevent UI glitches
+            guard !isSeeking else { return }
+            
             switch currentPlayer.state {
             case .playing, .opening, .buffering:
                 self.isPlaying = true
@@ -1658,8 +1823,28 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
     @MainActor
     private func updateTimeFromVLC() {
         guard let player = vlcPlayer, !isSeeking else { return }
-        self.currentTime = Double(player.time.intValue) / 1000.0
+        
+        let vlcTime = Double(player.time.intValue) / 1000.0
+        
+        // If paused and we have a recent manual seek position, prevent overwrite
+        if !isPlaying, let intendedPosition = lastIntendedSeekPosition {
+            let difference = abs(vlcTime - intendedPosition)
+            
+            // If VLC's time doesn't match our intended position (within 1s tolerance), ignore it
+            // VLC often reports old time while paused after a seek
+            if difference > 1.0 {
+                return 
+            } else {
+                // VLC has finally caught up/synced, we can clear the tracker
+                lastIntendedSeekPosition = nil
+            }
+        }
+        
+        self.currentTime = vlcTime
         self.currentTimeString = formatTime(seconds: currentTime)
+        
+        // Update subtitles
+        self.subtitleManager.update(currentTime: self.currentTime)
         
         if let media = player.media {
             let length = media.length
@@ -1668,6 +1853,23 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         }
         
         self.updateNowPlayingInfo()
+    }
+    
+    private func takeVLCSnapshot(for bookmarkID: UUID) {
+        guard isVLC, let player = vlcPlayer else { return }
+        
+        // Use caches directory to avoid backup bloat
+        let cachesDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let bookmarksDir = cachesDir.appendingPathComponent("bookmarks")
+        
+        // Ensure directory exists
+        if !FileManager.default.fileExists(atPath: bookmarksDir.path) {
+            try? FileManager.default.createDirectory(at: bookmarksDir, withIntermediateDirectories: true)
+        }
+        
+        let snapshotPath = bookmarksDir.appendingPathComponent("\(bookmarkID.uuidString).jpg").path
+        // VLC's snapshot generator is efficient for low-res thumbs
+        player.saveVideoSnapshot(at: snapshotPath, withWidth: 320, andHeight: 180)
     }
     
     // Unified formatting used by both AVPlayer and VLC updates

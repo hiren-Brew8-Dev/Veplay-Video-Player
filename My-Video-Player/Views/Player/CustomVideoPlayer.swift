@@ -23,7 +23,7 @@ struct CustomVideoPlayer: UIViewRepresentable {
         
         // Ensure automatic PiP is ALWAYS disabled unless manually triggered
         if #available(iOS 14.2, *) {
-            context.coordinator.pipController?.canStartPictureInPictureAutomaticallyFromInline = false
+            context.coordinator.pipController?.canStartPictureInPictureAutomaticallyFromInline = true
         }
         
         // Handle PiP Trigger
@@ -60,7 +60,7 @@ struct CustomVideoPlayer: UIViewRepresentable {
                 pipController?.delegate = self
                 
                 if #available(iOS 14.2, *) {
-                    pipController?.canStartPictureInPictureAutomaticallyFromInline = false
+                    pipController?.canStartPictureInPictureAutomaticallyFromInline = true
                 }
             }
             
