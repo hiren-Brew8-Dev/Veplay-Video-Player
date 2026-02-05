@@ -1311,14 +1311,20 @@ class PlayerViewModel: NSObject, ObservableObject {
             if index >= 0 && index < subtitleManager.availableTracks.count {
                 let track = subtitleManager.availableTracks[index]
                 if let url = track.url {
-                    // EXTERNAL track: Disable VLC native, enable custom overlay
-                    videoPlayer.currentVideoSubTitleIndex = -1
-                    subtitleManager.loadSubtitle(from: url, trackName: track.name)
-                    subtitleManager.isEnabled = true
+                    // EXTERNAL track: Use Native VLC Engine
+                    // Fix: Copy to temp file to ensure VLC (C-Lib) can access it due to Sandbox
+                    if let tempURL = createTempSubtitleFile(from: url) {
+                         videoPlayer.addPlaybackSlave(tempURL, type: .subtitle, enforce: true)
+                    } else {
+                        // Fallback to original URL if copy fails
+                         videoPlayer.addPlaybackSlave(url, type: .subtitle, enforce: true)
+                    }
+                    
+                    // Disable custom overlay since VLC is now rendering it
+                    subtitleManager.isEnabled = false 
+                    subtitleManager.currentSubtitle = ""
                 } else {
                     // EMBEDDED track: Enable VLC native, disable custom overlay text
-                    // We need to find the correct VLC ID for this track
-                    // Embedded tracks are appended after external ones in populateVLCTracksIfNeeded
                     let externalCount = subtitleManager.availableTracks.count - vlcSubtitleIndexes.count
                     let embeddedIndex = index - externalCount
                     if embeddedIndex >= 0 && embeddedIndex < vlcSubtitleIndexes.count {
@@ -1331,6 +1337,8 @@ class PlayerViewModel: NSObject, ObservableObject {
             }
             return
         }
+
+
         
         // Debounce or ensure we have a player item
         guard let playerItem = player?.currentItem else {
@@ -2200,6 +2208,23 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         // Restore player volume
         Task { @MainActor in
             self.player?.volume = 1.0
+        }
+    }
+    // Helper to bypass sandbox issues for VLC
+    private func createTempSubtitleFile(from url: URL) -> URL? {
+        do {
+            // Provide security scope access if needed
+            let secured = url.startAccessingSecurityScopedResource()
+            defer { if secured { url.stopAccessingSecurityScopedResource() } }
+            
+            let data = try Data(contentsOf: url)
+            let tempDir = FileManager.default.temporaryDirectory
+            let tempFile = tempDir.appendingPathComponent("vlc_temp_sub_\(UUID().uuidString).srt")
+            try data.write(to: tempFile)
+            return tempFile
+        } catch {
+            print("Failed to create temp subtitle file: \(error)")
+            return nil
         }
     }
 }

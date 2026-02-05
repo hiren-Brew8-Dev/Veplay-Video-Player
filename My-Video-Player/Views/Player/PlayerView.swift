@@ -7,8 +7,11 @@ struct PlayerView: View {
     var onPlaybackEnded: (() -> Void)? = nil
     @StateObject private var viewModel = PlayerViewModel()
     @Environment(\.presentationMode) var presentationMode
+    @Environment(\.scenePhase) var scenePhase // Monitor app state
     @EnvironmentObject var dashboardViewModel: DashboardViewModel
     @State private var resolvedTitle: String? = nil
+    @State private var dismissOffset: CGFloat = 0
+
     
     var body: some View {
         GeometryReader { geo in
@@ -125,9 +128,41 @@ struct PlayerView: View {
             .onAppear {
                 viewModel.updateAspectRatio(with: geo.size)
             }
+            .gesture(
+                DragGesture(coordinateSpace: .global)
+                    .onChanged { value in
+                        // 1. Avoid top edge (Notification Center conflict)
+                        // Ignore swipes starting in the top 50pt
+                        guard value.startLocation.y > 50 else { return }
+                        
+                        // Only allow swipe down (positive translation)
+                        if value.translation.height > 0 {
+                            var transaction = Transaction(animation: nil) // Disable implicit animations
+                            transaction.disablesAnimations = true
+                            withTransaction(transaction) {
+                                dismissOffset = value.translation.height
+                            }
+                        }
+                    }
+                    .onEnded { value in
+                        if value.translation.height > 100 {
+                            // Dismiss threshold reached
+                            withAnimation(.easeOut(duration: 0.2)) {
+                               viewModel.shouldDismissPlayer = true
+                            }
+                        } else {
+                            // Snap back
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                dismissOffset = 0
+                            }
+                        }
+                    }
+            )
+            .offset(y: dismissOffset)
         }
         .edgesIgnoringSafeArea(.all)
         .ignoresSafeArea(.all)
+        // Optimization: Removed opacity change during drag as it can be heavy with video
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
@@ -177,6 +212,16 @@ struct PlayerView: View {
         .onChange(of: viewModel.didFinishPlayback) { oldVal, finished in
             if finished {
                 onPlaybackEnded?()
+            }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .inactive || newPhase == .background {
+                // Force reset if interrupted by Notification Center or Home Swipe
+                if dismissOffset > 0 {
+                    withAnimation(.spring()) {
+                        dismissOffset = 0
+                    }
+                }
             }
         }
         .onChange(of: viewModel.shouldDismissPlayer) { oldVal, shouldDismiss in
