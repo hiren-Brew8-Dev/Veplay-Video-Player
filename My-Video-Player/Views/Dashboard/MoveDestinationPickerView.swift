@@ -10,33 +10,31 @@ struct MoveDestinationPickerView: View {
     var body: some View {
         NavigationStack {
             List {
-                if isLocalSource {
-                    Section("Sections") {
-                        Button(action: {
-                            viewModel.pasteVideos(to: viewModel.importedVideosDirectory)
-                            dismiss()
-                        }) {
-                            Label("Imported Videos", systemImage: "video.fill")
-                        }
+                Section("Sections") {
+                    Button(action: {
+                        viewModel.pasteVideos(to: viewModel.importedVideosDirectory)
+                        dismiss()
+                    }) {
+                        Label("Imported Videos", systemImage: "video.fill")
                     }
-                    
-                    Section("Folders") {
-                        if viewModel.folders.isEmpty {
-                            Text("No folders found").foregroundColor(.gray)
-                        } else {
-                            ForEach(viewModel.folders) { folder in
-                                if let url = folder.url {
-                                    Button(action: {
-                                        viewModel.pasteVideos(to: url)
-                                        dismiss()
-                                    }) {
-                                        HStack {
-                                            Image(systemName: "folder.fill")
-                                                .foregroundColor(.blue)
-                                            VStack(alignment: .leading) {
-                                                Text(folder.name)
-                                                Text("\(folder.videos.count) Videos").font(.caption).foregroundColor(.gray)
-                                            }
+                }
+                
+                Section("Folders") {
+                    if viewModel.folders.isEmpty {
+                        Text("No folders found").foregroundColor(.gray)
+                    } else {
+                        ForEach(viewModel.folders) { folder in
+                            if let url = folder.url {
+                                Button(action: {
+                                    viewModel.pasteVideos(to: url)
+                                    dismiss()
+                                }) {
+                                    HStack {
+                                        Image(systemName: "folder.fill")
+                                            .foregroundColor(.blue)
+                                        VStack(alignment: .leading) {
+                                            Text(folder.name)
+                                            Text("\(folder.videos.count) Videos").font(.caption).foregroundColor(.gray)
                                         }
                                     }
                                 }
@@ -45,47 +43,48 @@ struct MoveDestinationPickerView: View {
                     }
                 }
                 
-                if isGallerySource {
-                    Section("Gallery Albums") {
-                        // Option to just save to Camera Roll (Recents)
+                Section("Gallery Albums") {
+                    // Option to just save to Camera Roll (Recents)
+                    Button(action: {
+                        viewModel.pasteVideosToGallery(album: nil)
+                        dismiss()
+                    }) {
+                        Label("Photos Library", systemImage: "photo.on.rectangle.angled")
+                            .foregroundColor(.primary)
+                    }
+                    
+                    ForEach(viewModel.allGalleryAlbums, id: \.localIdentifier) { album in
                         Button(action: {
-                            viewModel.pasteVideosToGallery(album: nil)
+                            viewModel.pasteVideosToGallery(album: album)
                             dismiss()
                         }) {
-                            Label("Photos Library", systemImage: "photo.on.rectangle.angled")
-                                .foregroundColor(.primary)
-                        }
-                        
-                        ForEach(viewModel.allGalleryAlbums, id: \.localIdentifier) { album in
-                            Button(action: {
-                                viewModel.pasteVideosToGallery(album: album)
-                                dismiss()
-                            }) {
-                                HStack(spacing: 12) {
-                                    AlbumThumbnailView(album: album)
-                                        .frame(width: 50, height: 50)
-                                        .cornerRadius(8)
-                                    
-                                    VStack(alignment: .leading) {
-                                        Text(album.localizedTitle ?? "Album")
-                                            .foregroundColor(.primary)
-                                            .font(.system(size: 16, weight: .medium))
-                                        Text("\(videoCount(for: album)) Videos")
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                    }
+                            HStack(spacing: 12) {
+                                AlbumThumbnailView(album: album)
+                                    .frame(width: 50, height: 50)
+                                    .cornerRadius(8)
+                                
+                                VStack(alignment: .leading) {
+                                    Text(album.localizedTitle ?? "Album")
+                                        .foregroundColor(.primary)
+                                        .font(.system(size: 16, weight: .medium))
+                                    Text("\(videoCount(for: album)) Videos")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
                                 }
                             }
                         }
                     }
                 }
             }
-            .navigationTitle("Move to...")
+            .navigationTitle(isCutOperation ? "Move to..." : "Copy to...")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
+            }
+            .onAppear {
+                viewModel.fetchAlbums()
             }
         }
     }

@@ -76,13 +76,17 @@ struct VideoRowView: View {
             Spacer()
 
             if !isSelectionMode {
-                Button(action: {
-                    onMenuAction?()
-                }) {
-                    Image(systemName: "ellipsis")
-                        .foregroundColor(.gray)
-                        .padding()
-                }
+                Image(systemName: "ellipsis")
+                    .rotationEffect(.degrees(90))
+                    .foregroundColor(.gray)
+                    .padding(.vertical, 15)
+                    .padding(.horizontal, 20)
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(
+                        TapGesture().onEnded { _ in
+                            onMenuAction?()
+                        }
+                    )
             }
         }
         .padding(.horizontal)
@@ -131,39 +135,10 @@ struct VideoRowView: View {
     }
 
     private func loadThumbnail() {
-        if let asset = video.asset {
-            let manager = viewModel?.imageManager ?? PHImageManager.default()
-            let options = PHImageRequestOptions()
-            options.deliveryMode = .opportunistic
-            options.isNetworkAccessAllowed = true
-            
-            let targetDimension: CGFloat = 300 * UIScreen.main.scale
-            manager.requestImage(for: asset, targetSize: CGSize(width: targetDimension, height: targetDimension * 0.6), contentMode: .aspectFill, options: options) { image, _ in
+        // Use the persistent cache manager for instant loading
+        ThumbnailCacheManager.shared.getThumbnail(for: video) { [self] image in
+            DispatchQueue.main.async {
                 self.thumbnail = image
-            }
-        } else if let url = video.url {
-            Task {
-                let asset = AVAsset(url: url)
-                let generator = AVAssetImageGenerator(asset: asset)
-                generator.appliesPreferredTrackTransform = true
-                
-                // Check for VLC Format
-                if ["mkv", "avi", "wmv", "flv", "webm", "3gp"].contains(url.pathExtension.lowercased()) {
-                    let loader = VLCThumbnailHelper()
-                    await MainActor.run {
-                        self.vlcLoader = loader // Retain it
-                        loader.generate(for: url) { image in
-                            self.thumbnail = image
-                            self.vlcLoader = nil // Release
-                        }
-                    }
-                    return
-                }
-                
-                if let cgImage = try? generator.copyCGImage(at: .zero, actualTime: nil) {
-                    let uiImage = UIImage(cgImage: cgImage)
-                    await MainActor.run { self.thumbnail = uiImage }
-                }
             }
         }
     }

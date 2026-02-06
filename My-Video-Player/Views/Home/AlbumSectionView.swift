@@ -134,13 +134,13 @@ struct AlbumCardView: View {
         if let firstAsset = assets.firstObject {
             let manager = PHImageManager.default()
             let requestOptions = PHImageRequestOptions()
-            requestOptions.deliveryMode = .opportunistic
+            requestOptions.deliveryMode = .fastFormat
             requestOptions.isNetworkAccessAllowed = true
 
-            let size: CGFloat = 300 * UIScreen.main.scale
+            let thumbSize: CGFloat = 120 * UIScreen.main.scale
             manager.requestImage(
                 for: firstAsset,
-                targetSize: CGSize(width: size, height: size),
+                targetSize: CGSize(width: thumbSize, height: thumbSize),
                 contentMode: .aspectFill,
                 options: requestOptions
             ) { image, _ in

@@ -153,22 +153,19 @@ class DashboardViewModel: ObservableObject {
                         return
                     }
                     
-                    let tempDir = FileManager.default.temporaryDirectory
-                    let outputURL = tempDir.appendingPathComponent(firstResource.originalFilename)
+                    let uniqueTempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+                    try? FileManager.default.createDirectory(at: uniqueTempDir, withIntermediateDirectories: true)
+                    let outputURL = uniqueTempDir.appendingPathComponent(firstResource.originalFilename)
                     
-                    if FileManager.default.fileExists(atPath: outputURL.path) {
-                        completion(outputURL)
-                    } else {
-                        let resourceOptions = PHAssetResourceRequestOptions()
-                        resourceOptions.isNetworkAccessAllowed = true
-                        
-                        PHAssetResourceManager.default().writeData(for: firstResource, toFile: outputURL, options: resourceOptions) { error in
-                            if let error = error {
-                                print("Error exporting asset: \(error)")
-                                completion(nil)
-                            } else {
-                                completion(outputURL)
-                            }
+                    let resourceOptions = PHAssetResourceRequestOptions()
+                    resourceOptions.isNetworkAccessAllowed = true
+                    
+                    PHAssetResourceManager.default().writeData(for: firstResource, toFile: outputURL, options: resourceOptions) { error in
+                        if let error = error {
+                            print("❌ Error exporting asset: \(error.localizedDescription)")
+                            completion(nil)
+                        } else {
+                            completion(outputURL)
                         }
                     }
                 }
@@ -617,9 +614,14 @@ class DashboardViewModel: ObservableObject {
                     return
                 }
 
-                try? await PHPhotoLibrary.shared().performChanges {
-                    let request = PHAssetCollectionChangeRequest(for: album)
-                    request?.addAssets(assetsToAdd as NSArray)
+                do {
+                    try await PHPhotoLibrary.shared().performChanges {
+                        let request = PHAssetCollectionChangeRequest(for: album)
+                        request?.addAssets(assetsToAdd as NSArray)
+                    }
+                    print("✅ Successfully added \(assetsToAdd.count) existing assets to album")
+                } catch {
+                    print("❌ Failed to add existing assets to album: \(error)")
                 }
             }
             
@@ -632,50 +634,72 @@ class DashboardViewModel: ObservableObject {
                     }
                 }
                 
-                try? await PHPhotoLibrary.shared().performChanges {
-                    let requests = urls.map { PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: $0) }
-                    
-                    if let album = album, let placeholders = requests.compactMap({ $0?.placeholderForCreatedAsset }) as? [PHObjectPlaceholder] {
-                        let albumRequest = PHAssetCollectionChangeRequest(for: album)
-                        albumRequest?.addAssets(placeholders as NSArray)
+                do {
+                    try await PHPhotoLibrary.shared().performChanges {
+                        let libraryRequest = PHPhotoLibrary.shared()
+                        let requests = urls.map { PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: $0) }
+                        
+                        if let album = album {
+                            let placeholders = requests.compactMap({ $0?.placeholderForCreatedAsset })
+                            if !placeholders.isEmpty {
+                                let albumRequest = PHAssetCollectionChangeRequest(for: album)
+                                albumRequest?.addAssets(placeholders as NSArray)
+                            }
+                        }
                     }
+                    print("✅ Successfully imported \(urls.count) local videos to Photo Library")
+                } catch {
+                    print("❌ Failed to import local videos to Photo Library: \(error)")
                 }
-                
-                // 3. Handle Removal if Move (Album to Album)
-                if wasCutMode, let sourceId = sourceId {
-                    let sourceCollections = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [sourceId], options: nil)
-                    if let sourceAlbum = sourceCollections.firstObject {
-                        try? await PHPhotoLibrary.shared().performChanges {
+            }
+            
+            // 3. Handle Removal if Move (Album to Album)
+            if wasCutMode, let sourceId = sourceId {
+                let sourceCollections = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [sourceId], options: nil)
+                if let sourceAlbum = sourceCollections.firstObject {
+                    do {
+                        try await PHPhotoLibrary.shared().performChanges {
                             let assetsToRemove = galleryVideos.compactMap { $0.asset } as NSArray
                             let request = PHAssetCollectionChangeRequest(for: sourceAlbum)
                             request?.removeAssets(assetsToRemove)
                         }
-                    }
-                }
-                
-                // Only delete LOCAL files if Move
-                if wasCutMode {
-                    await MainActor.run {
-                        for video in localVideos {
-                            self.deleteVideo(video)
-                        }
+                        print("✅ Successfully removed \(galleryVideos.count) assets from source album")
+                    } catch {
+                        print("❌ Failed to remove assets from source album: \(error)")
                     }
                 }
             }
             
+            // 4. Only delete LOCAL files if Move
+            if wasCutMode && !localVideos.isEmpty {
+                await MainActor.run {
+                    for video in localVideos {
+                        self.deleteVideo(video)
+                    }
+                    // Refresh local storage views
+                    self.loadImportedVideos()
+                    self.loadUserFolders()
+                }
+            }
+            
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s delay for indexing
+            
             await MainActor.run {
                 self.isImporting = false
-                print("✅ Copied/Moved to Gallery")
+                print("✅ Copied/Moved to Gallery Complete")
                 
                 // Always clear clipboard
                 self.copiedVideoIds.removeAll()
                 self.isCutMode = false
                 self.sourceAlbumIdentifier = nil
                 self.sourceURL = nil
+                self.videosToMove = []
                 
-                // Refresh gallery assets and albums/counts
+                // Refresh everything
                 self.fetchAssets()
                 self.fetchAlbums()
+                self.loadImportedVideos()
+                self.loadUserFolders()
             }
         }
     }
@@ -737,8 +761,8 @@ class DashboardViewModel: ObservableObject {
         
         isImporting = true
         
-        let originalIds = copiedVideoIds
         let wasCutMode = isCutMode
+        let sourceAlbumId = sourceAlbumIdentifier
         
         Task {
             var urls: [URL] = []
@@ -755,11 +779,31 @@ class DashboardViewModel: ObservableObject {
                 self.importVideos(from: urls, names: names, to: destination)
                 
                 if wasCutMode {
-                    // Note: In a real 'Move' (Cut/Paste), we might want to delete after success.
-                    // But importVideos is async too. 
+                    // 1. Delete local files
                     for video in videosToPaste {
-                        if video.url != nil { // Only delete local files
+                        if video.url != nil {
                             self.deleteVideo(video)
+                        }
+                    }
+                    
+                    // 2. Remove from Gallery Album if source was an album
+                    if let albumId = sourceAlbumId {
+                        let galleryVideos = videosToPaste.filter { $0.asset != nil }
+                        if !galleryVideos.isEmpty {
+                            Task {
+                                let sourceCollections = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumId], options: nil)
+                                if let sourceAlbum = sourceCollections.firstObject {
+                                    try? await PHPhotoLibrary.shared().performChanges {
+                                        let assetsToRemove = galleryVideos.compactMap { $0.asset } as NSArray
+                                        let request = PHAssetCollectionChangeRequest(for: sourceAlbum)
+                                        request?.removeAssets(assetsToRemove)
+                                    }
+                                    await MainActor.run {
+                                        self.fetchAssets()
+                                        self.fetchAlbums()
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -975,10 +1019,22 @@ class DashboardViewModel: ObservableObject {
                         continue // Skip copying this one
                     }
                     
-                    try fileManager.copyItem(at: url, to: destinationURL)
-                    print("✅ Imported: \(filename) to \(targetDirectory.lastPathComponent)")
+                    // Try to move first (much faster), fallback to copy
+                    do {
+                        // Move is instant, copy is slow
+                        try fileManager.moveItem(at: url, to: destinationURL)
+                        print("⚡ Moved (instant): \(filename) to \(targetDirectory.lastPathComponent)")
+                    } catch {
+                        // If move fails (different volumes), try copy
+                        do {
+                            try fileManager.copyItem(at: url, to: destinationURL)
+                            print("✅ Copied: \(filename) to \(targetDirectory.lastPathComponent)")
+                        } catch {
+                            print("❌ Error importing \(url.lastPathComponent): \(error)")
+                        }
+                    }
                 } catch {
-                    print("❌ Error importing \(url.lastPathComponent): \(error)")
+                    print("❌ Error accessing file: \(error)")
                 }
             }
             
@@ -1064,41 +1120,48 @@ class DashboardViewModel: ObservableObject {
             
             // Start pre-fetching titles in small batches to avoid overhead
             self.preFetchTitles(for: newVideos)
+            
+            // Pre-warm thumbnail cache for gallery videos
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
+                ThumbnailCacheManager.shared.prewarmCache(for: newVideos)
+            }
         }
     }
     
     func preFetchTitles(for videos: [VideoItem]) {
-        for video in videos {
-            self.loadTitle(for: video) { [weak self] resolvedTitle in
-                guard let self = self else { return }
-                DispatchQueue.main.async {
-                    // Update in allGalleryVideos
-                    if let index = self.allGalleryVideos.firstIndex(where: { $0.id == video.id }) {
-                        self.allGalleryVideos[index].title = resolvedTitle
-                    }
-                    
-                    // Update in importedVideos (for mixed local/gallery collections)
-                    if let index = self.importedVideos.firstIndex(where: { $0.id == video.id }) {
-                        self.importedVideos[index].title = resolvedTitle
-                    }
-                    
-                    // Update in folders
-                    for i in 0..<self.folders.count {
-                        if let vIndex = self.folders[i].videos.firstIndex(where: { $0.id == video.id }) {
-                            self.folders[i].videos[vIndex].title = resolvedTitle
+        // Only pre-fetch the first 30 videos to avoid overwhelming the system
+        // The rest will be loaded on-demand when the view appears.
+        let limit = min(videos.count, 30)
+        let prioritizedVideos = Array(videos.prefix(limit))
+        
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            
+            for video in prioritizedVideos {
+                self.loadTitle(for: video) { resolvedTitle in
+                    DispatchQueue.main.async {
+                        // Update in allGalleryVideos
+                        if let index = self.allGalleryVideos.firstIndex(where: { $0.id == video.id }) {
+                            self.allGalleryVideos[index].title = resolvedTitle
+                        }
+                        
+                        // Update in importedVideos (for mixed local/gallery collections)
+                        if let index = self.importedVideos.firstIndex(where: { $0.id == video.id }) {
+                            self.importedVideos[index].title = resolvedTitle
+                        }
+                        
+                        // Update in folders
+                        for i in 0..<self.folders.count {
+                            if let vIndex = self.folders[i].videos.firstIndex(where: { $0.id == video.id }) {
+                                self.folders[i].videos[vIndex].title = resolvedTitle
+                            }
+                        }
+                        
+                        // Master list for search
+                        if let index = self.videos.firstIndex(where: { $0.id == video.id }) {
+                            self.videos[index].title = resolvedTitle
                         }
                     }
-                    
-                    // Master list for search
-                    if let index = self.videos.firstIndex(where: { $0.id == video.id }) {
-                        self.videos[index].title = resolvedTitle
-                    }
-                    
-                    // Current player
-                    if self.playingVideo?.id == video.id {
-                        self.playingVideo?.title = resolvedTitle
-                    }
-                    self.objectWillChange.send()
                 }
             }
         }
@@ -1148,6 +1211,11 @@ class DashboardViewModel: ObservableObject {
                     // Start background metadata fetching (Titles and Durations)
                     self.backgroundFetchTitles(for: loadedVideos)
                     self.backgroundFetchDurations(for: loadedVideos)
+                    
+                    // Pre-warm thumbnail cache in background
+                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
+                        ThumbnailCacheManager.shared.prewarmCache(for: loadedVideos)
+                    }
                 }
             } catch {
                 print("Error loading imported videos: \(error)")
@@ -1332,20 +1400,26 @@ class DashboardViewModel: ObservableObject {
             guard let self = self else { return }
             if status == .authorized || status == .limited {
                 let fetchOptions = PHFetchOptions()
-                let smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .any, options: fetchOptions)
+                // Sort user albums by title
+                fetchOptions.sortDescriptors = [NSSortDescriptor(key: "localizedTitle", ascending: true)]
+                
+                let smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .any, options: nil)
                 let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
                 
                 var videoAlbums: [PHAssetCollection] = []
-                var everyAlbum: [PHAssetCollection] = []
+                var userDestinations: [PHAssetCollection] = [] // Writable targets
                 
-                let processCollections = { (fetchResult: PHFetchResult<PHAssetCollection>) in
+                let processCollections = { (fetchResult: PHFetchResult<PHAssetCollection>, isUserAlbum: Bool) in
                     fetchResult.enumerateObjects { collection, _, _ in
                         let title = collection.localizedTitle ?? ""
-                        if title.lowercased() == "recents" {
+                        if title.lowercased() == "recents" || title.lowercased() == "recent" {
                             return
                         }
                         
-                        everyAlbum.append(collection)
+                        // User albums are always destination candidates
+                        if isUserAlbum {
+                            userDestinations.append(collection)
+                        }
                         
                         let options = PHFetchOptions()
                         options.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
@@ -1357,12 +1431,13 @@ class DashboardViewModel: ObservableObject {
                     }
                 }
                 
-                processCollections(smartAlbums)
-                processCollections(userAlbums)
+                processCollections(smartAlbums, false)
+                processCollections(userAlbums, true)
                 
                 DispatchQueue.main.async {
                     self.galleryAlbums = videoAlbums
-                    self.allGalleryAlbums = everyAlbum
+                    self.allGalleryAlbums = userDestinations // Only user-created albums for pasting
+                    self.objectWillChange.send()
                 }
             }
         }

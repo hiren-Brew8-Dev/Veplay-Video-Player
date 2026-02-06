@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		6C51E24D2F3457D100844EFE /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 6C51E24C2F3457D100844EFE /* Alamofire */; };
+		6CC3B5D42F35E5CF00EFA81E /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 6CC3B5D32F35E5CF00EFA81E /* Kingfisher */; };
 		AFACF78BEF8707680AD20E81 /* Pods_My_Video_Player.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B8DF893DECC4EC2F0C0875F /* Pods_My_Video_Player.framework */; };
 /* End PBXBuildFile section */
 
@@ -44,6 +45,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6CC3B5D42F35E5CF00EFA81E /* Kingfisher in Frameworks */,
 				AFACF78BEF8707680AD20E81 /* Pods_My_Video_Player.framework in Frameworks */,
 				6C51E24D2F3457D100844EFE /* Alamofire in Frameworks */,
 			);
@@ -138,6 +140,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				6C51E24B2F3457D100844EFE /* XCRemoteSwiftPackageReference "Alamofire" */,
+				6CC3B5D22F35E5CF00EFA81E /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6C51DFEF2F3453C500844EFE /* Products */;
@@ -190,9 +193,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -443,6 +450,14 @@
 				minimumVersion = 5.11.1;
 			};
 		};
+		6CC3B5D22F35E5CF00EFA81E /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -450,6 +465,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6C51E24B2F3457D100844EFE /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = Alamofire;
+		};
+		6CC3B5D32F35E5CF00EFA81E /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6CC3B5D22F35E5CF00EFA81E /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

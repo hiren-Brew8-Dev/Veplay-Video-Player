@@ -221,6 +221,7 @@ struct VideoSectionView: View {
                 
                 selectionBarItem(icon: "doc.on.doc", title: "Copy", action: { 
                     viewModel.copyVideos(ids: viewModel.selectedVideoIds, isCut: false, sourceURL: viewModel.importedVideosDirectory)
+                    viewModel.showMovePicker = true
                 })
 
                 selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: { 
@@ -427,6 +428,7 @@ struct VideoSectionView: View {
         
         items.append(CustomActionItem(title: "Copy", icon: "doc.on.doc", role: nil, action: {
             viewModel.copyVideos(ids: Set([video.id]), isCut: false, sourceURL: viewModel.importedVideosDirectory)
+            viewModel.showMovePicker = true
         }))
         
         items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {

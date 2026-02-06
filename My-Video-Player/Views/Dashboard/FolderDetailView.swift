@@ -484,12 +484,15 @@ struct FolderDetailView: View {
                 
                 selectionBarItem(icon: "doc.on.doc", title: "Copy", action: { 
                     viewModel.copyVideos(ids: selectedVideoIds, isCut: false, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
-                })
-
-                selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: { 
-                    viewModel.copyVideos(ids: selectedVideoIds, isCut: true, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
                     viewModel.showMovePicker = true
                 })
+
+                if folder.albumIdentifier == nil {
+                    selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: { 
+                        viewModel.copyVideos(ids: selectedVideoIds, isCut: true, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
+                        viewModel.showMovePicker = true
+                    })
+                }
 
                 selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareVideos(ids: selectedVideoIds) })
             }
@@ -597,13 +600,16 @@ struct FolderDetailView: View {
         
         items.append(CustomActionItem(title: "Copy", icon: "doc.on.doc", role: nil, action: {
             viewModel.copyVideos(ids: Set([video.id]), isCut: false, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
-        }))
-        
-        items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
-            viewModel.copyVideos(ids: Set([video.id]), isCut: true, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
-            videoToMove = video
             viewModel.showMovePicker = true
         }))
+        
+        if folder.albumIdentifier == nil {
+            items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
+                viewModel.copyVideos(ids: Set([video.id]), isCut: true, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
+                videoToMove = video
+                viewModel.showMovePicker = true
+            }))
+        }
         
         items.append(CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
             videoToDelete = video

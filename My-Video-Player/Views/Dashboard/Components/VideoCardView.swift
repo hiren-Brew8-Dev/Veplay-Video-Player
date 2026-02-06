@@ -102,23 +102,24 @@ struct VideoCardView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    onMenuAction?()
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.black.opacity(0.3))
-                            .frame(width: 32, height: 32)
-                        
-                        Image(systemName: "ellipsis")
-                            .rotationEffect(.degrees(90))
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                    .frame(width: 44, height: 44) // Increased touch area
-                    .contentShape(Rectangle())
+                ZStack {
+                    Circle()
+                        .fill(Color.black.opacity(0.3))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: "ellipsis")
+                        .rotationEffect(.degrees(90))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
                 }
-                .offset(x: 4, y: -4)
+                .frame(width: 50, height: 50) // Very large hit area
+                .contentShape(Rectangle())
+                .highPriorityGesture(
+                    TapGesture().onEnded { _ in
+                        onMenuAction?()
+                    }
+                )
+                .offset(x: 6, y: -4)
             }
             .padding(.horizontal, 12) // Match the 8px + 4px alignment
             .padding(.bottom, 8)
@@ -175,58 +176,10 @@ struct VideoCardView: View {
     }
     
     private func loadThumbnail() {
-        if let asset = video.asset {
-            let manager = viewModel?.imageManager ?? PHImageManager.default()
-            let options = PHImageRequestOptions()
-            options.deliveryMode = .opportunistic
-            options.isNetworkAccessAllowed = true
-            
-            let targetDimension: CGFloat = 300 * UIScreen.main.scale
-            let targetSize = CGSize(width: targetDimension * 1.6, height: targetDimension)
-            
-            manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, _ in
+        // Use the persistent cache manager for instant loading
+        ThumbnailCacheManager.shared.getThumbnail(for: video) { [self] image in
+            DispatchQueue.main.async {
                 self.thumbnail = image
-            }
-        } else if let url = video.url {
-            Task {
-                let asset = AVAsset(url: url)
-                let generator = AVAssetImageGenerator(asset: asset)
-                generator.appliesPreferredTrackTransform = true
-                
-                // Check for VLC Format
-                if ["mkv", "avi", "wmv", "flv", "webm", "3gp"].contains(url.pathExtension.lowercased()) {
-                    let loader = VLCThumbnailHelper()
-                    await MainActor.run {
-                        self.vlcLoader = loader // Retain it
-                        loader.generate(for: url) { image in
-                            self.thumbnail = image
-                            self.vlcLoader = nil // Release
-                        }
-                    }
-                    return
-                }
-                
-                // Try to load duration asynchronously
-                let dur = try? await asset.load(.duration)
-                let durationValue = CMTimeGetSeconds(dur ?? .zero)
-                
-                let timeToCapture = durationValue > 2.0 ? 1.0 : 0.0
-                let time = CMTime(seconds: timeToCapture, preferredTimescale: 60)
-                
-                if let cgImage = try? generator.copyCGImage(at: time, actualTime: nil) {
-                    let uiImage = UIImage(cgImage: cgImage)
-                    await MainActor.run {
-                        self.thumbnail = uiImage
-                    }
-                } else {
-                    // Fallback to 0 if 1 sec failed
-                    if let cg = try? generator.copyCGImage(at: .zero, actualTime: nil) {
-                        let uiImage = UIImage(cgImage: cg)
-                        await MainActor.run {
-                            self.thumbnail = uiImage
-                        }
-                    }
-                }
             }
         }
     }
