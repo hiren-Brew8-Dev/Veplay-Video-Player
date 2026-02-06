@@ -289,8 +289,9 @@ struct PlayerBottomBar: View {
                 // Red dot badge
                 Circle()
                     .fill(Color.red)
-                    .frame(width: 7, height: 7)
-                    .offset(x: 2, y: -2)
+                    .frame(width: 8, height: 8)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 1))
+                    .offset(x: 3, y: -3)
                     .opacity(isSubtitleEnabled ? 1 : 0)
             }
             .frame(width: 44, height: 44)

@@ -123,11 +123,7 @@ struct SubtitleSettingsView: View {
     }
     
     var actionGridView: some View {
-        HStack(spacing: 40) {
-            actionButton(title: "Smart Edit", icon: "square.and.pencil") {
-                showEditSheet = true
-            }
-            
+        HStack(spacing: 60) {
             actionButton(title: "Quick Import", icon: "doc.badge.arrow.up") {
                 showingFileImporter = true
             }

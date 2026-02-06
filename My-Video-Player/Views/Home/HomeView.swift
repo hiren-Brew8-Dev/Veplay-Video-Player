@@ -152,7 +152,7 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $showSortSheet) {
-            CustomSortingView(sortOptionRaw: $viewModel.sortOptionRaw, title: "Videos")
+            CustomSortingView(sortOptionRaw: $viewModel.videoSortOptionRaw, title: "Videos")
         }
         .frame(height: 44)
         .padding(.vertical, 8)

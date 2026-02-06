@@ -20,6 +20,10 @@ struct CustomSortingView: View {
         if title == "History" {
             // "2 sort options only... length"
             return [.date, .length]
+        } else if title == "Album" || title == "Gallery" {
+             // GALLERY PHOTOS (PHAssets) usually don't have easily accessible file size without extra requests
+             // The user explicitly asked to NOT have size sorting for gallery photos.
+            return [.date, .name, .length]
         } else {
             // "for imported videos show the 4th also by size"
             return [.date, .name, .length, .size]

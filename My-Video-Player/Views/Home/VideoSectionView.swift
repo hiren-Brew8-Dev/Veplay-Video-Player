@@ -70,7 +70,7 @@ struct VideoSectionView: View {
         }
         .background(Color.themeBackground)
         .sheet(isPresented: $showSortSheet) {
-            CustomSortingView(sortOptionRaw: $viewModel.sortOptionRaw, title: "Videos")
+            CustomSortingView(sortOptionRaw: $viewModel.videoSortOptionRaw, title: "Videos")
         }
         .sheet(item: $videoToMove) { video in
             MoveToFolderSheet(viewModel: viewModel, video: video)

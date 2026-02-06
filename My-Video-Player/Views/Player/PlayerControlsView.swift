@@ -902,13 +902,6 @@ struct SettingsSheetView: View {
                         isPresented = false
                         onPlaybackSpeed()
                     })
-                    
-                    Divider().background(Color.gray.opacity(0.3))
-                        .padding(.leading, 50)
-
-                    SettingsListItem(icon: "bookmark.circle", title: "Floating Bookmark", value: showBookmarkButton ? "On" : "Off", action: {
-                        showBookmarkButton.toggle()
-                    })
                 }
                 .padding(.horizontal)
             }

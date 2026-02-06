@@ -50,7 +50,10 @@ struct FolderDetailView: View {
     
     // Derived
     var sortOption: DashboardViewModel.SortOption {
-        return DashboardViewModel.SortOption(rawValue: viewModel.sortOptionRaw) ?? .dateDesc
+        if folder.url == nil {
+            return viewModel.gallerySortOption
+        }
+        return viewModel.folderSortOption
     }
     
     var sortedVideos: [VideoItem] {
@@ -120,7 +123,11 @@ struct FolderDetailView: View {
             }
         }
         .sheet(isPresented: $showSortSheet) {
-            CustomSortingView(sortOptionRaw: $viewModel.sortOptionRaw, title: folder.name)
+            if folder.url == nil {
+                CustomSortingView(sortOptionRaw: $viewModel.gallerySortOptionRaw, title: "Album")
+            } else {
+                CustomSortingView(sortOptionRaw: $viewModel.folderSortOptionRaw, title: folder.name)
+            }
         }
         .sheet(isPresented: $showShareSheet) {
             let items = folder.videos.filter { selectedVideoIds.contains($0.id) }.compactMap { $0.url }

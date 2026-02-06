@@ -35,7 +35,15 @@ class DashboardViewModel: ObservableObject {
     @Published var searchText: String = ""
     @Published var showPermissionDenied: Bool = false
     @Published var isSelectionMode: Bool = false
-    @Published var sortOptionRaw: String = "Newest First"
+    @Published var videoSortOptionRaw: String = UserDefaults.standard.string(forKey: "videoSortOptionRaw") ?? "Newest First" {
+        didSet { UserDefaults.standard.set(videoSortOptionRaw, forKey: "videoSortOptionRaw") }
+    }
+    @Published var gallerySortOptionRaw: String = UserDefaults.standard.string(forKey: "gallerySortOptionRaw") ?? "Newest First" {
+        didSet { UserDefaults.standard.set(gallerySortOptionRaw, forKey: "gallerySortOptionRaw") }
+    }
+    @Published var folderSortOptionRaw: String = UserDefaults.standard.string(forKey: "folderSortOptionRaw") ?? "Newest First" {
+        didSet { UserDefaults.standard.set(folderSortOptionRaw, forKey: "folderSortOptionRaw") }
+    }
     
     // Performance
     let imageManager = PHCachingImageManager()
@@ -140,8 +148,16 @@ class DashboardViewModel: ObservableObject {
         case folder(Folder)
     }
     
-    var sortOption: SortOption {
-        return SortOption(rawValue: sortOptionRaw) ?? .dateDesc
+    var videoSortOption: SortOption {
+        return SortOption(rawValue: videoSortOptionRaw) ?? .dateDesc
+    }
+    
+    var gallerySortOption: SortOption {
+        return SortOption(rawValue: gallerySortOptionRaw) ?? .dateDesc
+    }
+    
+    var folderSortOption: SortOption {
+        return SortOption(rawValue: folderSortOptionRaw) ?? .dateDesc
     }
     /// Dedicated folder for imported videos in Documents directory
     private var importedVideosDirectory: URL {
@@ -174,28 +190,28 @@ class DashboardViewModel: ObservableObject {
     }
     
     private func setupGroupedVideosObserver() {
-        Publishers.CombineLatest($importedVideos, $sortOptionRaw)
-            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
+        // Observer for imported videos tab (uses videoSortOptionRaw)
+        Publishers.CombineLatest($importedVideos, $videoSortOptionRaw)
+            .receive(on: RunLoop.main)
             .sink { [weak self] _, _ in
                 self?.updateGroupedVideos()
             }
             .store(in: &cancellables)
             
-        // Master videos list remains a combination for other views (like Search)
-        // but we'll ensure it respects sorting.
-        Publishers.CombineLatest3($importedVideos, $allGalleryVideos, $sortOptionRaw)
-            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
+        // Master list observer for combined videos (Search/etc) - uses DEFAULT (videoSortOptionRaw)
+        Publishers.CombineLatest3($importedVideos, $allGalleryVideos, $videoSortOptionRaw)
+            .receive(on: RunLoop.main)
             .sink { [weak self] imported, gallery, _ in
                 guard let self = self else { return }
                 let all = (imported + gallery)
-                self.videos = self.sortVideos(all)
+                self.videos = self.sortVideos(all, by: self.videoSortOption)
             }
             .store(in: &cancellables)
     }
     
-    private func sortVideos(_ items: [VideoItem]) -> [VideoItem] {
+    private func sortVideos(_ items: [VideoItem], by option: SortOption) -> [VideoItem] {
         return items.sorted {
-            switch sortOption {
+            switch option {
             case .dateDesc: return $0.creationDate > $1.creationDate
             case .dateAsc: return $0.creationDate < $1.creationDate
             case .nameAsc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
@@ -210,16 +226,17 @@ class DashboardViewModel: ObservableObject {
     
     private func updateGroupedVideos() {
         let calendar = Calendar.current
-        let sorted = sortVideos(importedVideos)
+        let currentSort = videoSortOption
+        let sorted = sortVideos(importedVideos, by: currentSort)
         
-        switch sortOption {
+        switch currentSort {
         case .dateDesc, .dateAsc:
             let grouped = Dictionary(grouping: sorted) { video -> Date in
                 calendar.startOfDay(for: video.creationDate)
             }
             
             let sortedDates = grouped.keys.sorted(by: { 
-                sortOption == .dateAsc ? $0 < $1 : $0 > $1 
+                currentSort == .dateAsc ? $0 < $1 : $0 > $1 
             })
             
             self.groupedImportedVideos = sortedDates.map { date in

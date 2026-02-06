@@ -338,6 +338,14 @@ class PlayerViewModel: NSObject, ObservableObject {
             }
             .store(in: &cancellables)
         
+        subtitleManager.objectWillChange
+            .sink { [weak self] _ in
+                DispatchQueue.main.async {
+                    self?.objectWillChange.send()
+                }
+            }
+            .store(in: &cancellables)
+            
         subtitleManager.$offsetDelay
             .receive(on: DispatchQueue.main)
             .sink { [weak self] delay in
