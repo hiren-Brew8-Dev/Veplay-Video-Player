@@ -87,6 +87,18 @@ struct VideoRowView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .background(
+            ZStack {
+                if viewModel?.highlightVideoId == video.id {
+                    Color.orange.opacity(0.1)
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.orange, lineWidth: 2)
+                }
+            }
+        )
+        .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.02 : 1.0)
+        .animation(.spring(), value: viewModel?.highlightVideoId)
         .onAppear { 
             loadThumbnail()
             loadTitle()

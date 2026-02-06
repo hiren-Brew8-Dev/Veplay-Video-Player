@@ -49,7 +49,6 @@ struct FolderSectionView: View {
                         }
                     }
                     .padding(.horizontal, 10)
-                    .padding(.bottom, 100) // Inset padding for bottom bar
                     
                     if viewModel.folders.isEmpty {
                         VStack(spacing: 12) {

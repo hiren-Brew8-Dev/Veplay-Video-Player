@@ -124,8 +124,18 @@ struct VideoCardView: View {
             .padding(.bottom, 8)
         }
         //.padding(padding) // Removed to fix spacing
-        .background(Color.themeSurface.opacity(0.4))
+        .background(
+            ZStack {
+                Color.themeSurface.opacity(0.4)
+                if viewModel?.highlightVideoId == video.id {
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.orange, lineWidth: 3)
+                }
+            }
+        )
         .cornerRadius(20)
+        .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.05 : 1.0)
+        .animation(.spring(), value: viewModel?.highlightVideoId)
     
         .onAppear {
             loadThumbnail()

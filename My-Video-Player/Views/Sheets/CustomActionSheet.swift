@@ -89,6 +89,7 @@ struct CustomActionSheet: View {
                 }
                 .edgesIgnoringSafeArea(.bottom)
                 .transition(.move(edge: .bottom))
+                .zIndex(100)
             }
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.85, blendDuration: 0), value: isPresented)

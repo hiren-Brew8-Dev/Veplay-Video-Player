@@ -140,11 +140,7 @@ struct SearchView: View {
         let baseVideos: [VideoItem] = {
             let sources: [VideoItem]
             if let initial = initialVideos {
-                if contextTitle == "Videos" || contextTitle == "All Videos" {
-                    sources = viewModel.videos
-                } else {
-                    sources = initial
-                }
+                sources = initial
             } else {
                 sources = viewModel.videos
             }
@@ -178,12 +174,14 @@ struct SearchView: View {
                 LazyVGrid(columns: GridLayout.gridColumns, spacing: GridLayout.spacing) {
                     ForEach(filtered) { video in
                         Button(action: {
+                            isSearchFocused = false
                             viewModel.playingVideo = video
                         }) {
                             VideoCardView(
                                 video: video,
                                 viewModel: viewModel,
                                 onMenuAction: {
+                                    isSearchFocused = false
                                     viewModel.actionSheetTarget = .video(video)
                                     viewModel.actionSheetItems = viewModel.videoActions(for: video)
                                     viewModel.showActionSheet = true

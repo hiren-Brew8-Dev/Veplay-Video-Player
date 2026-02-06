@@ -9,7 +9,7 @@ struct AlbumSectionView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Add a sub-header for Album section to match Video section if possible
+            // Add a sub-header for Gallery section to match Video section if possible
             ScrollView {
                  if viewModel.galleryAlbums.isEmpty {
                 VStack(spacing: 20) {
@@ -18,10 +18,10 @@ struct AlbumSectionView: View {
                     Image(systemName: "photo.on.rectangle")
                         .font(.system(size: 50))
                         .foregroundColor(.gray)
-                    Text("No Albums Found")
+                    Text("No Gallery Albums Found")
                         .font(.headline)
                         .foregroundColor(.gray)
-                    Text("Grant photo access to see albums")
+                    Text("Grant photo access to see gallery")
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
@@ -36,6 +36,7 @@ struct AlbumSectionView: View {
                     }
                 }
                 .padding(.horizontal, 10)
+                .padding(.bottom, 100)
             }
             }
         }
@@ -52,8 +53,8 @@ struct AlbumSectionView: View {
             videos.append(viewModel.videoItem(from: asset))
         }
         
-        let displayTitle = (album.localizedTitle ?? "Album") == "Videos" ? "All Videos" : (album.localizedTitle ?? "Album")
-        let folder = Folder(name: displayTitle, videoCount: videos.count, videos: videos, url: nil, subfolders: [])
+        let displayTitle = (album.localizedTitle ?? "Gallery") == "Videos" ? "All Videos" : (album.localizedTitle ?? "Gallery")
+        let folder = Folder(name: displayTitle, videoCount: videos.count, videos: videos, url: nil, albumIdentifier: album.localIdentifier, subfolders: [])
         return FolderDetailView(initialFolder: folder, viewModel: viewModel)
     }
     

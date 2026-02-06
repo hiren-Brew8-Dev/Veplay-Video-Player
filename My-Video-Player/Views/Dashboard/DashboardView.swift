@@ -74,6 +74,25 @@ struct DashboardView: View {
         } message: {
             Text("Enter a name for the new folder")
         }
+        .alert("Already Imported", isPresented: Binding(
+            get: { viewModel.duplicateVideo != nil },
+            set: { if !$0 { viewModel.duplicateVideo = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { viewModel.duplicateVideo = nil }
+            Button("Show") {
+                if let video = viewModel.duplicateVideo {
+                    viewModel.highlightVideoId = video.id
+                    viewModel.duplicateVideo = nil
+                }
+            }
+        } message: {
+            if let video = viewModel.duplicateVideo {
+                Text("\"\(video.title)\" has already been imported.")
+            }
+        }
+        .sheet(isPresented: $viewModel.showMovePicker) {
+            MoveDestinationPickerView(viewModel: viewModel, videosToMove: viewModel.videosToMove, isCutOperation: viewModel.isCutMode)
+        }
         .fileImporter(
             isPresented: $viewModel.showFileImporter,
             allowedContentTypes: [.movie, .video],
@@ -96,13 +115,27 @@ struct DashboardView: View {
             viewModel.isImporting = true
             Task {
                 var importedURLs = [URL]()
+                var importedNames = [String]()
+                
                 for item in newItems {
+                    // Try to get original filename
+                    var fileName: String?
+                    if let localID = item.itemIdentifier {
+                        let result = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil)
+                        if let asset = result.firstObject {
+                            let resources = PHAssetResource.assetResources(for: asset)
+                            fileName = resources.first?.originalFilename
+                        }
+                    }
+                    
                     if let movie = try? await item.loadTransferable(type: VideoTransferable.self) {
                         importedURLs.append(movie.url)
+                        importedNames.append(fileName ?? movie.url.lastPathComponent)
                     }
                 }
+                
                 await MainActor.run {
-                    viewModel.importVideos(from: importedURLs)
+                    viewModel.importVideos(from: importedURLs, names: importedNames)
                     selectedPhotoItems.removeAll()
                 }
             }

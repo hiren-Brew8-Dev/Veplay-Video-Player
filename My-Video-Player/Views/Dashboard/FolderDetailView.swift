@@ -34,14 +34,12 @@ struct FolderDetailView: View {
     
     // Selection State
     @State private var selectedVideoIds = Set<UUID>()
-    @State private var showShareSheet = false
-    
-    // Animation states
     @State private var animatedVideoIds: Set<UUID> = []
     
     @State private var showActionSheet = false
     @State private var activeActionItem: ActionTarget?
     @State private var showSearch = false
+    @State private var showImportOptions = false
     
     enum ActionTarget {
         case folder(Folder)
@@ -92,6 +90,7 @@ struct FolderDetailView: View {
                             listView
                         }
                     }
+                    .padding(.bottom, 100)
                 }
             }
             
@@ -129,10 +128,6 @@ struct FolderDetailView: View {
                 CustomSortingView(sortOptionRaw: $viewModel.folderSortOptionRaw, title: folder.name)
             }
         }
-        .sheet(isPresented: $showShareSheet) {
-            let items = folder.videos.filter { selectedVideoIds.contains($0.id) }.compactMap { $0.url }
-            ShareSheet(activityItems: items)
-        }
         .alert("Rename Video", isPresented: $showRenameVideoAlert) {
             TextField("New Name", text: $newVideoName)
             Button("Cancel", role: .cancel) {}
@@ -166,6 +161,17 @@ struct FolderDetailView: View {
             }
         } message: {
             Text("Enter a new name for this folder")
+        }
+        .confirmationDialog("Import Videos", isPresented: $showImportOptions, titleVisibility: .visible) {
+            Button("Photos Library") {
+                viewModel.activeImportFolderURL = folder.url
+                viewModel.showPhotoPicker = true
+            }
+            Button("Files App") {
+                viewModel.activeImportFolderURL = folder.url
+                viewModel.showFileImporter = true
+            }
+            Button("Cancel", role: .cancel) { }
         }
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
@@ -202,8 +208,6 @@ struct FolderDetailView: View {
                     .clipShape(Circle())
             }
             
-            Spacer()
-            
             Text(folder.name)
                 .font(.headline)
                 .foregroundColor(.white)
@@ -215,12 +219,28 @@ struct FolderDetailView: View {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 20))
                         .foregroundColor(.blue)
+                        .padding(10) // Larger hit area
                 }
                 .navigationDestination(isPresented: $showSearch) {
                     SearchView(viewModel: viewModel, contextTitle: folder.name, initialVideos: folder.videos)
                 }
                 
                 Menu {
+                    if !viewModel.copiedVideoIds.isEmpty {
+                        Button(action: { 
+                            if let url = folder.url {
+                                viewModel.pasteVideos(to: url)
+                            } else if let albumId = folder.albumIdentifier {
+                                // Paste to gallery album
+                                let collection = viewModel.galleryAlbums.first(where: { $0.localIdentifier == albumId })
+                                viewModel.pasteVideosToGallery(album: collection)
+                            }
+                        }) {
+                            Label("Paste", systemImage: "doc.on.clipboard")
+                        }
+                        Divider()
+                    }
+                    
                     Button(action: { viewModel.isSelectionMode = true }) {
                         Label("Select", systemImage: "checkmark.circle")
                     }
@@ -236,9 +256,11 @@ struct FolderDetailView: View {
                         Label("Sort", systemImage: "arrow.up.arrow.down")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.system(size: 20))
+                    Image(systemName: "ellipsis")
+                        .rotationEffect(.degrees(90))
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.blue)
+                        .padding(10) // Larger hit area
                 }
             }
         }
@@ -313,9 +335,9 @@ struct FolderDetailView: View {
             // Videos Section (Unified or Grouped)
             if folder.url == nil && (sortOption == .dateAsc || sortOption == .dateDesc) {
                 // ALBUIM MODE: Show Date Sections
-                ForEach(groupedVideos) { section in
+                ForEach(groupedVideos, id: \.id) { section in
                     Section(header: sectionHeader(for: section.date)) {
-                        ForEach(section.videos) { video in
+                        ForEach(section.videos, id: \.id) { video in
                             gridVideoItem(liveVideo(video))
                         }
                     }
@@ -328,13 +350,13 @@ struct FolderDetailView: View {
                         importButton
                     }
                     
-                    ForEach(sortedVideos) { video in
+                    ForEach(sortedVideos, id: \.id) { video in
                         gridVideoItem(liveVideo(video))
                     }
                 }
             }
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, GridLayout.horizontalPadding)
     }
     
     private var listView: some View {
@@ -367,9 +389,9 @@ struct FolderDetailView: View {
             Group {
                 if folder.url == nil && (sortOption == .dateAsc || sortOption == .dateDesc) {
                     // ALBUM MODE: Show Date Sections
-                    ForEach(groupedVideos) { section in
+                    ForEach(groupedVideos, id: \.id) { section in
                         Section(header: sectionHeader(for: section.date)) {
-                            ForEach(section.videos) { video in
+                            ForEach(section.videos, id: \.id) { video in
                                 videoRow(liveVideo(video))
                             }
                         }
@@ -378,19 +400,19 @@ struct FolderDetailView: View {
                     // FOLDER MODE: Flat List
                     Group {
                         if !viewModel.isSelectionMode && folder.url != nil {
-                            importButton
-                                .padding(.horizontal)
-                                .padding(.vertical, 8)
+                            AddVideoRowView(action: {
+                                showImportOptions = true
+                            })
+                            .padding(.vertical, 8)
                         }
                         
-                        ForEach(sortedVideos) { video in
+                        ForEach(sortedVideos, id: \.id) { video in
                             videoRow(liveVideo(video))
                         }
                     }
                 }
             }
         }
-        .padding(.bottom, 100)
     }
     
     private func sectionHeader(for date: Date) -> some View {
@@ -460,7 +482,16 @@ struct FolderDetailView: View {
             HStack(spacing: 0) {
                 selectionBarItem(icon: "trash", title: "Delete", action: { deleteSelected() })
                 
-                selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { showShareSheet = true })
+                selectionBarItem(icon: "doc.on.doc", title: "Copy", action: { 
+                    viewModel.copyVideos(ids: selectedVideoIds, isCut: false, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
+                })
+
+                selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: { 
+                    viewModel.copyVideos(ids: selectedVideoIds, isCut: true, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
+                    viewModel.showMovePicker = true
+                })
+
+                selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareVideos(ids: selectedVideoIds) })
             }
             .padding(.top, 12)
             .padding(.bottom, 25)
@@ -550,56 +581,43 @@ struct FolderDetailView: View {
     }
     
     private func videoActions(for video: VideoItem) -> [CustomActionItem] {
-        if video.asset != nil {
-            // Album Video
-            return [
-                CustomActionItem(title: "Share", icon: "square.and.arrow.up", role: nil, action: {
-                    viewModel.shareVideo(item: video)
-                }),
-                CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
-                    videoToDelete = video
-                    showDeleteVideoAlert = true
-                })
-            ]
-        } else {
-            // User Video
-            return [
-                CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
-                    videoToRename = video
-                    newVideoName = video.title
-                    showRenameVideoAlert = true
-                }),
-                CustomActionItem(title: "Share", icon: "square.and.arrow.up", role: nil, action: {
-                    viewModel.shareVideo(item: video)
-                }),
-                CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
-                    videoToDelete = video
-                    showDeleteVideoAlert = true
-                })
-            ]
+        var items: [CustomActionItem] = []
+        
+        if video.asset == nil {
+             items.append(CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
+                videoToRename = video
+                newVideoName = video.title
+                showRenameVideoAlert = true
+            }))
         }
+        
+        items.append(CustomActionItem(title: "Share", icon: "square.and.arrow.up", role: nil, action: {
+            viewModel.shareVideo(item: video)
+        }))
+        
+        items.append(CustomActionItem(title: "Copy", icon: "doc.on.doc", role: nil, action: {
+            viewModel.copyVideos(ids: Set([video.id]), isCut: false, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
+        }))
+        
+        items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
+            viewModel.copyVideos(ids: Set([video.id]), isCut: true, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
+            videoToMove = video
+            viewModel.showMovePicker = true
+        }))
+        
+        items.append(CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
+            videoToDelete = video
+            showDeleteVideoAlert = true
+        }))
+        
+        return items
     }
 
     
     private var importButton: some View {
-        Menu {
-            Button(action: {
-                viewModel.activeImportFolderURL = folder.url
-                viewModel.showPhotoPicker = true
-            }) {
-                Label("Photos Library", systemImage: "photo.on.rectangle")
-            }
-            
-            Button(action: {
-                viewModel.activeImportFolderURL = folder.url
-                viewModel.showFileImporter = true
-            }) {
-                Label("Files App", systemImage: "folder.badge.plus")
-            }
-        } label: {
-            AddVideoCardView(action: {})
-                .allowsHitTesting(false) // Let the Menu handle the tap
-        }
+        AddVideoCardView(action: {
+            showImportOptions = true
+        })
     }
     
     // MARK: - Helpers

@@ -16,6 +16,7 @@ struct VideoSectionView: View {
     @AppStorage("isGridView") private var isGridView: Bool = true
     @State private var showSortSheet: Bool = false
     @State private var showSearch = false
+    @State private var showImportOptions = false
 
     var body: some View {
         ZStack {
@@ -27,17 +28,31 @@ struct VideoSectionView: View {
                     selectionHeader
                 }
                 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
-                            emptyStateView
-                        } else if isGridView {
-                            contentView
-                        } else {
-                            listView
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
+                                emptyStateView
+                            } else if isGridView {
+                                contentView
+                            } else {
+                                listView
+                            }
+                        }
+                        .padding(.top)
+                        .padding(.bottom, 100)
+                    }
+                    .onChange(of: viewModel.highlightVideoId) { oldId, newId in
+                        if let id = newId {
+                            withAnimation(.spring()) {
+                                proxy.scrollTo(id, anchor: .center)
+                            }
+                            // Reset highlight after a delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                viewModel.highlightVideoId = nil
+                            }
                         }
                     }
-                    .padding(.top)
                 }
             }
             
@@ -115,7 +130,13 @@ struct VideoSectionView: View {
                         .foregroundColor(.blue)
                 }
                 .navigationDestination(isPresented: $showSearch) {
-                    SearchView(viewModel: viewModel, contextTitle: "Videos")
+                    SearchView(viewModel: viewModel, contextTitle: "Videos", initialVideos: viewModel.importedVideos)
+                }
+                
+                Button(action: { showImportOptions = true }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.orange)
                 }
                 
                 Menu {
@@ -146,7 +167,7 @@ struct VideoSectionView: View {
     private var selectionHeader: some View {
         HStack {
             Button(action: {
-                let allVideos = viewModel.importedVideos + viewModel.allGalleryVideos
+                let allVideos = viewModel.importedVideos
                 if isAllSelected {
                     viewModel.selectedVideoIds.removeAll()
                 } else {
@@ -172,7 +193,8 @@ struct VideoSectionView: View {
             
             Spacer()
             
-            Text("Selected (\(viewModel.selectedVideoIds.count)/\(viewModel.importedVideos.count + viewModel.allGalleryVideos.count))")
+            let allVideos = viewModel.importedVideos
+            Text("Selected (\(viewModel.selectedVideoIds.count)/\(allVideos.count))")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.white)
             
@@ -184,7 +206,7 @@ struct VideoSectionView: View {
             }
             .font(.system(size: 16, weight: .bold))
             .foregroundColor(.orange)
-            .padding(.trailing, 10)
+            .padding(10) // Larger hit area
         }
         .padding(.horizontal, 5)
         .padding(.bottom, 10)
@@ -197,6 +219,15 @@ struct VideoSectionView: View {
             HStack(spacing: 0) {
                 selectionBarItem(icon: "trash", title: "Delete", action: { deleteSelected() })
                 
+                selectionBarItem(icon: "doc.on.doc", title: "Copy", action: { 
+                    viewModel.copyVideos(ids: viewModel.selectedVideoIds, isCut: false, sourceURL: viewModel.importedVideosDirectory)
+                })
+
+                selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: { 
+                    viewModel.copyVideos(ids: viewModel.selectedVideoIds, isCut: true, sourceURL: viewModel.importedVideosDirectory)
+                    viewModel.showMovePicker = true
+                })
+
                 selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareSelectedVideos() })
             }
             .padding(.top, 12)
@@ -220,6 +251,7 @@ struct VideoSectionView: View {
                     .foregroundColor(.white)
             }
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 10) // Larger hit area
         }
         .disabled(viewModel.selectedVideoIds.isEmpty)
         .opacity(viewModel.selectedVideoIds.isEmpty ? 0.5 : 1.0)
@@ -297,11 +329,10 @@ struct VideoSectionView: View {
                              videoItemView(for: video)
                          }
                     }
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, GridLayout.horizontalPadding)
                 }
             }
         }
-        .padding(.bottom, paddingBottom)
     }
     
     private var listView: some View {
@@ -314,7 +345,6 @@ struct VideoSectionView: View {
                 }
             }
         }
-        .padding(.bottom, paddingBottom + 80)
     }
 
     
@@ -383,20 +413,34 @@ struct VideoSectionView: View {
     
     private func triggerActionSheet(for video: VideoItem) {
         viewModel.actionSheetTarget = .video(video)
-        viewModel.actionSheetItems = [
-            CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
-                videoToRename = video
-                newVideoName = video.title
-                showRenameVideoAlert = true
-            }),
-            CustomActionItem(title: "Share", icon: "square.and.arrow.up", role: nil, action: {
-                viewModel.shareVideo(item: video)
-            }),
-            CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
-                videoToDelete = video
-                showDeleteVideoAlert = true
-            })
-        ]
+        var items: [CustomActionItem] = []
+        
+        items.append(CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
+            videoToRename = video
+            newVideoName = video.title
+            showRenameVideoAlert = true
+        }))
+        
+        items.append(CustomActionItem(title: "Share", icon: "square.and.arrow.up", role: nil, action: {
+            viewModel.shareVideo(item: video)
+        }))
+        
+        items.append(CustomActionItem(title: "Copy", icon: "doc.on.doc", role: nil, action: {
+            viewModel.copyVideos(ids: Set([video.id]), isCut: false, sourceURL: viewModel.importedVideosDirectory)
+        }))
+        
+        items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
+            viewModel.copyVideos(ids: Set([video.id]), isCut: true, sourceURL: viewModel.importedVideosDirectory)
+            videoToMove = video
+            viewModel.showMovePicker = true
+        }))
+        
+        items.append(CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
+            videoToDelete = video
+            showDeleteVideoAlert = true
+        }))
+        
+        viewModel.actionSheetItems = items
         viewModel.showActionSheet = true
     }
     
