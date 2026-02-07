@@ -258,7 +258,7 @@ struct PlayerControlsView: View {
                             onMenu: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showSettingsSheet = true
-                                    viewModel.isControlsVisible = falsex
+                                    viewModel.isControlsVisible = false
                                 }
                             },
                             showBookmarkControls: showBookmarkButton && showFloatingBookmarkControls,
