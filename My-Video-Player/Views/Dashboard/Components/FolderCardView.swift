@@ -6,15 +6,14 @@ struct FolderCardView: View {
     
     var body: some View {
         let size = GridLayout.itemSize
-        let padding: CGFloat = 8
-        let thumbnailSize = size - (padding * 2)
+        let padding: CGFloat = 8 // Internal padding to match VideoCardView logic
+        let thumbnailSize = size // Fill the calculated grid item size
         
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) { // Match VideoCardView spacing
+            // 1. Icon / Preview Section (Mimicking Thumbnail)
             ZStack {
-                // Folder Surface
                 Color.homeCardBackground
                 
-                // Icon / Preview
                 VStack(spacing: AppDesign.Icons.internalSpacing) {
                     Image(systemName: "folder.fill")
                         .appIconStyle(size: AppDesign.Icons.largeIconSize, color: .homeAccent)
@@ -24,11 +23,14 @@ struct FolderCardView: View {
                         .foregroundColor(.homeTextSecondary)
                 }
             }
-            .frame(width: thumbnailSize, height: thumbnailSize)
-            .cornerRadius(12)
+            .frame(width: thumbnailSize - 16, height: thumbnailSize - 16) // Subtracted padding from size (8+8)
+            .clipped()
+            .cornerRadius(10) // Match VideoCardView thumbnail radius
+            .padding(.top, 8)
+            .padding(.horizontal, 8) // Equal spacing
             
-            // Bottom Info Bar
-            HStack(alignment: .top) {
+            // 2. Bottom Info Bar
+            HStack(alignment: .top, spacing: 0) {
                 Text(folder.name)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.homeTextPrimary)
@@ -41,17 +43,19 @@ struct FolderCardView: View {
                 }) {
                     Image(systemName: "ellipsis")
                         .rotationEffect(.degrees(90))
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.homeTextSecondary)
-                        .padding(6)
+                        .appIconStyle(size: AppDesign.Icons.rowIconSize - 2, weight: .bold, color: .homeTextPrimary)
+                        .padding(8)
                         .contentShape(Rectangle())
                 }
-                .offset(y: -2)
+                .offset(y: -4) // Visual adjustment to align with text baseline
             }
-            .padding(.horizontal, 8)
+            .padding(.leading, 12)
+            .padding(.trailing, 0) // Match VideoCardView alignment
+            .padding(.bottom, 8)
         }
-        .padding(8)
+        // Removed outer padding(8) to let card fill grid cell and handle internal padding like VideoCardView
         .background(Color.homeCardBackground.opacity(0.4))
         .cornerRadius(20)
+        .contentShape(RoundedRectangle(cornerRadius: 20))
     }
 }

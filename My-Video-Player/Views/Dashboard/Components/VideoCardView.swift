@@ -112,7 +112,8 @@ struct VideoCardView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.leading, 12)
+            .padding(.trailing, 0)
             .padding(.bottom, 8)
         }
         .background(

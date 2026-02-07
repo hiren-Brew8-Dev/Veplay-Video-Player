@@ -259,7 +259,6 @@ struct FolderDetailView: View {
                         .appIconStyle()
                 }
             }
-            .padding(.trailing, 16)
         }
         .padding(.horizontal)
         .padding(.bottom, 10)

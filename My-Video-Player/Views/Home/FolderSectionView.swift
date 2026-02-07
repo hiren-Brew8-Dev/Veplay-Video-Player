@@ -18,20 +18,12 @@ struct FolderSectionView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Folder sub-header
-            HStack {
-                Text("Folders")
-                    .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
-                    .foregroundColor(.homeTextPrimary)
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
             
             ZStack(alignment: .bottomTrailing) {
                 ZStack(alignment: .bottomTrailing) {
                     ScrollViewReader { proxy in
                         ScrollView {
-                            LazyVGrid(columns: columns, spacing: 10) {
+                            LazyVGrid(columns: columns, spacing: GridLayout.spacing) {
                                 ForEach(viewModel.folders) { folder in
                                     NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
                                         FolderCardView(folder: folder, onMenuAction: {
@@ -56,7 +48,7 @@ struct FolderSectionView: View {
                                     .id(folder.id) // Important for scrolling
                                 }
                             }
-                            .padding(.horizontal, 10)
+                            .padding(.horizontal, GridLayout.horizontalPadding)
                             .padding(.bottom, 100)
                             
                             if viewModel.folders.isEmpty {
