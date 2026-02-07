@@ -164,8 +164,6 @@ struct DashboardView: View {
         .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
             if newVideo != nil {
                 viewModel.isTabBarHidden = true
-            } else {
-                viewModel.isTabBarHidden = false
             }
         }
     }

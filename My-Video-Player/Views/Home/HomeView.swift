@@ -43,6 +43,9 @@ struct HomeView: View {
         }
         .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
         .navigationBarHidden(true)
+        .onAppear {
+            viewModel.isTabBarHidden = false
+        }
     }
     
     private var headerView: some View {

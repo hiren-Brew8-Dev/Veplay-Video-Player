@@ -69,7 +69,11 @@ struct PhotoAlbumDetailView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
+            viewModel.isTabBarHidden = true
             fetchAssets()
+        }
+        .onDisappear {
+            viewModel.isTabBarHidden = false
         }
     }
     
