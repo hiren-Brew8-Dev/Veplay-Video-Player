@@ -13,15 +13,9 @@ struct AlbumsView: View {
             VStack(spacing: 0) {
                 // Custom Navigation Bar
                 HStack {
-                    Button(action: {
+                    StandardIconButton(icon: "chevron.left", action: {
                         presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .appIconStyle(size: AppDesign.Icons.toolbarSize, weight: .bold, color: .homeTextPrimary)
-                            .padding(10)
-                            .background(Color.homeCardBackground)
-                            .clipShape(Circle())
-                    }
+                    })
                     
                     Spacer()
                     
@@ -32,10 +26,7 @@ struct AlbumsView: View {
                     Spacer()
                     
                     // Placeholder for balance
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.clear)
-                        .padding(10)
+                    StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 10)

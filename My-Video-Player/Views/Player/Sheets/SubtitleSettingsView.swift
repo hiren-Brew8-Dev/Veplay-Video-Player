@@ -26,18 +26,10 @@ struct SubtitleSettingsView: View {
                 // Header
                 HStack {
                     if let onBack = onBack {
-                        Button(action: onBack) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.homeTextPrimary)
-                                .padding(10)
-                        }
+                        StandardIconButton(icon: "chevron.left", action: onBack)
                     } else {
                          // Invisible spacer to balance if no back button (portrait usually has back)
-                         Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.clear)
-                            .padding(10)
+                         StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
                     }
                     
                     Spacer()

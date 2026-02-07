@@ -23,16 +23,11 @@ struct CastingModeSheet: View {
             
             // Header
             HStack {
-                Button(action: {
+                StandardIconButton(icon: "chevron.left", action: {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         isPresented = false
                     }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(10)
-                }
+                })
                 
                 Spacer()
                 
@@ -43,10 +38,7 @@ struct CastingModeSheet: View {
                 Spacer()
                 
                 // Invisible spacer
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.clear)
-                    .padding(10)
+                StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
             }
             .padding(.horizontal)
             
@@ -132,7 +124,7 @@ struct PlayingModeSheet: View {
             
             // Header
             HStack {
-                Button(action: {
+                StandardIconButton(icon: "chevron.left", action: {
                     if let back = onBack {
                         back()
                     } else {
@@ -140,12 +132,7 @@ struct PlayingModeSheet: View {
                             isPresented = false
                         }
                     }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(10)
-                }
+                })
                 
                 Spacer()
                 
@@ -155,10 +142,7 @@ struct PlayingModeSheet: View {
                 
                 Spacer()
                 
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.clear)
-                    .padding(10)
+                StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
             }
             .padding(.horizontal)
             
@@ -245,7 +229,7 @@ struct PlaybackSpeedSheet: View {
             
             // Header
             HStack {
-                Button(action: {
+                StandardIconButton(icon: "chevron.left", action: {
                     if let back = onBack {
                         back()
                     } else {
@@ -253,12 +237,7 @@ struct PlaybackSpeedSheet: View {
                             isPresented = false
                         }
                     }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(10)
-                }
+                })
                 
                 Spacer()
                 
@@ -268,10 +247,7 @@ struct PlaybackSpeedSheet: View {
                 
                 Spacer()
                 
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.clear)
-                    .padding(10)
+                StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
             }
             .padding(.horizontal)
             

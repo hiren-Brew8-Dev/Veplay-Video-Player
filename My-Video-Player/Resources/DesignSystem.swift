@@ -37,3 +37,24 @@ extension View {
             .foregroundColor(color)
     }
 }
+
+/// A standard circular icon button used for navigation (Back, Close)
+struct StandardIconButton: View {
+    let icon: String // System name
+    var size: CGFloat = 20
+    var weight: Font.Weight = .bold
+    var color: Color = .homeTextPrimary
+    var bg: Color = .homeCardBackground
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: size, weight: weight))
+                .foregroundColor(color)
+                .padding(10)
+                .background(bg)
+                .clipShape(Circle())
+        }
+    }
+}

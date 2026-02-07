@@ -34,12 +34,7 @@ struct AudioTrackSettingsView: View {
             
             // Header
             HStack {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.homeTextPrimary)
-                        .padding(10)
-                }
+                StandardIconButton(icon: "chevron.left", action: onBack)
                 
                 Spacer()
                 
@@ -50,10 +45,7 @@ struct AudioTrackSettingsView: View {
                 Spacer()
                 
                 // Invisible spacer to balance the back button
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.clear)
-                    .padding(10)
+                StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
             }
             .padding(.horizontal)
             // Removed padding(.bottom, 10) here

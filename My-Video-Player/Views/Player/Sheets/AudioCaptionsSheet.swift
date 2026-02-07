@@ -20,16 +20,11 @@ struct AudioCaptionsSheet: View {
             
             // Header
             HStack {
-                Button(action: {
+                StandardIconButton(icon: "chevron.left", action: {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         isPresented = false
                     }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.homeTextPrimary)
-                        .padding(10)
-                }
+                })
                 
                 Spacer()
                 
@@ -40,10 +35,7 @@ struct AudioCaptionsSheet: View {
                 Spacer()
                 
                 // Invisible spacer to balance
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.clear)
-                    .padding(10)
+                StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
             }
             .padding(.horizontal, isLandscape ? 40 : 20)
             

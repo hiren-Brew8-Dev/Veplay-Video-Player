@@ -19,16 +19,9 @@ struct PhotoAlbumDetailView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Button(action: {
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.homeTextPrimary)
-                            .padding(10)
-                            .background(Color.homeCardBackground)
-                            .clipShape(Circle())
-                    }
+                StandardIconButton(icon: "chevron.left", action: {
+                    presentationMode.wrappedValue.dismiss()
+                })
                     
                     Spacer()
                     

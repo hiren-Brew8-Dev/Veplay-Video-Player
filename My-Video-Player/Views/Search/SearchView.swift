@@ -52,12 +52,9 @@ struct SearchView: View {
     
     private var searchBarHeader: some View {
         HStack(spacing: 12) {
-            Button(action: {
+            StandardIconButton(icon: "chevron.left", action: {
                 presentationMode.wrappedValue.dismiss()
-            }) {
-                Image(systemName: "arrow.left")
-                    .appIconStyle(size: AppDesign.Icons.toolbarSize, weight: .bold, color: .homeAccent)
-            }
+            })
             
             HStack {
                 Image(systemName: "magnifyingglass")

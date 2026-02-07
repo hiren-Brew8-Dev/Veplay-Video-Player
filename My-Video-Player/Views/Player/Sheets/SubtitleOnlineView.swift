@@ -28,16 +28,11 @@ struct SubtitleOnlineView: View {
             
             // Header
             HStack {
-                Button(action: {
+                StandardIconButton(icon: "chevron.left", action: {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         isPresented = false
                     }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(10)
-                }
+                })
                 
                 Spacer()
                 
@@ -48,10 +43,7 @@ struct SubtitleOnlineView: View {
                 Spacer()
                 
                 // Invisible spacer for balance
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.clear)
-                    .padding(10)
+                StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
             }
             .padding(.horizontal)
             

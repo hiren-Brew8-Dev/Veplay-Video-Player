@@ -197,16 +197,9 @@ struct FolderDetailView: View {
     
     var standardHeader: some View {
         HStack {
-            Button(action: {
+            StandardIconButton(icon: "chevron.left", action: {
                 presentationMode.wrappedValue.dismiss()
-            }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.homeTextPrimary)
-                    .padding(10)
-                    .background(Color.homeCardBackground)
-                    .clipShape(Circle())
-            }
+            })
             
             Text(folder.name)
                 .font(.headline)

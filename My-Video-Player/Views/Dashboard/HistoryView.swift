@@ -16,15 +16,9 @@ struct HistoryView: View {
             VStack(spacing: 0) {
                 // Custom Navigation Bar
                 HStack {
-                    Button(action: {
+                    StandardIconButton(icon: "chevron.left", action: {
                         presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .appIconStyle(size: AppDesign.Icons.toolbarSize, weight: .bold, color: .homeTextPrimary)
-                            .padding(10)
-                            .background(Color.homeCardBackground)
-                            .clipShape(Circle())
-                    }
+                    })
                     
                     Spacer()
                     

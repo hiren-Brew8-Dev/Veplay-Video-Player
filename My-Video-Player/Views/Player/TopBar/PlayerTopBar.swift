@@ -18,12 +18,7 @@ struct PlayerTopBar: View {
             HStack(spacing: 8) {
                 // Left Group
                 if !viewModel.isLocked {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
-                    .frame(width: 44, height: 44)
+                    StandardIconButton(icon: "chevron.left", color: .white, bg: Color.black.opacity(0.5), action: onBack)
                     
                     // Title - Truncated after 15 characters
                     Text(title.count > 15 ? String(title.prefix(15)) + "..." : title)

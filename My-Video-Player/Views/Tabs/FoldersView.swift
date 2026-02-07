@@ -24,16 +24,9 @@ struct FoldersView: View {
             VStack(spacing: 0) {
                 // Custom Header with Back Button
                 HStack {
-                    Button(action: {
+                    StandardIconButton(icon: "chevron.left", action: {
                         presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.homeTextPrimary)
-                            .padding(10)
-                            .background(Color.homeCardBackground)
-                            .clipShape(Circle())
-                    }
+                    })
                     
                     Spacer()
                     
