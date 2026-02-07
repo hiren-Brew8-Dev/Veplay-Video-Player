@@ -236,8 +236,8 @@ struct PlayerControlsView: View {
                                 viewModel.togglePiP()
                                 resetTimer()
                             },
-                            onAspectRatio: {
-                                viewModel.toggleAspectRatio()
+                            onAspectRatio: { ratio in
+                                viewModel.updateAspectRatio(to: ratio)
                                 resetTimer()
                             },
                             onLock: {

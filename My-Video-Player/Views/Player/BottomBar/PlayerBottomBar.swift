@@ -14,11 +14,10 @@ struct PlayerBottomBar: View {
     let playbackSpeed: Float
     let onSpeedChange: @MainActor (Float) -> Void
     let onPIP: @MainActor () -> Void
-    let onAspectRatio: @MainActor () -> Void
+    let onAspectRatio: @MainActor (PlayerViewModel.VideoAspectRatio) -> Void
     let onLock: @MainActor () -> Void
     let onAudioCaptions: @MainActor () -> Void
     let onMenu: @MainActor () -> Void
-    let onSpeedSheet: @MainActor () -> Void
     
     // Bookmark Props
     let showBookmarkControls: Bool
@@ -61,7 +60,7 @@ struct PlayerBottomBar: View {
         verticalSizeClass == .compact
     }
     
-    @State private var isShowingSpeedInline: Bool = false
+
     
     var body: some View {
         VStack(spacing: 8) { // Reduced from 20 to 8 for tighter fit
@@ -88,99 +87,89 @@ struct PlayerBottomBar: View {
             // 2. Control Buttons Row
             ZStack {
                 // Layer 1: Center (Audio & Captions) - Always centered
-                if !isShowingSpeedInline {
-                    Button(action: onAudioCaptions) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "captions.bubble.fill")
-                                .font(.system(size: 14))
-                            Text(isLandscape ? "Audio & CC" : "Audio & CC")
-                                .font(.system(size: 13, weight: .medium))
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.15))
-                        .clipShape(Capsule())
+                Button(action: onAudioCaptions) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "captions.bubble.fill")
+                            .font(.system(size: 14))
+                        Text(isLandscape ? "Audio & CC" : "Audio & CC")
+                            .font(.system(size: 13, weight: .medium))
                     }
-                    .transition(.opacity)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(Capsule())
                 }
                 
                 // Layer 2: Left and Right Controls
                 HStack(spacing: 0) {
                     // Left side: Aspect Ratio
-                    if !isShowingSpeedInline {
-                        Button(action: onAspectRatio) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "aspectratio")
-                                    .font(.system(size: 14))
-                                Text(currentAspectRatio.shortLabel)
-                                    .font(.system(size: 13, weight: .medium))
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color.white.opacity(0.15))
-                            .clipShape(Capsule())
+                    Button(action: { onAspectRatio(currentAspectRatio.next) }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "aspectratio")
+                                .font(.system(size: 14))
+                            Text(currentAspectRatio.shortLabel)
+                                .font(.system(size: 13, weight: .medium))
                         }
-                        .transition(.move(edge: .leading).combined(with: .opacity))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(Capsule())
+                    }
+                    .contextMenu {
+                        ForEach(PlayerViewModel.VideoAspectRatio.allCases, id: \.self) { ratio in
+                            Button(action: {
+                                onAspectRatio(ratio)
+                            }) {
+                                HStack {
+                                    Text(ratio.rawValue)
+                                    if ratio == currentAspectRatio {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
                     }
                     
                     Spacer()
                     
+                    
                     // Right side items
                     HStack(spacing: 8) {
-                        if isShowingSpeedInline {
-                            // In-line speed selector replaces everything in this row
-                            HStack(spacing: 12) {
-                                Button(action: { withAnimation { isShowingSpeedInline = false } }) {
-                                    Image(systemName: "chevron.left")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .padding(8)
-                                        .background(Color.white.opacity(0.2))
-                                        .clipShape(Circle())
-                                }
-                                
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 10) {
-                                        ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
-                                            Button(action: {
-                                                onSpeedChange(Float(speed))
-                                                withAnimation { isShowingSpeedInline = false }
-                                            }) {
-                                                Text(String(format: "%.1fx", speed))
-                                                    .font(.system(size: 13, weight: .bold))
-                                                    .foregroundColor(Float(speed) == playbackSpeed ? .homeAccent : .white)
-                                                    .padding(.horizontal, 10)
-                                                    .padding(.vertical, 6)
-                                                    .background(Color.white.opacity(0.1))
-                                                    .cornerRadius(6)
-                                            }
+                        // Speed Pill with Context Menu
+                        Button(action: {}) {
+                            Text(String(format: "%.1fx", playbackSpeed))
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.white.opacity(0.15))
+                                .clipShape(Capsule())
+                        }
+                        .contextMenu {
+                            ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
+                                Button(action: {
+                                    onSpeedChange(Float(speed))
+                                }) {
+                                    HStack {
+                                        Text(String(format: "%.1fx", speed))
+                                        if abs(Float(speed) - playbackSpeed) < 0.01 {
+                                            Image(systemName: "checkmark")
                                         }
                                     }
                                 }
                             }
-                            .transition(.move(edge: .trailing).combined(with: .opacity))
-                        } else {
-                            // Speed Pill
-                            Button(action: { withAnimation { isShowingSpeedInline = true } }) {
-                                Text(String(format: "%.1fx", playbackSpeed))
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Color.white.opacity(0.15))
-                                    .clipShape(Capsule())
-                            }
-                            
-                            // Rotate button
-                            Button(action: onRotate) {
-                                Image(systemName: "viewfinder")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(.white)
-                            }
-                            .frame(width: 32, height: 32)
                         }
+                        
+                        // Rotate button
+                        Button(action: onRotate) {
+                            Image(systemName: "viewfinder")
+                                .font(.system(size: 18))
+                                .foregroundColor(.white)
+                        }
+                        .frame(width: 32, height: 32)
+                    }
                     }
                 }
             }

@@ -20,8 +20,22 @@ struct PlayerGestureOverlay: View {
                 Color.black.opacity(0.001)
                     .contentShape(Rectangle())
                     .onTapGesture { toggleControls() }
+                    // 2. Double-Tap Gesture for Skip
+                    .gesture(
+                        SpatialTapGesture(count: 2, coordinateSpace: .local)
+                            .onEnded { value in
+                                if viewModel.isLocked { return }
+                                
+                                let tapX = value.location.x
+                                let screenWidth = geo.size.width
+                                let isForward = tapX > screenWidth / 2
+                                
+                                viewModel.performDoubleTapSeek(forward: isForward)
+                                onShowTapFeedback(isForward)
+                            }
+                    )
             }
-            // 2. Global Drag Gesture
+            // 3. Global Drag Gesture
             .gesture(
                 DragGesture(minimumDistance: 20, coordinateSpace: .local)
                     .onChanged { value in
@@ -36,13 +50,13 @@ struct PlayerGestureOverlay: View {
                             if value.startLocation.x < edgeThreshold {
                                 // Left 20% -> Brightness
                                 isDraggingLeft = true
-                                viewModel.triggerBrightnessUI()
                                 dragStartValue = viewModel.currentBrightness
+                                viewModel.triggerBrightnessUI()
                             } else if value.startLocation.x > (geo.size.width - edgeThreshold) {
                                 // Right 20% -> Volume
                                 isDraggingRight = true
-                                volumeManager.triggerVolumeUI()
                                 dragStartValue = volumeManager.currentVolume
+                                volumeManager.triggerVolumeUI()
                             } else {
                                 // Center 60% -> Ignore vertical drag
                                 return 
@@ -56,7 +70,7 @@ struct PlayerGestureOverlay: View {
                         
                         if isDraggingLeft {
                             viewModel.setBrightness(newValue)
-                        } else {
+                        } else if isDraggingRight {
                             volumeManager.setVolume(newValue)
                         }
                     }

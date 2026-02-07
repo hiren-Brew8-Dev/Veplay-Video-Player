@@ -60,9 +60,17 @@ struct PlayerView: View {
             
             // Seek Indicator Overlay (Display above player, below controls)
             if viewModel.isSeekUIActive {
-                SeekIndicatorView(isForward: viewModel.isSeekForward, amount: viewModel.accumulatedSkipAmount)
-                    .transition(.opacity.animation(.easeInOut(duration: 0.3)))
-                    .zIndex(2)
+                DoubleTapOverlay(
+                    isForward: viewModel.isSeekForward,
+                    onClose: {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            viewModel.isSeekUIActive = false
+                        }
+                    },
+                    viewModel: viewModel
+                )
+                .transition(.opacity.animation(.easeInOut(duration: 0.3)))
+                .zIndex(2)
             }
             
             // New Full Screen Controls Overlay

@@ -1985,6 +1985,12 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         aspectRatio = aspectRatio.next
         updateAspectRatio(with: nil) 
     }
+    
+    @MainActor
+    func updateAspectRatio(to newRatio: VideoAspectRatio) {
+        aspectRatio = newRatio
+        updateAspectRatio(with: nil)
+    }
 
     @MainActor
     func updateAspectRatio(with size: CGSize? = nil) {
