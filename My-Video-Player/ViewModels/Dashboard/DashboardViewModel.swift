@@ -36,7 +36,13 @@ class DashboardViewModel: ObservableObject {
     
     @Published var searchText: String = ""
     @Published var showPermissionDenied: Bool = false
-    @Published var isSelectionMode: Bool = false
+    @Published var isSelectionMode: Bool = false {
+        didSet {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                isTabBarHidden = isSelectionMode
+            }
+        }
+    }
     @Published var videoSortOptionRaw: String = UserDefaults.standard.string(forKey: "videoSortOptionRaw") ?? "Newest First" {
         didSet { UserDefaults.standard.set(videoSortOptionRaw, forKey: "videoSortOptionRaw") }
     }
@@ -96,8 +102,18 @@ class DashboardViewModel: ObservableObject {
     @Published var sourceAlbumIdentifier: String? = nil
     @Published var sourceURL: URL? = nil
     
-    @Published var showMovePicker = false
     @Published var videosToMove: [VideoItem] = []
+    
+    // Album Compatibility Alert
+    @Published var unsupportedVideoForAlbum: VideoItem? = nil
+    @Published var showUnsupportedFormatAlert = false
+    
+    // Move Picker
+    @Published var showMovePicker = false
+    
+    func validateVideosForAlbum(_ videos: [VideoItem]) -> VideoItem? {
+        return videos.first(where: { !$0.isAlbumCompatible })
+    }
     
     // Sharing State
     @Published var shareURL: URL? = nil
@@ -122,10 +138,20 @@ class DashboardViewModel: ObservableObject {
         shareVideos(ids: selectedVideoIds)
     }
     
+    var allVideosAcrossFolders: [VideoItem] {
+        func getVideos(from folder: Folder) -> [VideoItem] {
+            return folder.videos + folder.subfolders.flatMap { getVideos(from: $0) }
+        }
+        return folders.flatMap { getVideos(from: $0) }
+    }
+    
     func shareVideos(ids: Set<UUID>) {
-        // Collect ALL possible videos to filter selection from
-        let allVideos = importedVideos + allGalleryVideos + folders.flatMap { $0.videos }
+        // Collect ALL possible videos to filter selection from recursively
+        let allVideos = importedVideos + allGalleryVideos + allVideosAcrossFolders
         let selectedItems = allVideos.filter { ids.contains($0.id) }
+        
+        // Check for album compatibility if destination is an album (though sharing is generic)
+        // This is for future use or localized logic if needed.
         
         guard !selectedItems.isEmpty else { 
             print("⚠️ No items selected to share")
@@ -360,25 +386,30 @@ class DashboardViewModel: ObservableObject {
         // Logic for favoriting
         print("Toggle favorite for \(video.title)")
     }
-    
+       @Published var alertMessage: String = ""
+    @Published var showAlert: Bool = false
+
     func createFolder(name: String) -> Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return false }
+        
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let baseURL = documentsURL.appendingPathComponent("Folders", isDirectory: true)
-        let folderURL = baseURL.appendingPathComponent(name, isDirectory: true)
+        let folderURL = baseURL.appendingPathComponent(trimmedName, isDirectory: true)
         
+        // Check if folder exists
         if FileManager.default.fileExists(atPath: folderURL.path) {
-            // Find existing folder and highlight it
-            if let existingFolder = folders.first(where: { $0.name == name }) {
+            // Find existing folder ID as precisely as possible
+            if let existingFolder = folders.first(where: { $0.url?.path == folderURL.path }) {
                 highlightFolderWithTimeout(existingFolder.id)
-                // Return success (true) so the UI dismisses the creation sheet, 
-                // but the user sees the existing folder highlighted.
-                // Or maybe return false to keep sheet open? 
-                // User said "dismiss animation automatically", so implies sheet closes.
-                // So we return true to let DashboardView close sheet, 
-                // BUT we don't create a new folder.
-                return true 
             }
-            return false
+            
+            // Show alert explaining it exists
+            alertMessage = "A folder named '\(trimmedName)' already exists."
+            showAlert = true
+            return false // Don't dismiss the create dialog immediately if you want them to rename? 
+            // Actually, if we want typical behavior, we return false to keep the alert open or show a new one.
+            // But the user said "not highlight that foldere not propperly" - maybe they want it to switch and highlight.
         }
         
         // Ensure "Folders" directory exists
@@ -388,14 +419,24 @@ class DashboardViewModel: ObservableObject {
         
         do {
             try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true, attributes: nil)
-            print("✅ Created folder: \(name)")
-            loadUserFolders() // Refresh
-            // Success: clear input and close alert
+            print("✅ Created folder: \(trimmedName)")
+            
+            // Immediate partial refresh to get the new folder in the list
+            loadUserFolders() 
+            
+            // Wait a tiny bit for folders to refresh then highlight
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                if let newFolder = self?.folders.first(where: { $0.url?.path == folderURL.path }) {
+                    self?.highlightFolderWithTimeout(newFolder.id)
+                }
+            }
+            
             newFolderName = ""
             showCreateFolderAlert = false 
             return true
         } catch {
-            print("❌ Failed to create folder: \(error.localizedDescription)")
+            alertMessage = "Failed to create folder: \(error.localizedDescription)"
+            showAlert = true
             return false
         }
     }
@@ -632,6 +673,17 @@ class DashboardViewModel: ObservableObject {
         let sourceId = sourceAlbumIdentifier
         let sourceURL = sourceURL
         
+        // --- ALBUM COMPATIBILITY CHECK ---
+        if let album = album {
+            if let incompatibleVideo = validateVideosForAlbum(videosToPaste) {
+                isImporting = false
+                self.unsupportedVideoForAlbum = incompatibleVideo
+                self.showUnsupportedFormatAlert = true
+                return
+            }
+        }
+        // ---------------------------------
+        
         // Split into Gallery vs Local items
         let galleryVideos = videosToPaste.filter { $0.asset != nil }
         let localVideos = videosToPaste.filter { $0.asset == nil }
@@ -667,10 +719,19 @@ class DashboardViewModel: ObservableObject {
                 if assetsToAdd.isEmpty && !galleryVideos.isEmpty {
                     // All were duplicates
                     await MainActor.run {
-                        self.highlightWithTimeout(firstDuplicate?.id ?? UUID()) // Highlight first duplicate
                         self.isImporting = false
+                        self.alertMessage = "These videos are already in this album."
+                        self.showAlert = true
                     }
                     return
+                }
+
+                if !assetsToAdd.isEmpty && assetsToAdd.count < galleryVideos.count {
+                    // Partial duplicates
+                    await MainActor.run {
+                        self.alertMessage = "Some videos were already in this album and were skipped."
+                        self.showAlert = true
+                    }
                 }
 
                 do {
@@ -781,11 +842,22 @@ class DashboardViewModel: ObservableObject {
             do {
                 if fileManager.fileExists(atPath: newURL.path) {
                     print("⚠️ Destination already exists: \(newURL.lastPathComponent)")
-                    // Optional: handle conflict by appending (1), etc.
                 }
                 
                 try fileManager.moveItem(at: oldURL, to: newURL)
                 print("✅ Renamed: \(oldURL.lastPathComponent) -> \(newURL.lastPathComponent)")
+                
+                // Update HistoryItem in Core Data
+                let context = CDManager.shared.container.viewContext
+                let fetchRequest: NSFetchRequest<HistoryItem> = HistoryItem.fetchRequest()
+                fetchRequest.predicate = NSPredicate(format: "videoUrlString == %@", oldURL.absoluteString)
+                
+                if let results = try? context.fetch(fetchRequest), let historyItem = results.first {
+                    historyItem.videoUrlString = newURL.absoluteString
+                    historyItem.title = (newURL.lastPathComponent as NSString).deletingPathExtension
+                    try? context.save()
+                    print("💾 Updated HistoryItem in DB")
+                }
                 
                 DispatchQueue.main.async {
                     self.loadImportedVideos()
@@ -803,24 +875,18 @@ class DashboardViewModel: ObservableObject {
         self.sourceURL = sourceURL
         self.sourceAlbumIdentifier = sourceAlbumId
         
-        // Resolve VideoItem objects for the move picker logic
-        let allPossibleVideos = importedVideos + allGalleryVideos + folders.flatMap { $0.videos }
+        // Resolve VideoItem objects for the move picker logic recursively
+        let allPossibleVideos = importedVideos + allGalleryVideos + allVideosAcrossFolders
         self.videosToMove = allPossibleVideos.filter { ids.contains($0.id) }
         
         print("📋 \(isCut ? "Cut" : "Copied") \(ids.count) videos")
     }
 
     func pasteVideos(to destination: URL) {
-        // Collect all possible video items to find the ones by ID
-        let allPossibleVideos = importedVideos + allGalleryVideos + folders.flatMap { $0.videos }
+        let allPossibleVideos = importedVideos + allGalleryVideos + allVideosAcrossFolders
         let videosToPaste = allPossibleVideos.filter { copiedVideoIds.contains($0.id) }
         
-        guard !videosToPaste.isEmpty else { 
-            print("⚠️ No videos to paste")
-            return 
-        }
-        
-        isImporting = true
+        guard !videosToPaste.isEmpty else { return }
         
         let wasCutMode = isCutMode
         let sourceAlbumId = sourceAlbumIdentifier
@@ -832,22 +898,46 @@ class DashboardViewModel: ObservableObject {
             for video in videosToPaste {
                 if let url = await getURLAsync(for: video) {
                     urls.append(url)
-                    names.append(video.url?.lastPathComponent ?? video.title + ".mp4")
+                    // CRITICAL: Always use the actual filename from the resolved URL.
+                    // For gallery items, getURLAsync provides a temp file with the original name.
+                    // Using video.title here can result in 'Fetching Title...' or empty names.
+                    names.append(url.lastPathComponent)
                 }
             }
             
+            // 1. Import/Move
+            let results = await self.importVideos(from: urls, names: names, to: destination, shouldMove: wasCutMode)
+            
+            // 2. Cleanup
             await MainActor.run {
-                self.importVideos(from: urls, names: names, to: destination)
-                
-                if wasCutMode {
-                    // 1. Delete local files
+                if wasCutMode && !results.isEmpty {
                     for video in videosToPaste {
-                        if video.url != nil {
-                            self.deleteVideo(video)
+                        // If file was successfully imported/moved to destination, handle source UI removal
+                        if let url = video.url {
+                            // Check if the source file is gone (moved) or still there (duplicate or copy)
+                            if !FileManager.default.fileExists(atPath: url.path) {
+                                // moved successfully - already gone from filesystem
+                                withAnimation {
+                                    self.importedVideos.removeAll { $0.id == video.id }
+                                }
+                            } else {
+                                // File still exists (copied or failed move/duplicate during cut), 
+                                // we should delete it IF it's not the one we just pasted (same path check)
+                                // But simpler: if Move mode and results contains the new destination,
+                                // we can delete the source if it's different from all results.
+                                // Higher level: Results contains only SUCCESSFUL paste operations.
+                                if results.contains(where: { $0.lastPathComponent == url.lastPathComponent }) {
+                                    // The file was successfully pasted with this name.
+                                    // If the source path is different from any successful destination path, delete source.
+                                    if !results.contains(where: { $0.path == url.path }) {
+                                         self.deleteVideo(video)
+                                    }
+                                }
+                            }
                         }
                     }
                     
-                    // 2. Remove from Gallery Album if source was an album
+                    // Gallery handling
                     if let albumId = sourceAlbumId {
                         let galleryVideos = videosToPaste.filter { $0.asset != nil }
                         if !galleryVideos.isEmpty {
@@ -860,8 +950,7 @@ class DashboardViewModel: ObservableObject {
                                         request?.removeAssets(assetsToRemove)
                                     }
                                     await MainActor.run {
-                                        self.fetchAssets()
-                                        self.fetchAlbums()
+                                        self.loadData()
                                     }
                                 }
                             }
@@ -869,15 +958,15 @@ class DashboardViewModel: ObservableObject {
                     }
                 }
                 
-                // Always Clear clipboard
                 self.copiedVideoIds.removeAll()
                 self.isCutMode = false
                 self.sourceURL = nil
                 self.sourceAlbumIdentifier = nil
-                
-                // Clear selection mode now that operation is complete
                 self.isSelectionMode = false
                 self.selectedVideoIds.removeAll()
+                
+                self.loadImportedVideos()
+                self.loadUserFolders()
             }
         }
     }
@@ -891,14 +980,33 @@ class DashboardViewModel: ObservableObject {
     }
     
     func renameFolder(_ folder: Folder, to newName: String) {
-        guard let oldURL = folder.url else { return }
-        let newURL = oldURL.deletingLastPathComponent().appendingPathComponent(newName)
+        let trimmedName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, let oldURL = folder.url else { return }
+        
+        // Don't rename if name is the same
+        if trimmedName == folder.name { return }
+        
+        let newURL = oldURL.deletingLastPathComponent().appendingPathComponent(trimmedName)
+        
+        if FileManager.default.fileExists(atPath: newURL.path) {
+            alertMessage = "A folder named '\(trimmedName)' already exists."
+            showAlert = true
+            return
+        }
         
         do {
             try FileManager.default.moveItem(at: oldURL, to: newURL)
             loadUserFolders()
+            
+            // Highlight the renamed folder
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                if let renamed = self?.folders.first(where: { $0.url?.path == newURL.path }) {
+                    self?.highlightFolderWithTimeout(renamed.id)
+                }
+            }
         } catch {
-            print("❌ Failed to rename folder: \(error)")
+            alertMessage = "Failed to rename folder: \(error.localizedDescription)"
+            showAlert = true
         }
     }
     
@@ -976,7 +1084,10 @@ class DashboardViewModel: ObservableObject {
         items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
             self.copyVideos(ids: Set([video.id]), isCut: true)
             self.videosToMove = [video]
-            self.showMovePicker = true
+            // Extra safety delay to ensure sheet doesn't conflict with dismissing action sheet
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.showMovePicker = true
+            }
         }))
         
         items.append(CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
@@ -987,7 +1098,9 @@ class DashboardViewModel: ObservableObject {
     }
     
     func importVideo(from url: URL, withName name: String? = nil, to destination: URL? = nil) {
-        importVideos(from: [url], names: name != nil ? [name!] : nil, to: destination)
+        Task {
+            await importVideos(from: [url], names: name != nil ? [name!] : nil, to: destination)
+        }
     }
     
     private func checkDuplicate(url: URL) -> VideoItem? {
@@ -1000,132 +1113,122 @@ class DashboardViewModel: ObservableObject {
     }
     
     // Import logic
-    func importVideos(from urls: [URL], names: [String]? = nil, to destination: URL? = nil) {
-        // 1. Check for duplicates FIRST (User request: "copy duplicate file then highlight... remove show option")
-        // If single file import and it exists, just highlight and return.
-        if urls.count == 1, let first = urls.first, let duplicate = checkDuplicate(url: first) {
-             print("Duplicate found: \(duplicate.title)")
-             // Auto highlight and dismiss
-             highlightWithTimeout(duplicate.id)
-             return
-        }
+    @discardableResult
+    func importVideos(from urls: [URL], names: [String]? = nil, to destination: URL? = nil, shouldMove: Bool = false) async -> [URL] {
+        var successfulURLs: [URL] = []
         
         // Start Loading
-        DispatchQueue.main.async {
+        await MainActor.run {
             self.isImporting = true
         }
         
         let targetDirectory = destination ?? self.activeImportFolderURL ?? self.importedVideosDirectory
         let context = CDManager.shared.container.viewContext
         
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
-            
             for (index, url) in urls.enumerated() {
-                let filename: String
+                var filename: String
                 if let names = names, index < names.count {
                     filename = names[index]
                 } else {
                     filename = url.lastPathComponent
                 }
                 
+                // If the filename is just a placeholder or UUID, try to get a better one
+                if filename.starts(with: VideoItem.titlePlaceholder) || filename.count > 30 {
+                   // This is suspicious, but we can't easily resolve here without the original asset
+                   // However, DashboardView should have passed the correct name.
+                }
+                
                 let destinationURL = targetDirectory.appendingPathComponent(filename)
                 
                 // 1. Save to History (Core Data)
-                DispatchQueue.main.sync {
+                await MainActor.run {
                     let newItem = HistoryItem(context: context)
                     newItem.id = UUID()
                     newItem.videoUrlString = destinationURL.absoluteString
-                    newItem.title = (filename as NSString).deletingPathExtension
+                    
+                    // Clean title - don't save placeholder or extension
+                    var cleanTitle = (filename as NSString).deletingPathExtension
+                    if cleanTitle == VideoItem.titlePlaceholder {
+                        cleanTitle = "Video_\(Int(Date().timeIntervalSince1970))"
+                    }
+                    newItem.title = cleanTitle
+                    
                     newItem.timestamp = Date()
                     try? context.save()
                 }
+            
+            // 2. Copy/Move File
+            do {
+                let fileManager = FileManager.default
                 
-                // 2. Copy File
-                do {
-                    let fileManager = FileManager.default
-                    
-                    // Ensure access
-                    let gainedAccess = url.startAccessingSecurityScopedResource()
-                    defer { if gainedAccess { url.stopAccessingSecurityScopedResource() } }
-                    
-                    if fileManager.fileExists(atPath: destinationURL.path) {
-                        print("⚠️ Duplicate detected: \(filename)")
-                        DispatchQueue.main.async {
-                            // Search and find the existing video object to highlight it
-                            let allFoldersVideos = self.folders.flatMap { $0.videos }
-                            let allVideos = self.importedVideos + allFoldersVideos
-                            
-                            let targetDirPath = targetDirectory.standardized.path
-                            
-                            // 1. Try to find the exact match in the destination folder first
-                            var existing = allVideos.first(where: { 
-                                $0.url?.standardized.path == destinationURL.standardized.path
-                            })
-                            
-                            // 2. Fallback to filename + same parent directory
-                            if existing == nil {
-                                existing = allVideos.first(where: {
-                                    $0.url?.lastPathComponent == filename && 
-                                    $0.url?.deletingLastPathComponent().standardized.path == targetDirPath
-                                })
-                            }
-                            
-                            // 3. Last fallback: any video with the same name (might be in a different folder, but better than nothing)
-                            if existing == nil {
-                                existing = allVideos.first(where: { $0.url?.lastPathComponent == filename })
-                            }
-                            
-                            if let found = existing {
-                                print("🎯 Found existing video to highlight: \(found.title)")
-                                
-                                // Highlight found duplicate (auto-clear removed per request)
-                                self.highlightWithTimeout(found.id)
-                            } else {
-                                print("❓ Duplicate file exists at \(destinationURL.path) but VideoItem not found in memory")
-                                self.loadImportedVideos()
-                                self.loadUserFolders()
-                                
-                                // Try again after refresh
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                                    let refreshedVideos = self.importedVideos + self.folders.flatMap { $0.videos }
-                                    if let reFound = refreshedVideos.first(where: { $0.url?.standardized.path == destinationURL.standardized.path }) {
-                                        self.highlightWithTimeout(reFound.id)
-                                    }
-                                }
-                            }
+                // Ensure access
+                let gainedAccess = url.startAccessingSecurityScopedResource()
+                defer { if gainedAccess { url.stopAccessingSecurityScopedResource() } }
+                
+                if fileManager.fileExists(atPath: destinationURL.path) {
+                    print("⚠️ Duplicate detected at destination: \(filename)")
+                    // If source is same as destination, it's just a user error / pointess move
+                    if url.path == destinationURL.path {
+                        await MainActor.run {
+                            self.alertMessage = "'\(filename)' is already in this folder."
+                            self.showAlert = true
                         }
-                        continue // Skip copying this one
+                    } else {
+                        await MainActor.run {
+                            self.alertMessage = "A file named '\(filename)' already exists in the destination folder."
+                            self.showAlert = true
+                        }
                     }
-                    
-                    // Try to move first (much faster), fallback to copy
-                    do {
-                        // Move is instant, copy is slow
+                    continue 
+                }
+                
+                // Try to move if requested, otherwise copy
+                do {
+                    if shouldMove {
                         try fileManager.moveItem(at: url, to: destinationURL)
-                        print("⚡ Moved (instant): \(filename) to \(targetDirectory.lastPathComponent)")
-                    } catch {
-                        // If move fails (different volumes), try copy
-                        do {
-                            try fileManager.copyItem(at: url, to: destinationURL)
-                            print("✅ Copied: \(filename) to \(targetDirectory.lastPathComponent)")
-                        } catch {
-                            print("❌ Error importing \(url.lastPathComponent): \(error)")
-                        }
+                        successfulURLs.append(destinationURL)
+                        print("⚡ Moved (instant): \(filename)")
+                    } else {
+                        try fileManager.copyItem(at: url, to: destinationURL)
+                        successfulURLs.append(destinationURL)
+                        print("✅ Copied: \(filename)")
                     }
                 } catch {
-                    print("❌ Error accessing file: \(error)")
+                    // Fallback to copy if move fails (e.g. across volumes)
+                    if shouldMove {
+                        do {
+                            try fileManager.copyItem(at: url, to: destinationURL)
+                            successfulURLs.append(destinationURL)
+                            print("✅ Copied (Move fallback): \(filename)")
+                        } catch {
+                            print("❌ Error importing \(url.lastPathComponent): \(error)")
+                            await MainActor.run {
+                                self.alertMessage = "Failed to copy '\(filename)': \(error.localizedDescription)"
+                                self.showAlert = true
+                            }
+                        }
+                    } else {
+                        print("❌ Error copying \(url.lastPathComponent): \(error)")
+                        await MainActor.run {
+                            self.alertMessage = "Failed to copy '\(filename)': \(error.localizedDescription)"
+                            self.showAlert = true
+                        }
+                    }
                 }
             }
-            
-            // 3. Finalize
-            DispatchQueue.main.async {
-                self.loadImportedVideos()
-                self.loadUserFolders()
-                self.isImporting = false
-                self.activeImportFolderURL = nil
-                self.isSelectionMode = false // Exit selection mode if active
-            }
         }
+        
+        // 3. Finalize
+        await MainActor.run {
+            self.loadImportedVideos()
+            self.loadUserFolders()
+            self.isImporting = false
+            self.activeImportFolderURL = nil
+            self.isSelectionMode = false 
+        }
+        
+        return successfulURLs
     }
 
     func findFolder(byId id: UUID) -> Folder? {
@@ -1475,9 +1578,17 @@ class DashboardViewModel: ObservableObject {
     }
     
     func fetchAlbums() {
-        PHPhotoLibrary.requestAuthorization { [weak self] status in
-            guard let self = self else { return }
-            if status == .authorized || status == .limited {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else {
+            print("⚠️ Skipping fetchAlbums: Not authorized (\(status.rawValue))")
+            return
+        }
+        
+        // Use regular fetch (requestAuthorization is not needed if status is already OK)
+        performAlbumFetch()
+    }
+    
+    private func performAlbumFetch() {
                 let fetchOptions = PHFetchOptions()
                 // Sort user albums by title
                 fetchOptions.sortDescriptors = [NSSortDescriptor(key: "localizedTitle", ascending: true)]
@@ -1518,8 +1629,6 @@ class DashboardViewModel: ObservableObject {
                     self.allGalleryAlbums = userDestinations // Only user-created albums for pasting
                     self.objectWillChange.send()
                 }
-            }
-        }
     }
 }
 

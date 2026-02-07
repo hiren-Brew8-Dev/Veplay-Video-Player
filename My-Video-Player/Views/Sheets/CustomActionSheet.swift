@@ -42,8 +42,8 @@ struct CustomActionSheet: View {
                             withAnimation {
                                 isPresented = false
                             }
-                            // Small delay to allow sheet to start dismissing
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            // Increased delay to allow sheet to fully dismiss and UI to stabilize
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                                 item.action()
                             }
                         }) {

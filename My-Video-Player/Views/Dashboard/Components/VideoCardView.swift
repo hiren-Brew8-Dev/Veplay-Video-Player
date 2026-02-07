@@ -81,7 +81,7 @@ struct VideoCardView: View {
             .padding(.horizontal, 8) // This gives equal spacing on both sides
             
             // 2. Info Section
-            HStack(alignment: .top, spacing: 0) {
+            HStack(alignment: .center, spacing: 0) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(resolvedTitle ?? video.title)
                         .font(.system(size: 14, weight: .bold))
@@ -105,11 +105,12 @@ struct VideoCardView: View {
                     Button(action: { onMenuAction?() }) {
                         Image(systemName: "ellipsis")
                             .rotationEffect(.degrees(90))
-                            .appIconStyle(size: AppDesign.Icons.rowIconSize - 2, weight: .bold, color: .homeTextPrimary)
-                            .padding(8) // Hit area
-                            .contentShape(Rectangle())
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.homeTextPrimary)
+                            .padding(8)
+                            .contentShape(Circle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.scalable)
                 }
             }
             .padding(.leading, 12)

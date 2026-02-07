@@ -56,9 +56,12 @@ struct FolderDetailView: View {
         return viewModel.folderSortOption
     }
     
+    private var displayVideos: [VideoItem] {
+        return (folder.videos.isEmpty && !asyncVideos.isEmpty) ? asyncVideos : folder.videos
+    }
+    
     var sortedVideos: [VideoItem] {
-        let sourceVideos = (folder.videos.isEmpty && !asyncVideos.isEmpty) ? asyncVideos : folder.videos
-        let sorted = sourceVideos.sorted {
+        let sorted = displayVideos.sorted {
             switch sortOption {
             case .dateDesc: return $0.creationDate > $1.creationDate
             case .dateAsc: return $0.creationDate < $1.creationDate
@@ -96,7 +99,7 @@ struct FolderDetailView: View {
                             listView
                         }
                     }
-                    .padding(.bottom, 100)
+                    .padding(.bottom, 90)
                 }
             }
             
@@ -105,27 +108,7 @@ struct FolderDetailView: View {
             }
 
             // Syncing Overlay
-            if viewModel.isImporting {
-                ZStack {
-                    Color.homeBackground.opacity(0.8)
-                        .edgesIgnoringSafeArea(.all)
-                    
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .homeAccent))
-                            .scaleEffect(1.5)
-                        
-                        Text("Syncing...")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.homeTextPrimary)
-                    }
-                    .padding(40)
-                    .background(Color.sheetSurface)
-                    .cornerRadius(20)
-                    .shadow(radius: 20)
-                }
-                .transition(.opacity)
-            }
+
         }
         .sheet(isPresented: $showSortSheet) {
             if folder.url == nil {
@@ -233,25 +216,10 @@ struct FolderDetailView: View {
                         .appIconStyle()
                 }
                 .navigationDestination(isPresented: $showSearch) {
-                    SearchView(viewModel: viewModel, contextTitle: folder.name, initialVideos: folder.videos)
+                    SearchView(viewModel: viewModel, contextTitle: folder.name, initialVideos: displayVideos)
                 }
                 
                 Menu {
-                    if !viewModel.copiedVideoIds.isEmpty {
-                        Button(action: { 
-                            if let url = folder.url {
-                                viewModel.pasteVideos(to: url)
-                            } else if let albumId = folder.albumIdentifier {
-                                // Paste to gallery album
-                                let collection = viewModel.galleryAlbums.first(where: { $0.localIdentifier == albumId })
-                                viewModel.pasteVideosToGallery(album: collection)
-                            }
-                        }) {
-                            Label("Paste", systemImage: "doc.on.clipboard")
-                        }
-                        Divider()
-                    }
-                    
                     Button(action: { viewModel.isSelectionMode = true }) {
                         Label("Select", systemImage: "checkmark.circle")
                     }
@@ -267,9 +235,15 @@ struct FolderDetailView: View {
                         Label("Sort", systemImage: "arrow.up.arrow.down")
                     }
                 } label: {
-                    Image(systemName: "ellipsis")
-                        .rotationEffect(.degrees(90))
-                        .appIconStyle()
+                    ZStack {
+                        Circle()
+                            .fill(Color.clear)
+                            .frame(width: 32, height: 32)
+                        
+                        Image(systemName: "ellipsis")
+                            .rotationEffect(.degrees(90))
+                            .appIconStyle()
+                    }
                 }
             }
         }
@@ -284,7 +258,7 @@ struct FolderDetailView: View {
                 if isAllSelected {
                     selectedVideoIds.removeAll()
                 } else {
-                    selectedVideoIds = Set(folder.videos.map { $0.id })
+                    selectedVideoIds = Set(displayVideos.map { $0.id })
                 }
             }) {
                 ZStack {
@@ -306,7 +280,7 @@ struct FolderDetailView: View {
             
             Spacer()
             
-            Text("Selected (\(selectedVideoIds.count)/\(folder.videos.count))")
+            Text("Selected (\(selectedVideoIds.count)/\(displayVideos.count))")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.homeTextPrimary)
             
@@ -332,7 +306,7 @@ struct FolderDetailView: View {
                 Section(header: sectionHeaderLabel("Folders")) {
                     ForEach(folder.subfolders) { subfolder in
                         NavigationLink(destination: FolderDetailView(initialFolder: subfolder, viewModel: viewModel)) {
-                            FolderCardView(folder: subfolder, onMenuAction: {
+                            FolderCardView(folder: subfolder, viewModel: viewModel, onMenuAction: {
                                 activeActionItem = .folder(subfolder)
                                 showActionSheet = true
                             })
@@ -486,7 +460,7 @@ struct FolderDetailView: View {
     }
     
     private var selectionActionBar: some View {
-        VStack {
+        VStack(spacing: 0) {
             Spacer()
             HStack(spacing: 0) {
                 selectionBarItem(icon: "trash", title: "Delete", action: { deleteSelected() })
@@ -505,13 +479,13 @@ struct FolderDetailView: View {
 
                 selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareVideos(ids: selectedVideoIds) })
             }
-            .padding(.top, 12)
-            .padding(.bottom, 25)
+            .padding(.top, 16)
+            .padding(.bottom, 34) // Explicit safe area space
             .background(Color.sheetSurface)
-            .cornerRadius(20, corners: [.topLeft, .topRight])
-            .shadow(color: Color.homeBackground.opacity(0.3), radius: 10, x: 0, y: -5)
+            .clipShape(RoundedCorner(radius: 32, corners: [.topLeft, .topRight]))
+            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: -5)
         }
-        .edgesIgnoringSafeArea(.bottom)
+        .ignoresSafeArea(.all, edges: .bottom)
         .transition(.move(edge: .bottom))
     }
     
@@ -567,12 +541,12 @@ struct FolderDetailView: View {
     // MARK: - Grouping Logic
     
     var isAllSelected: Bool {
-        return !folder.videos.isEmpty && selectedVideoIds.count == folder.videos.count
+        return !displayVideos.isEmpty && selectedVideoIds.count == displayVideos.count
     }
     
     var groupedVideos: [VideoSection] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: folder.videos) { video -> Date in
+        let grouped = Dictionary(grouping: displayVideos) { video -> Date in
             calendar.startOfDay(for: video.creationDate)
         }
         let sortedDates = grouped.keys.sorted {
@@ -656,7 +630,7 @@ struct FolderDetailView: View {
             let formatter = DateFormatter()
             formatter.dateFormat = "d MMM"
             return formatter.string(from: date)
-        }
+        
         }
     }
     
@@ -687,5 +661,6 @@ struct FolderDetailView: View {
         }
     }
 }
+
 
 

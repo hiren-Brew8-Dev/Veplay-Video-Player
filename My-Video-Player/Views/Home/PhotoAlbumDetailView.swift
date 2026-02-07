@@ -173,9 +173,14 @@ struct PhotoAssetItem: View {
         let options = PHImageRequestOptions()
         options.isSynchronous = false
         options.deliveryMode = .opportunistic
-        options.resizeMode = .fast
+        options.resizeMode = .exact // Use .exact for better quality
         
-        manager.requestImage(for: asset, targetSize: CGSize(width: 200, height: 200), contentMode: .aspectFill, options: options) { result, _ in
+        // Increase targetSize for better sharpness on high-resolution screens
+        let scale = UIScreen.main.scale
+        let size: CGFloat = 100 * scale // Base size 100 on screen, but fetch higher for better quality
+        let targetSize = CGSize(width: size * 1.5, height: size * 1.5) // Buffer for quality
+        
+        manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { result, _ in
             if let result = result {
                 self.image = result
             }

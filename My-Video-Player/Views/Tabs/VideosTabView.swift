@@ -98,7 +98,7 @@ struct VideosTabView: View {
                                     HStack(spacing: 15) {
                                         ForEach(viewModel.folders) { folder in
                                             NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
-                                                FolderCardView(folder: folder)
+                                                FolderCardView(folder: folder, viewModel: viewModel)
                                                     .frame(width: 110)
                                             }
                                         }

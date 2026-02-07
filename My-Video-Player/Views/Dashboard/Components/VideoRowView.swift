@@ -80,15 +80,15 @@ struct VideoRowView: View {
                     .padding(.trailing, 2) // Close to the dots
             }
             if !isSelectionMode {
-                Image(systemName: "ellipsis")
-                    .rotationEffect(.degrees(90))
-                    .appIconStyle(size: AppDesign.Icons.rowIconSize - 2, weight: .bold, color: .homeTint)
-                    .contentShape(Rectangle())
-                    .highPriorityGesture(
-                        TapGesture().onEnded { _ in
-                            onMenuAction?()
-                        }
-                    )
+                Button(action: { onMenuAction?() }) {
+                    Image(systemName: "ellipsis")
+                        .rotationEffect(.degrees(90))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.homeTint)
+                        .padding(8)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.scalable)
             }
         }
         .padding(.leading, 16)

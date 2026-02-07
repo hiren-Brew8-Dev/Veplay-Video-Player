@@ -40,7 +40,7 @@ struct AlbumsView: View {
                     ], spacing: 15) {
                         ForEach(folders) { folder in
                             NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
-                                FolderCardView(folder: folder)
+                                FolderCardView(folder: folder, viewModel: viewModel)
                             }
                         }
                     }

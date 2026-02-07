@@ -16,6 +16,16 @@ struct VideoItem: Identifiable, Hashable {
     
     static let titlePlaceholder = "Fetching Title..."
     
+    var isAlbumCompatible: Bool {
+        // iOS Photos Library (PHAsset) primarily supports mp4, mov, m4v.
+        // Others like mkv, avi, webm are not supported for saving to library.
+        if asset != nil { return true } // Already in gallery
+        guard let url = url else { return false }
+        let ext = url.pathExtension.lowercased()
+        let supported = ["mp4", "mov", "m4v"]
+        return supported.contains(ext)
+    }
+    
     var isGenericTitle: Bool {
         let t = title.lowercased()
         let genericPatterns = ["img_", "dsc_", "mov_", "pxl_", "video_", "movie", "video"]

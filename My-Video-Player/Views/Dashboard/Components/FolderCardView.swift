@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FolderCardView: View {
     let folder: Folder
+    let viewModel: DashboardViewModel?
     var onMenuAction: (() -> Void)? = nil
     
     var body: some View {
@@ -30,7 +31,7 @@ struct FolderCardView: View {
             .padding(.horizontal, 8) // Equal spacing
             
             // 2. Bottom Info Bar
-            HStack(alignment: .top, spacing: 0) {
+            HStack(alignment: .center, spacing: 0) {
                 Text(folder.name)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.homeTextPrimary)
@@ -43,19 +44,29 @@ struct FolderCardView: View {
                 }) {
                     Image(systemName: "ellipsis")
                         .rotationEffect(.degrees(90))
-                        .appIconStyle(size: AppDesign.Icons.rowIconSize - 2, weight: .bold, color: .homeTextPrimary)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.homeTextPrimary)
                         .padding(8)
-                        .contentShape(Rectangle())
+                        .contentShape(Circle())
                 }
-                .offset(y: -4) // Visual adjustment to align with text baseline
+                .buttonStyle(.scalable)
             }
             .padding(.leading, 12)
             .padding(.trailing, 0) // Match VideoCardView alignment
             .padding(.bottom, 8)
         }
-        // Removed outer padding(8) to let card fill grid cell and handle internal padding like VideoCardView
-        .background(Color.homeCardBackground.opacity(0.4))
+        .background(
+            ZStack {
+                Color.homeCardBackground.opacity(0.4)
+                if viewModel?.highlightFolderId == folder.id {
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.homeAccent, lineWidth: 3)
+                }
+            }
+        )
         .cornerRadius(20)
+        .scaleEffect(viewModel?.highlightFolderId == folder.id ? 1.05 : 1.0)
+        .animation(.spring(), value: viewModel?.highlightFolderId)
         .contentShape(RoundedRectangle(cornerRadius: 20))
     }
 }

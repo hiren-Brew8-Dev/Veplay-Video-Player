@@ -124,17 +124,25 @@ struct AlbumCardView: View {
         if let firstAsset = assets.firstObject {
             let manager = PHImageManager.default()
             let requestOptions = PHImageRequestOptions()
-            requestOptions.deliveryMode = .fastFormat
+            requestOptions.deliveryMode = .opportunistic
             requestOptions.isNetworkAccessAllowed = true
+            requestOptions.version = .current
 
-            let thumbSize: CGFloat = 120 * UIScreen.main.scale
+            // Calculate exact size based on display size and screen scale
+            let size = GridLayout.itemSize
+            let padding: CGFloat = 8
+            let thumbnailSize = size - (padding * 2)
+            let pixelSize = thumbnailSize * UIScreen.main.scale
+            
             manager.requestImage(
                 for: firstAsset,
-                targetSize: CGSize(width: thumbSize, height: thumbSize),
+                targetSize: CGSize(width: pixelSize, height: pixelSize),
                 contentMode: .aspectFill,
                 options: requestOptions
             ) { image, _ in
-                thumbnail = image
+                if let image = image {
+                    thumbnail = image
+                }
             }
         }
     }

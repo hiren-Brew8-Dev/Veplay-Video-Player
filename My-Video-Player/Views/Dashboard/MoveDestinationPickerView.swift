@@ -10,25 +10,28 @@ struct MoveDestinationPickerView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Sections") {
-                    Button(action: {
-                        viewModel.pasteVideos(to: viewModel.importedVideosDirectory)
-                        dismiss()
-                    }) {
-                        Label {
-                            Text("Imported Videos")
-                        } icon: {
-                            Image(systemName: "video.fill")
-                                .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeAccent)
+                if viewModel.sourceURL != viewModel.importedVideosDirectory {
+                    Section("Sections") {
+                        Button(action: {
+                            viewModel.pasteVideos(to: viewModel.importedVideosDirectory)
+                            dismiss()
+                        }) {
+                            Label {
+                                Text("Imported Videos")
+                            } icon: {
+                                Image(systemName: "video.fill")
+                                    .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeAccent)
+                            }
                         }
                     }
                 }
                 
                 Section("Folders") {
-                    if viewModel.folders.isEmpty {
-                        Text("No folders found").foregroundColor(.homeTextSecondary)
+                    let otherFolders = viewModel.folders.filter { $0.url != viewModel.sourceURL }
+                    if otherFolders.isEmpty {
+                        Text("No other folders found").foregroundColor(.homeTextSecondary)
                     } else {
-                        ForEach(viewModel.folders) { folder in
+                        ForEach(otherFolders) { folder in
                             if let url = folder.url {
                                 Button(action: {
                                     viewModel.pasteVideos(to: url)
@@ -50,20 +53,34 @@ struct MoveDestinationPickerView: View {
                 
                 Section("Gallery Albums") {
                     // Option to just save to Camera Roll (Recents)
-                    Button(action: {
-                        viewModel.pasteVideosToGallery(album: nil)
-                        dismiss()
-                    }) {
-                        Label {
-                            Text("Photos Library")
-                                .foregroundColor(.primary)
-                        } icon: {
-                            Image(systemName: "photo.on.rectangle.angled")
-                                .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeAccent)
+                    // Only show if source is NOT the main Photos Library (no albumId and no sourceURL)
+                    let otherAlbums = viewModel.allGalleryAlbums.filter { $0.localIdentifier != viewModel.sourceAlbumIdentifier }
+                    let selectionHasIncompatible = viewModel.validateVideosForAlbum(videosToMove) != nil
+                    
+                    if viewModel.sourceAlbumIdentifier != nil || viewModel.sourceURL != nil {
+                        Button(action: {
+                            viewModel.pasteVideosToGallery(album: nil)
+                            dismiss()
+                        }) {
+                            HStack {
+                                Label {
+                                    Text("Photos Library")
+                                        .foregroundColor(.primary)
+                                } icon: {
+                                    Image(systemName: "photo.on.rectangle.angled")
+                                        .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeAccent)
+                                }
+                                Spacer()
+                                if selectionHasIncompatible {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(.red)
+                                        .font(.caption)
+                                }
+                            }
                         }
                     }
                     
-                    ForEach(viewModel.allGalleryAlbums, id: \.localIdentifier) { album in
+                    ForEach(otherAlbums, id: \.localIdentifier) { album in
                         Button(action: {
                             viewModel.pasteVideosToGallery(album: album)
                             dismiss()
@@ -80,6 +97,12 @@ struct MoveDestinationPickerView: View {
                                     Text("\(videoCount(for: album)) Videos")
                                         .font(.caption)
                                         .foregroundColor(.homeTextSecondary)
+                                }
+                                Spacer()
+                                if selectionHasIncompatible {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(.red)
+                                        .font(.caption)
                                 }
                             }
                         }
@@ -148,8 +171,13 @@ struct AlbumThumbnailView: View {
             let thumbOptions = PHImageRequestOptions()
             thumbOptions.isNetworkAccessAllowed = true
             thumbOptions.deliveryMode = .opportunistic
+            thumbOptions.resizeMode = .exact // Better quality
             
-            manager.requestImage(for: firstAsset, targetSize: CGSize(width: 100, height: 100), contentMode: .aspectFill, options: thumbOptions) { image, _ in
+            // Calculate pixel size for retina display (50pt * scale)
+            let scale = UIScreen.main.scale
+            let targetSize = CGSize(width: 50 * scale, height: 50 * scale)
+            
+            manager.requestImage(for: firstAsset, targetSize: targetSize, contentMode: .aspectFill, options: thumbOptions) { image, _ in
                 if let image = image {
                     self.thumbnail = image
                 }

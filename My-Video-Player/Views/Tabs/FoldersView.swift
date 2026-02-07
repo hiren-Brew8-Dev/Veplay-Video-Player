@@ -55,7 +55,7 @@ struct FoldersView: View {
                             LazyVGrid(columns: columns, spacing: 16) {
                                 ForEach(Array(viewModel.folders.enumerated()), id: \.element.id) { index, folder in
                                     NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
-                                        FolderCardView(folder: folder, onMenuAction: {
+                                        FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
                                             viewModel.actionSheetTarget = .folder(folder)
                                             viewModel.actionSheetItems = [
                                                 CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {

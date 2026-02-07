@@ -26,7 +26,7 @@ struct FolderSectionView: View {
                             LazyVGrid(columns: columns, spacing: GridLayout.spacing) {
                                 ForEach(viewModel.folders) { folder in
                                     NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
-                                        FolderCardView(folder: folder, onMenuAction: {
+                                        FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
                                             viewModel.actionSheetTarget = .folder(folder)
                                             viewModel.actionSheetItems = [
                                                 CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
@@ -49,7 +49,7 @@ struct FolderSectionView: View {
                                 }
                             }
                             .padding(.horizontal, GridLayout.horizontalPadding)
-                            .padding(.bottom, 100)
+                            .padding(.bottom, 90)
                             
                             if viewModel.folders.isEmpty {
                                 VStack(spacing: 12) {
@@ -104,7 +104,9 @@ struct FolderSectionView: View {
             }
         }
         .onAppear {
-            viewModel.isTabBarHidden = false
+            if !viewModel.isSelectionMode {
+                viewModel.isTabBarHidden = false
+            }
         }
     }
 }

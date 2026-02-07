@@ -44,7 +44,9 @@ struct HomeView: View {
         .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
         .navigationBarHidden(true)
         .onAppear {
-            viewModel.isTabBarHidden = false
+            if !viewModel.isSelectionMode {
+                viewModel.isTabBarHidden = false
+            }
         }
         .onChange(of: viewModel.homeSelectedTab) { oldTab, newTab in
             // Ensure tab bar is visible when switching between Video/Gallery/Folder
@@ -155,9 +157,15 @@ struct HomeView: View {
                             Label("Sort", systemImage: "arrow.up.arrow.down")
                         }
                     } label: {
-                        Image(systemName: "ellipsis")
-                            .rotationEffect(.degrees(90))
-                            .appIconStyle()
+                        ZStack {
+                            Circle()
+                                .fill(Color.clear)
+                                .frame(width: 32, height: 32)
+                            
+                            Image(systemName: "ellipsis")
+                                .rotationEffect(.degrees(90))
+                                .appIconStyle()
+                        }
                     }
                 }
                 .padding(.trailing, 16)

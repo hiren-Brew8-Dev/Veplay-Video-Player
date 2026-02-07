@@ -75,6 +75,10 @@ struct DashboardView: View {
             if !viewModel.isHeaderExpanded && !viewModel.isTabBarHidden && !viewModel.showActionSheet && viewModel.playingVideo == nil {
                 CustomTabBarOverlay(viewModel: viewModel)
             }
+            
+            if viewModel.showUnsupportedFormatAlert {
+                UnsupportedFormatAlert(video: viewModel.unsupportedVideoForAlbum, isPresented: $viewModel.showUnsupportedFormatAlert)
+            }
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: viewModel.showActionSheet)
         .environmentObject(viewModel)
@@ -83,15 +87,29 @@ struct DashboardView: View {
             TextField("Folder Name", text: $viewModel.newFolderName)
             Button("Cancel", role: .cancel) { viewModel.newFolderName = "" }
             Button("Create") {
-                if viewModel.createFolder(name: viewModel.newFolderName) {
-                    viewModel.newFolderName = ""
-                    // Universal rule: Move to Folder section after creating folder
+                let name = viewModel.newFolderName
+                if viewModel.createFolder(name: name) {
+                    // Success case
                     viewModel.selectedTab = 0
                     viewModel.homeSelectedTab = "Folder"
+                } else {
+                    // Fail case (exists or error)
+                    // If it was already there, the VM would have set alertMessage
+                    // We still switch to Folder tab to show the highlight if it exists
+                    if viewModel.folders.contains(where: { $0.name.lowercased() == name.lowercased() }) {
+                        viewModel.selectedTab = 0
+                        viewModel.homeSelectedTab = "Folder"
+                        viewModel.showCreateFolderAlert = false
+                    }
                 }
             }
         } message: {
             Text("Enter a name for the new folder")
+        }
+        .alert("Folder Error", isPresented: $viewModel.showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.alertMessage)
         }
         .sheet(isPresented: $viewModel.showMovePicker) {
             MoveDestinationPickerView(viewModel: viewModel, videosToMove: viewModel.videosToMove, isCutOperation: viewModel.isCutMode)
@@ -103,10 +121,14 @@ struct DashboardView: View {
         ) { result in
             switch result {
             case .success(let urls):
-                viewModel.importVideos(from: urls)
-                // Universal rule: Move to Video section after importing
-                viewModel.selectedTab = 0
-                viewModel.homeSelectedTab = "Video"
+                Task {
+                    await viewModel.importVideos(from: urls)
+                    await MainActor.run {
+                        // Universal rule: Move to Video section after importing
+                        viewModel.selectedTab = 0
+                        viewModel.homeSelectedTab = "Video"
+                    }
+                }
             case .failure(let error):
                 print("File import failed: \(error.localizedDescription)")
             }
@@ -141,12 +163,13 @@ struct DashboardView: View {
                 }
                 
                 await MainActor.run {
-                    viewModel.importVideos(from: importedURLs, names: importedNames)
                     selectedPhotoItems.removeAll()
                     // Universal rule: Move to Video section after importing
                     viewModel.selectedTab = 0
                     viewModel.homeSelectedTab = "Video"
                 }
+                
+                await viewModel.importVideos(from: importedURLs, names: importedNames)
             }
         }
         .sheet(isPresented: $viewModel.showShareSheetGlobal) {
@@ -235,9 +258,9 @@ struct CustomTabBarOverlay: View {
                         Spacer()
                     }
                     .padding(.top, 10)
-                    .padding(.bottom, 30)
+                    .padding(.bottom, 34) // Explicit safe area space
                     .background(Color.sheetSurface)
-                    .cornerRadius(30, corners: [.topLeft, .topRight])
+                    .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
                     .shadow(color: Color.homeBackground.opacity(0.3), radius: 10, x: 0, y: -5)
                     
                     ZStack {

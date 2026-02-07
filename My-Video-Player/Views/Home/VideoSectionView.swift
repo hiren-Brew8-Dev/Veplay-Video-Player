@@ -39,8 +39,7 @@ struct VideoSectionView: View {
                                 listView
                             }
                         }
-                        .padding(.top)
-                        .padding(.bottom, 100)
+                        .padding(.bottom, 90)
                     }
                     .onChange(of: viewModel.highlightVideoId) { oldId, newId in
                         if let id = newId {
@@ -58,26 +57,7 @@ struct VideoSectionView: View {
             }
             
             // Syncing Overlay
-            if viewModel.isImporting {
-                ZStack {
-                    Color.homeBackground.opacity(0.6)
-                        .edgesIgnoringSafeArea(.all)
-                    
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .homeAccent))
-                            .scaleEffect(1.5)
-                        
-                        Text("Syncing...")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.homeTextPrimary)
-                    }
-                    .padding(40)
-                    .background(Color.sheetSurface)
-                    .cornerRadius(20)
-                    .shadow(radius: 20)
-                }
-            }
+
         }
         .background(Color.homeBackground)
         .sheet(isPresented: $showSortSheet) {
@@ -102,12 +82,15 @@ struct VideoSectionView: View {
                     viewModel.deleteVideo(video)
                 }
             }
+        
         }
         .onAppear {
-            viewModel.isTabBarHidden = false
+            if !viewModel.isSelectionMode {
+                viewModel.isTabBarHidden = false
+            }
         }
         .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
-            if newVideo == nil {
+            if newVideo == nil && !viewModel.isSelectionMode {
                 viewModel.isTabBarHidden = false
             }
         }
@@ -171,10 +154,16 @@ struct VideoSectionView: View {
                         Label("Sort", systemImage: "arrow.up.arrow.down")
                     }
                 } label: {
-                    Image(systemName: "ellipsis")
-                        .rotationEffect(.degrees(90))
-                        .font(.system(size: 20))
-                        .foregroundColor(.homeTint)
+                    ZStack {
+                        Circle()
+                            .fill(Color.clear)
+                            .frame(width: 32, height: 32)
+                        
+                        Image(systemName: "ellipsis")
+                            .rotationEffect(.degrees(90))
+                            .font(.system(size: 20))
+                            .foregroundColor(.homeTint)
+                    }
                 }
             }
         }
@@ -233,7 +222,7 @@ struct VideoSectionView: View {
     }
     
     private var selectionActionBar: some View {
-        VStack {
+        VStack(spacing: 0) {
             Spacer()
             HStack(spacing: 0) {
                 selectionBarItem(icon: "trash", title: "Delete", action: { deleteSelected() })
@@ -250,13 +239,13 @@ struct VideoSectionView: View {
 
                 selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareSelectedVideos() })
             }
-            .padding(.top, 12)
-            .padding(.bottom, 25)
+            .padding(.top, 16)
+            .padding(.bottom, 34) // Explicit safe area space
             .background(Color.sheetSurface)
-            .cornerRadius(20, corners: [.topLeft, .topRight])
-            .shadow(color: Color.homeBackground.opacity(0.3), radius: 10, x: 0, y: -5)
+            .clipShape(RoundedCorner(radius: 32, corners: [.topLeft, .topRight]))
+            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: -5)
         }
-        .edgesIgnoringSafeArea(.bottom)
+        .ignoresSafeArea(.all, edges: .bottom)
         .transition(.move(edge: .bottom))
     }
     
@@ -489,5 +478,4 @@ struct VideoSectionView: View {
         viewModel.isSelectionMode = false
         viewModel.selectedVideoIds.removeAll()
     }
-    
 }
