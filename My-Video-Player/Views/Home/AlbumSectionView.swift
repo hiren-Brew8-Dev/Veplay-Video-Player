@@ -43,18 +43,8 @@ struct AlbumSectionView: View {
     }
     
     private func albumDestination(for album: PHAssetCollection) -> some View {
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
-        let assets = PHAsset.fetchAssets(in: album, options: fetchOptions)
-        
-        var videos: [VideoItem] = []
-        assets.enumerateObjects { asset, _, _ in
-            videos.append(viewModel.videoItem(from: asset))
-        }
-        
-        let displayTitle = (album.localizedTitle ?? "Gallery") == "Videos" ? "All Videos" : (album.localizedTitle ?? "Gallery")
-        let folder = Folder(name: displayTitle, videoCount: videos.count, videos: videos, url: nil, albumIdentifier: album.localIdentifier, subfolders: [])
-        return FolderDetailView(initialFolder: folder, viewModel: viewModel)
+        return PhotoAlbumDetailView(album: album)
+            .environmentObject(viewModel)
     }
     
 }
