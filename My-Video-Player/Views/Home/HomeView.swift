@@ -35,7 +35,7 @@ struct HomeView: View {
                         .tag("Folder")
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.homeSelectedTab)
+                .tabViewStyle(.page(indexDisplayMode: .never))
                 // Block swipes in selection mode
                 .allowsHitTesting(true) 
                 .gesture(viewModel.isSelectionMode ? DragGesture() : nil)
