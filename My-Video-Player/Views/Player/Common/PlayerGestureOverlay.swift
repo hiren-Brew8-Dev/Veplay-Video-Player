@@ -16,31 +16,10 @@ struct PlayerGestureOverlay: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                // 1. Invisible Tap Areas (Keep existing logic)
-                HStack(spacing: 0) {
-                    // LEFT (Rewind)
-                    Color.black.opacity(0.001)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) {
-                             viewModel.performDoubleTapSeek(forward: false)
-                             onShowTapFeedback(false) // Haptic
-                        }
-                        .onTapGesture(count: 1) { toggleControls() }
-                    
-                    // CENTER (Play/Pause or Toggle)
-                    Color.black.opacity(0.001)
-                        .contentShape(Rectangle())
-                        .onTapGesture { toggleControls() }
-                    
-                    // RIGHT (Forward)
-                    Color.black.opacity(0.001)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) {
-                             viewModel.performDoubleTapSeek(forward: true)
-                             onShowTapFeedback(true) // Haptic
-                        }
-                        .onTapGesture(count: 1) { toggleControls() }
-                }
+                // 1. Invisible Tap Areas
+                Color.black.opacity(0.001)
+                    .contentShape(Rectangle())
+                    .onTapGesture { toggleControls() }
             }
             // 2. Global Drag Gesture
             .gesture(

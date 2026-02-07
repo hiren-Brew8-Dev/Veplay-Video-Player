@@ -175,6 +175,7 @@ struct SearchView: View {
                     ForEach(filtered) { video in
                         Button(action: {
                             isSearchFocused = false
+                            viewModel.currentPlaylist = filtered
                             viewModel.playingVideo = video
                         }) {
                             VideoCardView(

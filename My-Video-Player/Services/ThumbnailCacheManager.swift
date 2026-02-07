@@ -126,22 +126,37 @@ class ThumbnailCacheManager {
                 return
             }
             
-            var thumbnail: UIImage?
-            
             if let asset = video.asset {
-                thumbnail = self.generateThumbnailFromAsset(asset)
+                let thumbnail = self.generateThumbnailFromAsset(asset)
+                if let thumb = thumbnail {
+                    self.cache.store(thumb, forKey: cacheKey)
+                }
+                DispatchQueue.main.async {
+                    completion(thumbnail)
+                }
             } else if let url = video.url {
-                thumbnail = self.generateThumbnailFromFile(url)
-            }
-            
-            // Cache the result
-            if let thumbnail = thumbnail {
-                self.cache.store(thumbnail, forKey: cacheKey)
-            }
-            
-            // Callback on main thread
-            DispatchQueue.main.async {
-                completion(thumbnail)
+                let thumbnail = self.generateThumbnailFromFile(url)
+                
+                if let thumb = thumbnail {
+                    self.cache.store(thumb, forKey: cacheKey)
+                    DispatchQueue.main.async {
+                        completion(thumb)
+                    }
+                } else {
+                    // Fallback to VLC for MKV/FLV etc.
+                    VLCThumbnailRequestManager.shared.request(for: url) { vlcThumb in
+                        if let vlcThumb = vlcThumb {
+                            self.cache.store(vlcThumb, forKey: cacheKey)
+                        }
+                        DispatchQueue.main.async {
+                            completion(vlcThumb)
+                        }
+                    }
+                }
+            } else {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
             }
         }
     }
@@ -166,23 +181,30 @@ class ThumbnailCacheManager {
     }
     
     private func generateThumbnailFromFile(_ url: URL) -> UIImage? {
+        // First try standard AVFoundation
         let asset = AVAsset(url: url)
         let generator = AVAssetImageGenerator(asset: asset)
         generator.appliesPreferredTrackTransform = true
-        generator.maximumSize = CGSize(width: 320, height: 320)
+        generator.maximumSize = CGSize(width: 400, height: 400) // Slightly larger for better quality
         
-        // Try at 1 second first
         let time = CMTime(seconds: 1, preferredTimescale: 600)
         
         do {
             let cgImage = try generator.copyCGImage(at: time, actualTime: nil)
             return UIImage(cgImage: cgImage)
         } catch {
-            // Fallback to 0 seconds
+            // AVFoundation failed. This is typical for MKV/FLV etc.
+            // For MKV, AVAsset might still report duration but no video tracks accessible via generator.
+            
+            // Fallback attempt at 0 seconds
             do {
                 let cgImage = try generator.copyCGImage(at: .zero, actualTime: nil)
                 return UIImage(cgImage: cgImage)
             } catch {
+                // Both standard attempts failed. 
+                // Return nil so the UI can show a placeholder or we can implement 
+                // a heavier VLC-based thumbnailer if absolutely necessary.
+                print("⚠️ Thumbnail generation failed for: \(url.lastPathComponent)")
                 return nil
             }
         }

@@ -95,13 +95,18 @@ struct HistoryView: View {
     }
     
     private func videoFromHistory(_ item: HistoryItem) -> VideoItem {
+        let isLocal = item.isLocalFile
+        let url = isLocal ? URL(fileURLWithPath: item.videoUrlString ?? "") : nil
+        let asset = !isLocal ? fetchAsset(for: item.videoUrlString) : nil
+        
         return VideoItem(
             id: item.id ?? UUID(),
-            asset: fetchAsset(for: item.videoUrlString),
+            asset: asset,
             title: item.title ?? "Unknown",
             duration: item.duration,
             creationDate: item.timestamp ?? Date(),
-            fileSizeBytes: item.fileSizeBytes
+            fileSizeBytes: item.fileSizeBytes,
+            url: url
         )
     }
 

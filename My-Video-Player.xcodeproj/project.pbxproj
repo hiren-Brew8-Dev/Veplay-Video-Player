@@ -355,7 +355,8 @@
 				INFOPLIST_FILE = "My-Video-Player/Info.plist";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "This app requires Face ID to secure your private videos.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photo library to play videos.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "We need access to your photo library to save snapshots and video edits.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photo library to play and manage your videos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -394,7 +395,8 @@
 				INFOPLIST_FILE = "My-Video-Player/Info.plist";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "This app requires Face ID to secure your private videos.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photo library to play videos.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "We need access to your photo library to save snapshots and video edits.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "We need access to your photo library to play and manage your videos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

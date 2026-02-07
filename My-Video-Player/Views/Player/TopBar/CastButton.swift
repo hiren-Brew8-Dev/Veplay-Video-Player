@@ -6,9 +6,16 @@ struct CastButton: View {
     @ObservedObject var viewModel: PlayerViewModel
     
     var body: some View {
-        // Use native AVRoutePickerView directly
-        AVRoutePickerViewWrapper(isActive: viewModel.isExternalPlaybackActive)
-            .frame(width: 44, height: 44)
+        ZStack {
+            Image(systemName: "airplayvideo")
+                .font(.system(size: 20))
+                .foregroundColor(viewModel.isExternalPlaybackActive ? .blue : .white)
+            
+            // Hidden but functional picker
+            AVRoutePickerViewWrapper(isActive: viewModel.isExternalPlaybackActive)
+                .opacity(0.01)
+        }
+        .frame(width: 44, height: 44)
     }
 }
 

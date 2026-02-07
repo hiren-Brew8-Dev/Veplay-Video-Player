@@ -217,6 +217,10 @@ class DashboardViewModel: ObservableObject {
         }
     }
     
+    var sortedImportedVideos: [VideoItem] {
+        return sortVideos(importedVideos, by: videoSortOption)
+    }
+    
     private var cancellables = Set<AnyCancellable>()
     
     init() {
@@ -700,6 +704,10 @@ class DashboardViewModel: ObservableObject {
                 self.fetchAlbums()
                 self.loadImportedVideos()
                 self.loadUserFolders()
+                
+                // Clear selection mode now that operation is complete
+                self.isSelectionMode = false
+                self.selectedVideoIds.removeAll()
             }
         }
     }
@@ -739,8 +747,6 @@ class DashboardViewModel: ObservableObject {
         self.isCutMode = isCut
         self.sourceURL = sourceURL
         self.sourceAlbumIdentifier = sourceAlbumId
-        self.isSelectionMode = false
-        self.selectedVideoIds.removeAll()
         
         // Resolve VideoItem objects for the move picker logic
         let allPossibleVideos = importedVideos + allGalleryVideos + folders.flatMap { $0.videos }
@@ -813,6 +819,10 @@ class DashboardViewModel: ObservableObject {
                 self.isCutMode = false
                 self.sourceURL = nil
                 self.sourceAlbumIdentifier = nil
+                
+                // Clear selection mode now that operation is complete
+                self.isSelectionMode = false
+                self.selectedVideoIds.removeAll()
             }
         }
     }
@@ -996,12 +1006,8 @@ class DashboardViewModel: ObservableObject {
                                 self.duplicateVideo = found
                                 print("🎯 Found existing video to highlight: \(found.title) at \(found.url?.path ?? "unknown")")
                                 
-                                // Auto-clear highlight after 5 seconds
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-                                    if self.highlightVideoId == found.id {
-                                        self.highlightVideoId = nil
-                                    }
-                                }
+                                // Highlight found duplicate (auto-clear removed per request)
+                                self.highlightVideoId = found.id
                             } else {
                                 print("❓ Duplicate file exists at \(destinationURL.path) but VideoItem not found in memory")
                                 self.loadImportedVideos()

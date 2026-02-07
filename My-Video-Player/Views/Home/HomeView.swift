@@ -23,7 +23,8 @@ struct HomeView: View {
                     topTabBar
                 }
                 
-                // Content using TabView for swipe support
+                // Content
+                // Content using stable TabView
                 TabView(selection: $selectedTab) {
                     VideoSectionView(viewModel: viewModel, paddingBottom: $paddingBottom)
                         .tag("Video")
@@ -36,6 +37,9 @@ struct HomeView: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .animation(.spring(response: 0.4, dampingFraction: 0.8), value: selectedTab)
+                // Block swipes in selection mode
+                .allowsHitTesting(true) 
+                .gesture(viewModel.isSelectionMode ? DragGesture() : nil)
             }
         }
         .background(Color.themeBackground.edgesIgnoringSafeArea(.all))
@@ -112,50 +116,52 @@ struct HomeView: View {
                 .padding(.horizontal, 20)
             }
             
-            HStack(spacing: 4) {
-                Button(action: { showSearch = true }) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.blue)
-                        .padding(10) // Larger hit area
-                }
-                .navigationDestination(isPresented: $showSearch) {
-                    if selectedTab == "Video" {
-                        SearchView(viewModel: viewModel, contextTitle: "Videos", initialVideos: viewModel.importedVideos)
-                    } else if selectedTab == "Gallery" {
-                        SearchView(viewModel: viewModel, contextTitle: "Gallery", initialVideos: viewModel.allGalleryVideos)
-                    } else {
-                        SearchView(viewModel: viewModel, contextTitle: "Files", initialVideos: viewModel.videos)
+            if selectedTab == "Video" {
+                HStack(spacing: 4) {
+                    Button(action: { showSearch = true }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.blue)
+                            .padding(10) // Larger hit area
                     }
-                }
-                
-                Menu {
-                    if !viewModel.copiedVideoIds.isEmpty {
-                        Button(action: { viewModel.pasteVideos(to: viewModel.importedVideosDirectory) }) {
-                            Label("Paste", systemImage: "doc.on.clipboard")
+                    .navigationDestination(isPresented: $showSearch) {
+                        if selectedTab == "Video" {
+                            SearchView(viewModel: viewModel, contextTitle: "Videos", initialVideos: viewModel.importedVideos)
+                        } else if selectedTab == "Gallery" {
+                            SearchView(viewModel: viewModel, contextTitle: "Gallery", initialVideos: viewModel.allGalleryVideos)
+                        } else {
+                            SearchView(viewModel: viewModel, contextTitle: "Files", initialVideos: viewModel.videos)
                         }
-                        Divider()
-                    }
-                    Button(action: { showSortSheet = true }) {
-                        Label("Sort by", systemImage: "arrow.up.arrow.down")
                     }
                     
-                    Button(action: { isGridView.toggle() }) {
-                        Label(isGridView ? "List View" : "Grid View", systemImage: isGridView ? "list.bullet" : "square.grid.2x2")
+                    Menu {
+                        if !viewModel.copiedVideoIds.isEmpty {
+                            Button(action: { viewModel.pasteVideos(to: viewModel.importedVideosDirectory) }) {
+                                Label("Paste", systemImage: "doc.on.clipboard")
+                            }
+                            Divider()
+                        }
+                        Button(action: { showSortSheet = true }) {
+                            Label("Sort by", systemImage: "arrow.up.arrow.down")
+                        }
+                        
+                        Button(action: { isGridView.toggle() }) {
+                            Label(isGridView ? "List View" : "Grid View", systemImage: isGridView ? "list.bullet" : "square.grid.2x2")
+                        }
+                        
+                        Button(action: { viewModel.isSelectionMode = true }) {
+                            Label("Select", systemImage: "checkmark.circle")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .rotationEffect(.degrees(90))
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.blue)
+                            .padding(10) // Larger hit area
                     }
-                    
-                    Button(action: { viewModel.isSelectionMode = true }) {
-                        Label("Select", systemImage: "checkmark.circle")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .rotationEffect(.degrees(90))
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.blue)
-                        .padding(10) // Larger hit area
                 }
+                .padding(.trailing, 8)
             }
-            .padding(.trailing, 8)
         }
         .sheet(isPresented: $showSortSheet) {
             CustomSortingView(sortOptionRaw: (selectedTab == "Video" ? $viewModel.videoSortOptionRaw : (selectedTab == "Gallery" ? $viewModel.gallerySortOptionRaw : $viewModel.folderSortOptionRaw)), title: selectedTab == "Gallery" ? "Gallery" : selectedTab)

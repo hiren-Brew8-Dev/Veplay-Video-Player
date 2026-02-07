@@ -16,9 +16,7 @@ class PlayerViewModel: NSObject, ObservableObject {
     @MainActor @Published var isSeeking: Bool = false
     @MainActor @Published var aspectRatio: VideoAspectRatio = .fit {
         didSet {
-            if isVLC {
-                updateVLCAspectRatio()
-            }
+            updateAspectRatio()
         }
     }
     @MainActor @Published var repeatMode: RepeatMode = .off
@@ -56,8 +54,10 @@ class PlayerViewModel: NSObject, ObservableObject {
     // PiP
     @MainActor @Published var isPiPActive: Bool = false
     @MainActor @Published var showPiPError: Bool = false
-    @MainActor @Published var showAspectRatioToast: Bool = false
     private var toastTask: Task<Void, Never>?
+    
+    // Size tracking for Aspect Ratio
+    @MainActor private var lastKnownViewSize: CGSize? = nil
     
     // Subtitles/Audio Selection
     @MainActor @Published var availableSubtitles: [String] = []
@@ -120,8 +120,8 @@ class PlayerViewModel: NSObject, ObservableObject {
     let subtitleManager = SubtitleManager()
     private var embeddedSubtitleOptions: [AVMediaSelectionOption] = []
     private var embeddedAudioOptions: [AVMediaSelectionOption] = []
-    private var vlcSubtitleIndexes: [Int32] = []
-    private var vlcAudioIndexes: [Int32] = []
+    private var vlcSubtitleMapping: [String: Int32] = [:]
+    private var vlcAudioMapping: [String: Int32] = [:]
     
     // Audio Engine for AVPlayer audio delay
     // NOTE: AVPlayerItemAudioOutput is not available in iOS SDK
@@ -180,7 +180,7 @@ class PlayerViewModel: NSObject, ObservableObject {
             case .fit: return "Fit"
             case .fill: return "Fill"
             case .stretch: return "Stretch"
-            case .original: return "Original"
+            case .original: return "Orig"
             case .sixteenByNine: return "16:9"
             case .fourByThree: return "4:3"
             case .sixteenByTen: return "16:10"
@@ -391,9 +391,9 @@ class PlayerViewModel: NSObject, ObservableObject {
         self.loadBookmarks()
         self.subtitleManager.clear()
         
-        // Clear VLC-specific track arrays for fresh state
-        self.vlcSubtitleIndexes.removeAll()
-        self.vlcAudioIndexes.removeAll()
+        // Clear VLC-specific track mappings for fresh state
+        self.vlcSubtitleMapping.removeAll()
+        self.vlcAudioMapping.removeAll()
         self.availableAudioTracks.removeAll()
         self.availableSubtitles.removeAll()
         self.embeddedSubtitleOptions.removeAll()
@@ -1360,14 +1360,11 @@ class PlayerViewModel: NSObject, ObservableObject {
                     subtitleManager.isEnabled = false 
                     subtitleManager.currentSubtitle = ""
                 } else {
-                    // EMBEDDED track: Enable VLC native, disable custom overlay text
-                    let externalCount = subtitleManager.availableTracks.count - vlcSubtitleIndexes.count
-                    let embeddedIndex = index - externalCount
-                    if embeddedIndex >= 0 && embeddedIndex < vlcSubtitleIndexes.count {
-                        let vlcID = vlcSubtitleIndexes[embeddedIndex]
+                    // EMBEDDED track: Enable VLC native
+                    // We DO NOT set isEnabled = false here, because that would hide the checkmark in the UI.
+                    // SubtitleManager won't render anything because 'subtitles' array is empty for embedded tracks.
+                    if let vlcID = vlcSubtitleMapping[track.name] {
                         videoPlayer.currentVideoSubTitleIndex = vlcID
-                        subtitleManager.isEnabled = false // Disable overlay to avoid dual subs
-                        subtitleManager.currentSubtitle = ""
                     }
                 }
             }
@@ -1415,19 +1412,85 @@ class PlayerViewModel: NSObject, ObservableObject {
     }
     
     @MainActor
+    func selectSubtitleTrack(at index: Int) {
+        if isVLC {
+            let tracks = subtitleManager.availableTracks
+            
+            if index == -1 {
+                subtitleManager.selectTrack(at: -1)
+                return
+            }
+            
+            guard index >= 0 && index < tracks.count else { return }
+            
+            // Just update the manager. 
+            // The change observer (handleSubtitleSelection) will handle the VLC command.
+            subtitleManager.selectTrack(at: index)
+            return
+        }
+        
+        // AVPlayer Logic
+        guard let playerItem = player?.currentItem else { 
+             subtitleManager.selectTrack(at: index)
+             return 
+        }
+        
+        if index == -1 {
+            Task {
+                if let legibleGroup = try? await playerItem.asset.loadMediaSelectionGroup(for: .legible) {
+                    playerItem.select(nil, in: legibleGroup)
+                }
+                await MainActor.run {
+                    subtitleManager.selectTrack(at: -1)
+                }
+            }
+            return
+        }
+        
+        let tracks = subtitleManager.availableTracks
+        guard index >= 0 && index < tracks.count else { return }
+        
+        let track = tracks[index]
+        if let _ = track.url {
+            subtitleManager.selectTrack(at: index)
+            Task {
+                if let legibleGroup = try? await playerItem.asset.loadMediaSelectionGroup(for: .legible) {
+                    playerItem.select(nil, in: legibleGroup)
+                }
+            }
+        } else {
+            let externalCount = tracks.filter { $0.url != nil }.count
+            let embeddedIndex = index - externalCount
+            
+            if embeddedIndex >= 0 && embeddedIndex < embeddedSubtitleOptions.count {
+                let option = embeddedSubtitleOptions[embeddedIndex]
+                Task {
+                    if let legibleGroup = try? await playerItem.asset.loadMediaSelectionGroup(for: .legible) {
+                        playerItem.select(option, in: legibleGroup)
+                    }
+                    await MainActor.run {
+                        subtitleManager.selectTrack(at: index)
+                    }
+                }
+            }
+        }
+    }
+    
+    @MainActor
     func selectAudioTrack(at index: Int) {
         if isVLC {
             guard let videoPlayer = vlcPlayer else { return }
             
             if index == -1 {
-                // Disable / Mute
                 videoPlayer.audio?.isMuted = true
                 self.selectedAudioTrackIndex = -1
-            } else if index >= 0 && index < vlcAudioIndexes.count {
-                let vlcID = vlcAudioIndexes[index]
-                videoPlayer.audio?.isMuted = false
-                videoPlayer.currentAudioTrackIndex = vlcID
-                self.selectedAudioTrackIndex = index
+            } else if index >= 0 && index < availableAudioTracks.count {
+                let trackName = availableAudioTracks[index]
+                if let vlcID = vlcAudioMapping[trackName] {
+                    videoPlayer.audio?.isMuted = false
+                    videoPlayer.currentAudioTrackIndex = vlcID
+                    self.selectedAudioTrackIndex = index
+                }
             }
             return
         }
@@ -1507,6 +1570,10 @@ class PlayerViewModel: NSObject, ObservableObject {
         if isVLC {
              lastIntendedSeekPosition = nil // Clear on play
              vlcPlayer?.rate = playbackSpeed
+             
+             // Re-apply audio delay to ensure sync on resume
+             vlcPlayer?.currentAudioPlaybackDelay = Int(audioDelay * 1_000_000)
+             
              vlcPlayer?.play()
              isPlaying = true
              return
@@ -1609,21 +1676,16 @@ class PlayerViewModel: NSObject, ObservableObject {
         
         if isVLC {
             isSeeking = true
-            lastIntendedSeekPosition = time // Set tracker
+            lastIntendedSeekPosition = time 
             
-            // Set both time and position for best results
-            let vlcTime = VLCTime(int: Int32(time * 1000))
-            vlcPlayer?.time = vlcTime
+            // Only set time for smoother scrubbing
+            // Setting both position and time causes stutter
+            vlcPlayer?.time = VLCTime(int: Int32(time * 1000))
             
-            let position = Float(time / max(duration, 0.001))
-            vlcPlayer?.position = position
-            
-            // Auto-reset isSeeking after a short delay if no more smooth seeks come in
             seekRequestID += 1
             let currentID = seekRequestID
             Task {
-                // Wait for more seeks or clear flag
-                try? await Task.sleep(nanoseconds: 400_000_000) // 400ms - balance between responsiveness and stability
+                try? await Task.sleep(nanoseconds: 300_000_000) // 300ms delay
                 await MainActor.run {
                     if self.seekRequestID == currentID {
                         self.isSeeking = false
@@ -1639,11 +1701,9 @@ class PlayerViewModel: NSObject, ObservableObject {
         
         let cmTime = CMTime(seconds: time, preferredTimescale: 600)
         
-        // Use small tolerance to force frame updates while dragging (even if paused),
-        // but not zero tolerance which would be too slow.
-        let tolerance = CMTime(seconds: 0.1, preferredTimescale: 600)
-        
-        player?.seek(to: cmTime, toleranceBefore: tolerance, toleranceAfter: tolerance) { [weak self] _ in
+        // Use positiveInfinity tolerance for smooth scrubbing (snaps to keyframes)
+        // Zero tolerance is too slow for live dragging and causes the video to freeze
+        player?.seek(to: cmTime, toleranceBefore: .positiveInfinity, toleranceAfter: .positiveInfinity) { [weak self] _ in
             guard let self = self else { return }
             Task { @MainActor in
                 if self.seekRequestID == currentID {
@@ -1737,8 +1797,8 @@ class PlayerViewModel: NSObject, ObservableObject {
         cleanupAudioEngine()
         
         // Clear VLC track arrays
-        vlcSubtitleIndexes.removeAll()
-        vlcAudioIndexes.removeAll()
+        vlcSubtitleMapping.removeAll()
+        vlcAudioMapping.removeAll()
         availableAudioTracks.removeAll()
         availableSubtitles.removeAll()
         embeddedSubtitleOptions.removeAll()
@@ -1924,27 +1984,16 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         // Cycle next
         aspectRatio = aspectRatio.next
         updateAspectRatio(with: nil) 
-        
-        // Show Toast with ID-based transition handling
-        toastTask?.cancel()
-        
-        // Ensure it's true (if it was false, it appears. If true, it just stays)
-        // Note: Changing the text (aspectRatio.shortLabel) inside the view will update correctly.
-        showAspectRatioToast = true
-        
-        toastTask = Task {
-            // Updated to 0.5s as requested
-            try? await Task.sleep(nanoseconds: 500_000_000) 
-            if !Task.isCancelled {
-                showAspectRatioToast = false
-            }
-        }
     }
 
     @MainActor
     func updateAspectRatio(with size: CGSize? = nil) {
+        if let size = size {
+            lastKnownViewSize = size
+        }
+        
         if isVLC {
-            updateVLCAspectRatio(with: size)
+            updateVLCAspectRatio(with: lastKnownViewSize)
         }
     }
 
@@ -1952,9 +2001,10 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
     private func updateVLCAspectRatio(with size: CGSize? = nil) {
         guard let player = vlcPlayer else { return }
         
+        // Use provided size, stored size, or fallback to main screen
+        let targetSize = size ?? lastKnownViewSize ?? UIScreen.main.bounds.size
+        
         // Helper to safely set aspect ratio using strdup to avoid Swift bridging release issues
-        // We rely on VLC copying the string. If VLC keeps the pointer, we would leak.
-        // Standard VLC property behavior is copy.
         func setAR(_ ratio: String?) {
             if let r = ratio {
                 let p = strdup(r)
@@ -1986,9 +2036,6 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         case .fill:
             // "Fill" means Zoom to Fill.
             // We achieve this in VLC by cropping the video to the SCREEN/VIEW's aspect ratio.
-            
-            // Use provided size or fallback to main screen
-            let targetSize = size ?? UIScreen.main.bounds.size
             let ratioString = String(format: "%d:%d", Int(targetSize.width), Int(targetSize.height))
             
             setAR(nil) // Allow natural scaling of the crop
@@ -1996,7 +2043,6 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
             player.scaleFactor = 0
             
         case .stretch:
-            let targetSize = size ?? UIScreen.main.bounds.size
             let ratioString = String(format: "%d:%d", Int(targetSize.width), Int(targetSize.height))
             setAR(ratioString)
             player.scaleFactor = 0
@@ -2038,7 +2084,7 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         let externalTracks = subtitleManager.availableTracks.filter { $0.url != nil }
         
         // 1. Subtitles
-        self.vlcSubtitleIndexes.removeAll()
+        self.vlcSubtitleMapping.removeAll()
         var newTracks = externalTracks
         var subTitlesNames: [String] = []
         
@@ -2049,18 +2095,18 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         for (index, name) in zip(vlcSubIndexes, vlcSubNames) {
             if index == -1 { continue }
             
-            // Check if this is an external track we already discovered (VLC includes playback slaves in this list)
+            // Check if this is an external track we already discovered
             if externalTracks.contains(where: { $0.name == name }) {
-                // If it's already in our external tracks, we'll store its index for selection mapping
-                self.vlcSubtitleIndexes.append(index)
+                self.vlcSubtitleMapping[name] = index
                 continue
             }
             
             // Embedded or newly found VLC track
-            let track = SubtitleTrack(name: name, url: nil)
+            let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let track = SubtitleTrack(name: cleanName, url: nil)
             newTracks.append(track)
-            subTitlesNames.append(name)
-            self.vlcSubtitleIndexes.append(index)
+            subTitlesNames.append(cleanName)
+            self.vlcSubtitleMapping[cleanName] = index
         }
         
         self.subtitleManager.availableTracks = newTracks
@@ -2074,19 +2120,26 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
             } else {
                 subtitleManager.selectedTrackIndex = -1
             }
-        } else if let vlcIndex = vlcSubtitleIndexes.firstIndex(of: currentSubID) {
-            // Check if this vlcID belongs to an external track
-            let name = vlcSubNames[vlcSubIndexes.firstIndex(of: currentSubID) ?? 0]
-            if let extIndex = externalTracks.firstIndex(where: { $0.name == name }) {
-                subtitleManager.selectedTrackIndex = extIndex
-            } else {
-                subtitleManager.selectedTrackIndex = externalTracks.count + vlcIndex
+        } else {
+            // Find which track name corresponds to this currentSubID
+            if let matchedName = vlcSubtitleMapping.first(where: { $0.value == currentSubID })?.key {
+                 // Now find where this name is in our newTracks list
+                 if let unifiedIndex = newTracks.firstIndex(where: { $0.name == matchedName }) {
+                     subtitleManager.selectedTrackIndex = unifiedIndex
+                 }
             }
+        }
+        
+        // Sync enabled state
+        if currentSubID != -1 {
+            subtitleManager.isEnabled = true
+        } else if subtitleManager.selectedTrackIndex == -1 {
+            subtitleManager.isEnabled = false
         }
         
         // 2. Audio
         self.availableAudioTracks.removeAll()
-        self.vlcAudioIndexes.removeAll()
+        self.vlcAudioMapping.removeAll()
         
         let vlcAudioNames = player.audioTrackNames as? [String] ?? []
         let vlcAudioIndexesArr = (player.audioTrackIndexes as? [NSNumber])?.map { $0.int32Value } ?? []
@@ -2100,14 +2153,15 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         } else if validTracks.count == 1 && validTracks.first!.1.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             // Scenario 2: Single unnamed track (phone video) - create "Track 1"
             self.availableAudioTracks.append("Track 1")
-            self.vlcAudioIndexes.append(validTracks.first!.0)
+            self.vlcAudioMapping["Track 1"] = validTracks.first!.0
             self.selectedAudioTrackIndex = 0
         } else {
             // Scenario 1: Named tracks (MKV) - use original names
             for (index, name) in validTracks {
                 let trackName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                self.availableAudioTracks.append(trackName.isEmpty ? "Track \\(self.availableAudioTracks.count + 1)" : trackName)
-                self.vlcAudioIndexes.append(index)
+                let finalName = trackName.isEmpty ? "Track \(self.availableAudioTracks.count + 1)" : trackName
+                self.availableAudioTracks.append(finalName)
+                self.vlcAudioMapping[finalName] = index
             }
             self.selectedAudioTrackIndex = 0
         }
@@ -2118,10 +2172,10 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         } else {
             // Set current selection for audio
             let currentAudioID = player.currentAudioTrackIndex
-            if let audioIndex = vlcAudioIndexes.firstIndex(of: currentAudioID) {
+            if let matchedName = vlcAudioMapping.first(where: { $0.value == currentAudioID })?.key,
+               let audioIndex = availableAudioTracks.firstIndex(of: matchedName) {
                 self.selectedAudioTrackIndex = audioIndex
             } else if !availableAudioTracks.isEmpty {
-                // If not muted but no match, maybe default to 0
                 self.selectedAudioTrackIndex = 0
             } else {
                 self.selectedAudioTrackIndex = -1
@@ -2129,7 +2183,7 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         }
         
         // RETRY MECHANISM: If tracks are still 0, retry in 0.5s (VLC sometimes takes time to parse tracks)
-        if vlcSubtitleIndexes.isEmpty && vlcAudioIndexes.isEmpty {
+        if vlcSubtitleMapping.isEmpty && vlcAudioMapping.isEmpty {
             Task {
                 try? await Task.sleep(nanoseconds: 500_000_000)
                 await MainActor.run { [weak self] in

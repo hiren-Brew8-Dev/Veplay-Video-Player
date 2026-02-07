@@ -38,6 +38,7 @@ struct PlayerControlsView: View {
     @State private var showTrackSelection = false
     @State private var showPlayingModeSheet = false
     @State private var showPlaybackSpeedSheet = false
+    @State private var showAudioCaptionsSheet = false
     
     // Navigation State
     @State private var returnToSettings = false
@@ -59,6 +60,7 @@ struct PlayerControlsView: View {
         if showSleepTimer { return "sleep" }
         if showPlayingModeSheet { return "mode" }
         if showPlaybackSpeedSheet { return "speed" }
+        if showAudioCaptionsSheet { return "audiocaptions" }
         return "none"
     }
     
@@ -174,98 +176,26 @@ struct PlayerControlsView: View {
                 
                 ZStack {
                     VStack {
-                        PlayerTopBar(
-                            title: videoTitle,
-                            onBack: onBack,
-                            viewModel: viewModel,
-                            onCC: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    returnToSettings = false
-                                    showSubtitleSettings = true
-                                    viewModel.isControlsVisible = false
-                                }
-                            },
-                            onMenu: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showSettingsSheet = true
-                                    viewModel.isControlsVisible = false
-                                }
-                            },
-                            onSleepTimer: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    returnToSettings = false
-                                    showSleepTimer = true
-                                    viewModel.isControlsVisible = false
-                                }
+                    PlayerTopBar(
+                        title: videoTitle,
+                        onBack: onBack,
+                        viewModel: viewModel,
+                        onMenu: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showSettingsSheet = true
+                                viewModel.isControlsVisible = false
                             }
-                        )
-                        
-                        // Top Left Controls (Bookmark + Sleep Timer)
-                        HStack(spacing: 12) {
-                            if showBookmarkButton {
-                                Button(action: {
-                                    withAnimation(.spring()) {
-                                        showFloatingBookmarkControls.toggle()
-                                    }
-                                    resetTimer()
-                                }) {
-                                    Image(systemName: "bookmark")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(.white)
-                                        .padding(12)
-                                        .background(showFloatingBookmarkControls ? Color.orange : Color.gray.opacity(0.6))
-                                        .clipShape(Circle())
-                                }
-                                .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
-                                .highPriorityGesture(TapGesture().onEnded {
-                                    withAnimation(.spring()) {
-                                        showFloatingBookmarkControls.toggle()
-                                    }
-                                    resetTimer()
-                                })
-                            }
-                            
-                            if viewModel.isSleepTimerActive {
-                                Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        returnToSettings = false
-                                        showSleepTimer = true
-                                        viewModel.isControlsVisible = false
-                                    }
-                                }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "timer")
-                                            .font(.system(size: 16, weight: .bold))
-                                        if let remaining = viewModel.sleepTimerRemainingString {
-                                            Text(remaining)
-                                                .font(.system(size: 14, weight: .bold))
-                                                .monospacedDigit()
-                                        }
-                                    }
-                                    .foregroundColor(.orange)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(Color.black.opacity(0.5))
-                                    .clipShape(Capsule())
-                                }
-                                .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
-                            }
-                            
-                            Spacer()
+                        },
+                        onLock: {
+                            viewModel.isLocked = true
+                            viewModel.isControlsVisible = false
                         }
-                        .padding(.leading, isLandscape ? 50 : 16)
-                        .padding(.top, 10)
-                        
-                        Spacer()
-                        
-                        Spacer()
-                        
-                        // Bottom Center Navigation Controls (REMOVED - Moved to BottomBar)
-                        // This space is now just spacing
-                        // However, we still have the spacer above.
-                        // Let's ensure layout is correct.
-                        // If controls are in BottomBar, we don't need them here.
-                        
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    
+                    Spacer()
+                    
+                    VStack(spacing: 0) {
                         PlayerBottomBar(
                             currentTime: Binding(
                                 get: { viewModel.currentTime },
@@ -306,19 +236,6 @@ struct PlayerControlsView: View {
                                 viewModel.togglePiP()
                                 resetTimer()
                             },
-                            onQueue: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showPlaylistQueue = true
-                                    viewModel.isControlsVisible = false
-                                }
-                            },
-                            onTrackSelection: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    returnToSettings = false
-                                    showTrackSelection = true
-                                    viewModel.isControlsVisible = false
-                                }
-                            },
                             onAspectRatio: {
                                 viewModel.toggleAspectRatio()
                                 resetTimer()
@@ -327,14 +244,22 @@ struct PlayerControlsView: View {
                                 viewModel.isLocked = true
                                 viewModel.isControlsVisible = false
                             },
-                            onRotate: {
-                                viewModel.toggleOrientation()
-                                resetTimer()
-                            },
-                            onCC: {
+                            onAudioCaptions: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     returnToSettings = false
-                                    showSubtitleSettings = true
+                                    showAudioCaptionsSheet = true
+                                    viewModel.isControlsVisible = false
+                                }
+                            },
+                            onMenu: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showSettingsSheet = true
+                                    viewModel.isControlsVisible = false
+                                }
+                            },
+                            onSpeedSheet: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showPlaybackSpeedSheet = true
                                     viewModel.isControlsVisible = false
                                 }
                             },
@@ -354,8 +279,23 @@ struct PlayerControlsView: View {
                             hasPrevBookmark: viewModel.hasPreviousBookmark,
                             hasNextBookmark: viewModel.hasNextBookmark,
                             isAtBookmark: viewModel.isAtBookmark,
-                            isSubtitleEnabled: viewModel.subtitleManager.isEnabled
+                            isSubtitleEnabled: viewModel.subtitleManager.isEnabled,
+                            onRotate: {
+                                // Simple rotation trigger
+                                let keyWindow = UIApplication.shared.connectedScenes
+                                    .filter({$0.activationState == .foregroundActive})
+                                    .compactMap({$0 as? UIWindowScene})
+                                    .first?.windows
+                                    .filter({$0.isKeyWindow}).first
+                                
+                                if let windowScene = keyWindow?.windowScene {
+                                    let geometryRequest = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: isLandscape ? .portrait : .landscapeRight)
+                                    windowScene.requestGeometryUpdate(geometryRequest)
+                                }
+                                resetTimer()
+                            }
                         )
+                    }
                     }
                     
                     centerControls
@@ -365,59 +305,101 @@ struct PlayerControlsView: View {
     }
     
     private var centerControls: some View {
-        HStack(spacing: 40) {
-            playbackButton(icon: "backward.end.fill", size: 24, frameSize: 54) {
-                if viewModel.playlist.count > 1 {
-                    viewModel.playPrevious()
-                } else {
-                    viewModel.seek(to: viewModel.currentTime - 10)
-                }
+        HStack(spacing: 50) {
+            // Skip Backward 10s
+            Button(action: {
+                viewModel.seek(to: viewModel.currentTime - 10)
                 resetTimer()
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.black.opacity(0.15))
+                        .frame(width: 54, height: 54)
+                    
+                    Image(systemName: "gobackward.10")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundColor(.white)
+                }
             }
             
-            playbackButton(icon: viewModel.isPlaying ? "pause.fill" : "play.fill", size: 34, frameSize: 74) {
+            // Play/Pause
+            Button(action: {
                 viewModel.togglePlayPause()
                 resetTimer()
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 74, height: 74)
+                    
+                    Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 34))
+                        .foregroundColor(.black)
+                }
             }
             
-            playbackButton(icon: "forward.end.fill", size: 24, frameSize: 54) {
-                if viewModel.playlist.count > 1 {
-                    viewModel.playNext()
-                } else {
-                    viewModel.seek(to: viewModel.currentTime + 10)
-                }
+            // Skip Forward 10s
+            Button(action: {
+                viewModel.seek(to: viewModel.currentTime + 10)
                 resetTimer()
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.black.opacity(0.15))
+                        .frame(width: 54, height: 54)
+                    
+                    Image(systemName: "goforward.10")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundColor(.white)
+                }
             }
         }
     }
     
+    
     @ViewBuilder
     private var lockOverlay: some View {
-        if viewModel.isLocked && viewModel.isControlsVisible {
-            HStack {
-                Button(action: {
-                    viewModel.isLocked = false
-                    viewModel.isControlsVisible = true
-                    resetTimer()
-                }) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(14)
-                        .background(
-                            Circle()
-                                .fill(Color.black.opacity(0.3))
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.4), lineWidth: 1)
-                                )
-                        )
-                        .shadow(color: .black.opacity(0.4), radius: 5, x: 0, y: 3)
-                }
-                .padding(.leading, 24)
+        if viewModel.isLocked {
+            ZStack {
+                // Layout-filling transparent view to capture all touches
+                Color.black.opacity(0.001)
+                    .contentShape(Rectangle())
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onTapGesture {
+                        withAnimation {
+                            viewModel.isControlsVisible.toggle()
+                        }
+                        if viewModel.isControlsVisible {
+                            resetTimer()
+                        }
+                    }
+                    // Capture high priority gestures to prevent them passing through
+                    .highPriorityGesture(DragGesture().onChanged { _ in })
+                    .highPriorityGesture(MagnificationGesture().onChanged { _ in })
+                    .highPriorityGesture(TapGesture(count: 2).onEnded { }) // Block double tap
                 
-                Spacer()
+                if viewModel.isControlsVisible {
+                    VStack {
+                        PlayerTopBar(
+                            title: videoTitle,
+                            onBack: onBack,
+                            viewModel: viewModel,
+                            onMenu: { },
+                            onLock: { },
+                            onUnlock: {
+                                withAnimation {
+                                    viewModel.isLocked = false
+                                    viewModel.isControlsVisible = true
+                                    resetTimer()
+                                }
+                            }
+                        )
+                        Spacer()
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
             }
+            .ignoresSafeArea()
         }
     }
     
@@ -425,7 +407,7 @@ struct PlayerControlsView: View {
     private var settingsOverlay: some View {
         GeometryReader { geometry in
             let isLandscape = geometry.size.width > geometry.size.height
-            let anySheetVisible = showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet || showPlaylistQueue || showSleepTimer || showPlayingModeSheet || showPlaybackSpeedSheet
+            let anySheetVisible = showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet || showPlaylistQueue || showSleepTimer || showPlayingModeSheet || showPlaybackSpeedSheet || showAudioCaptionsSheet
             
             ZStack {
                 // Background Scrim
@@ -443,7 +425,17 @@ struct PlayerControlsView: View {
                 // Sheet Content
                 if anySheetVisible {
                     Group {
-                        if isLandscape {
+                        if showAudioCaptionsSheet {
+                            // Point 6: Audio & Captions sheet is full height bottom-to-top ALWAYS
+                            VStack(spacing: 0) {
+                                Spacer()
+                                sheetContent(isLandscape: isLandscape)
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.clear)
+                                    .edgesIgnoringSafeArea(.all)
+                            }
+                            .transition(.move(edge: .bottom))
+                        } else if isLandscape {
                             HStack(spacing: 0) {
                                 Spacer()
                                 sheetContent(isLandscape: true)
@@ -470,7 +462,7 @@ struct PlayerControlsView: View {
         }
         .overlay(snapshotToastOverlay)
         .overlay(sleepTimerToastOverlay) // Add Sleep Timer Toast
-        .allowsHitTesting(showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet || showPlaylistQueue || showSleepTimer || showPlayingModeSheet || showPlaybackSpeedSheet)
+        .allowsHitTesting(showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet || showPlaylistQueue || showSleepTimer || showPlayingModeSheet || showPlaybackSpeedSheet || showAudioCaptionsSheet)
     }
 
     private func closeAllSheets() {
@@ -482,6 +474,7 @@ struct PlayerControlsView: View {
         showSleepTimer = false
         showPlayingModeSheet = false
         showPlaybackSpeedSheet = false
+        showAudioCaptionsSheet = false
     }
 
     @ViewBuilder
@@ -513,17 +506,6 @@ struct PlayerControlsView: View {
                          showSleepTimer = true
                      }
                 },
-                onBookmark: { 
-                     withAnimation(.spring()) {
-                         showBookmarkButton.toggle()
-                         if showBookmarkButton {
-                             showFloatingBookmarkControls = true
-                             viewModel.isControlsVisible = true
-                             resetTimer()
-                         }
-                         showSettingsSheet = false
-                     }
-                },
                 onScreenshot: { 
                     viewModel.captureSnapshot { image in
                         if let image = image {
@@ -540,6 +522,13 @@ struct PlayerControlsView: View {
                         }
                     }
                 },
+                onQueue: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showSettingsSheet = false
+                        showPlaylistQueue = true
+                        viewModel.isControlsVisible = false
+                    }
+                },
                 onPlayingMode: {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         returnToSettings = true
@@ -553,8 +542,7 @@ struct PlayerControlsView: View {
                         showSettingsSheet = false
                         showPlaybackSpeedSheet = true
                     }
-                },
-                showBookmarkButton: $showBookmarkButton
+                }
             )
         } else if showSubtitleSettings {
             SubtitleSettingsView(
@@ -636,6 +624,19 @@ struct PlayerControlsView: View {
                 } : nil
             )
             .if(!isLandscape) { $0.frame(height: 450) }
+        } else if showAudioCaptionsSheet {
+            AudioCaptionsSheet(
+                viewModel: viewModel,
+                isPresented: $showAudioCaptionsSheet,
+                isLandscape: isLandscape,
+                onBack: returnToSettings ? {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showAudioCaptionsSheet = false
+                        showSettingsSheet = true
+                    }
+                } : nil
+            )
+            .if(!isLandscape) { $0.frame(height: 500) }
         }
     }
 
@@ -776,6 +777,7 @@ struct PlayerControlsView: View {
     }
 }
 
+
 struct ActivityViewController: UIViewControllerRepresentable {
     var activityItems: [Any]
     var applicationActivities: [UIActivity]? = nil
@@ -808,12 +810,11 @@ struct SettingsSheetView: View {
     var onAirPlay: () -> Void
     var onSubtitle: () -> Void
     var onSleepTimer: () -> Void
-    var onBookmark: () -> Void
     var onScreenshot: () -> Void
     var onShare: () -> Void
+    var onQueue: () -> Void
     let onPlayingMode: () -> Void
     let onPlaybackSpeed: () -> Void
-    @Binding var showBookmarkButton: Bool
     
     var body: some View {
         VStack(spacing: 0) {
@@ -867,20 +868,13 @@ struct SettingsSheetView: View {
                     GridItem(.flexible()),
                     GridItem(.flexible())
                 ], spacing: 20) {
-                    SettingsGridItem(icon: "music.note.list", title: "Audio Track", action: {
-                        isPresented = false
-                        onAudioTrack()
-                    })
-                    AirPlayGridItem(viewModel: viewModel, onDismiss: { isPresented = false })
-                    SettingsGridItem(icon: "captions.bubble", title: "Subtitle", action: {
-                        isPresented = false
-                        onSubtitle()
-                    })
                     SettingsGridItem(icon: "timer", title: "Sleep Timer", isActive: viewModel.isSleepTimerActive, action: onSleepTimer)
-                    
-                    SettingsGridItem(icon: "bookmark", title: "Bookmark", isActive: showBookmarkButton, action: onBookmark)
                     SettingsGridItem(icon: "camera", title: "Screenshot", action: onScreenshot)
                     SettingsGridItem(icon: "square.and.arrow.up", title: "Share", action: onShare)
+                    SettingsGridItem(icon: "list.bullet", title: "Queue", action: {
+                        isPresented = false
+                        onQueue()
+                    })
                 }
                 .padding(.horizontal)
                 
@@ -893,14 +887,6 @@ struct SettingsSheetView: View {
                     SettingsListItem(icon: "infinity", title: "Playing Mode", value: viewModel.playingMode.rawValue, action: {
                         isPresented = false
                         onPlayingMode()
-                    })
-                    
-                    Divider().background(Color.gray.opacity(0.3))
-                        .padding(.leading, 50)
-                    
-                    SettingsListItem(icon: "play.circle", title: "Playback Speed", value: String(format: "%.1fx", viewModel.playbackSpeed), action: {
-                        isPresented = false
-                        onPlaybackSpeed()
                     })
                 }
                 .padding(.horizontal)
@@ -1063,8 +1049,7 @@ struct PlayingQueueView: View {
                 
                 Spacer()
                 
-                
-                Text(selectedTab == "Queue" ? "Queue" : "Bookmark")
+                Text("Playlist Queue")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.white)
                 
@@ -1079,52 +1064,7 @@ struct PlayingQueueView: View {
             .padding(.top, safeAreaTop)
             .background(Color.black)
 
-            // Tabs
-            HStack(spacing: 30) {
-                ForEach(tabs, id: \.self) { tab in
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedTab = tab
-                        }
-                    }) {
-                        VStack(spacing: 8) {
-                            HStack(spacing: 8) {
-                                if tab == "Queue" {
-                                    Image(systemName: "text.alignleft")
-                                } else {
-                                    Image(systemName: "bookmark.fill")
-                                }
-                                Text(tab)
-                                    .font(.system(size: 16, weight: .semibold))
-                            }
-                            .foregroundColor(selectedTab == tab ? .orange : .white)
-                            
-                            ZStack {
-                                if selectedTab == tab {
-                                    Rectangle()
-                                        .fill(Color.orange)
-                                        .frame(height: 2)
-                                        .matchedGeometryEffect(id: "TabUnderline", in: namespace)
-                                } else {
-                                    Rectangle()
-                                        .fill(Color.clear)
-                                        .frame(height: 2)
-                                }
-                            }
-                        }
-                    }
-                }
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.top, 10)
-            .background(Color.black)
-
-            if selectedTab == "Queue" {
-                queueList
-            } else {
-                bookmarkList
-            }
+            queueList
         }
         .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color.black)

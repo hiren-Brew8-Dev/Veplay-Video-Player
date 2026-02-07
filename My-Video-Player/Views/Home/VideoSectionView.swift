@@ -47,10 +47,7 @@ struct VideoSectionView: View {
                             withAnimation(.spring()) {
                                 proxy.scrollTo(id, anchor: .center)
                             }
-                            // Reset highlight after a delay
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                viewModel.highlightVideoId = nil
-                            }
+                            // Scroll to highlighted item
                         }
                     }
                 }
@@ -80,7 +77,6 @@ struct VideoSectionView: View {
                     .cornerRadius(20)
                     .shadow(radius: 20)
                 }
-                .transition(.opacity)
             }
         }
         .background(Color.themeBackground)
@@ -454,8 +450,8 @@ struct VideoSectionView: View {
                 viewModel.selectedVideoIds.insert(video.id)
             }
         } else {
-            // Setup playlist context: All imported videos
-            viewModel.currentPlaylist = viewModel.importedVideos
+            // Setup playlist context: All imported videos (sorted)
+            viewModel.currentPlaylist = viewModel.sortedImportedVideos
             viewModel.playingVideo = video
         }
     }

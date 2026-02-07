@@ -107,20 +107,6 @@ struct PlayerView: View {
                     viewModel.smoothSeek(to: val)
                 }
                 )
-                if viewModel.showAspectRatioToast {
-                     Text(viewModel.aspectRatio.shortLabel)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(12)
-                        // Dynamic ID ensures that changing the ratio triggers a smooth transition
-                        // even if the toast is already visible.
-                        .id(viewModel.aspectRatio.shortLabel) 
-                        .transition(.opacity.animation(.easeInOut(duration: 0.3)))
-                        .zIndex(100)
-                }
             }
             .onChange(of: geo.size) { oldSize, newSize in
                 viewModel.updateAspectRatio(with: newSize)

@@ -22,28 +22,30 @@ struct CustomSlider: View {
                 
                 // Progress Track
                 Capsule()
-                    .fill(Color.orange) // Specifically using orange to match user provided UI
+                    .fill(Color.red)
                     .frame(width: max(0, min(CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound)) * geometry.size.width, geometry.size.width)), height: 4)
                 
                 // Bookmarks
                 ForEach(bookmarks) { bookmark in
                     Rectangle()
                         .fill(Color.white)
-                        .frame(width: 2, height: 8) // Thicker and taller
+                        .frame(width: 2, height: 8)
                         .shadow(radius: 1)
                         .offset(x: max(0, min(CGFloat((bookmark.time - range.lowerBound) / (range.upperBound - range.lowerBound)) * geometry.size.width - 1, geometry.size.width - 2)))
                 }
                 
                 // Thumb
                 Circle()
-                    .fill(Color.white)
-                    .frame(width: 14, height: 14)
-                    .offset(x: max(0, min(CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound)) * geometry.size.width - 7, geometry.size.width - 14)))
+                    .fill(Color.red)
+                    .frame(width: 12, height: 12)
+                    .offset(x: max(0, min(CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound)) * geometry.size.width - 6, geometry.size.width - 12)))
                     .gesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { gesture in
-                                isDragging = true
-                                onEditingChanged(true)
+                                if !isDragging {
+                                    onEditingChanged(true)
+                                    isDragging = true
+                                }
                                 let rawValue = Double(gesture.location.x / geometry.size.width) * (range.upperBound - range.lowerBound) + range.lowerBound
                                 let newValue: Double
                                 if let step = step {
@@ -63,22 +65,24 @@ struct CustomSlider: View {
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
-                    .onChanged { gesture in
-                        isDragging = true
-                        onEditingChanged(true)
-                        let rawValue = Double(gesture.location.x / geometry.size.width) * (range.upperBound - range.lowerBound) + range.lowerBound
-                        let newValue: Double
-                        if let step = step {
-                            newValue = (rawValue / step).rounded() * step
-                        } else {
-                            newValue = rawValue
-                        }
-                        value = min(max(range.lowerBound, newValue), range.upperBound)
-                    }
-                    .onEnded { _ in
-                        isDragging = false
-                        onEditingChanged(false)
-                    }
+                            .onChanged { gesture in
+                                if !isDragging {
+                                    onEditingChanged(true)
+                                    isDragging = true
+                                }
+                                let rawValue = Double(gesture.location.x / geometry.size.width) * (range.upperBound - range.lowerBound) + range.lowerBound
+                                let newValue: Double
+                                if let step = step {
+                                    newValue = (rawValue / step).rounded() * step
+                                } else {
+                                    newValue = rawValue
+                                }
+                                value = min(max(range.lowerBound, newValue), range.upperBound)
+                            }
+                            .onEnded { _ in
+                                isDragging = false
+                                onEditingChanged(false)
+                            }
             )
         }
         .frame(height: 14)

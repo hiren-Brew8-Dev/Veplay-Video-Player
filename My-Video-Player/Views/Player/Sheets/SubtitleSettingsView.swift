@@ -8,7 +8,6 @@ struct SubtitleSettingsView: View {
     var onBack: (() -> Void)? = nil
     
     @State private var showEditSheet = false
-    @State private var showOnlineSheet = false
     @State private var showingFileImporter = false
     
     var body: some View {
@@ -104,10 +103,6 @@ struct SubtitleSettingsView: View {
             SubtitleEditView(isPresented: $showEditSheet, subtitleManager: subtitleManager)
                 .presentationDetents([.fraction(0.5)])
         }
-        .sheet(isPresented: $showOnlineSheet) {
-            SubtitleOnlineView(isPresented: $showOnlineSheet, subtitleManager: subtitleManager, isLandscape: isLandscape)
-                .presentationDetents([.large])
-        }
         .fileImporter(
             isPresented: $showingFileImporter,
             allowedContentTypes: [UTType.plainText, UTType(filenameExtension: "srt")!, UTType.text],
@@ -123,14 +118,12 @@ struct SubtitleSettingsView: View {
     }
     
     var actionGridView: some View {
-        HStack(spacing: 60) {
+        HStack {
+            Spacer()
             actionButton(title: "Quick Import", icon: "doc.badge.arrow.up") {
                 showingFileImporter = true
             }
-            
-            actionButton(title: "Go Online", icon: "globe") {
-                showOnlineSheet = true
-            }
+            Spacer()
         }
     }
     

@@ -122,6 +122,8 @@ class SubtitleManager: ObservableObject {
         // Load the selected track (this will set isEnabled = true)
         if let url = availableTracks[index].url {
             loadSubtitle(from: url, trackName: availableTracks[index].name)
+        } else {
+            isEnabled = true
         }
         selectedTrackIndex = index
     }

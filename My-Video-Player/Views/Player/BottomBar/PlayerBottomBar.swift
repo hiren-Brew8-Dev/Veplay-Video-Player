@@ -14,12 +14,12 @@ struct PlayerBottomBar: View {
     let playbackSpeed: Float
     let onSpeedChange: @MainActor (Float) -> Void
     let onPIP: @MainActor () -> Void
-    let onQueue: @MainActor () -> Void
-    let onTrackSelection: @MainActor () -> Void
     let onAspectRatio: @MainActor () -> Void
     let onLock: @MainActor () -> Void
-    let onRotate: @MainActor () -> Void
-    let onCC: @MainActor () -> Void
+    let onAudioCaptions: @MainActor () -> Void
+    let onMenu: @MainActor () -> Void
+    let onSpeedSheet: @MainActor () -> Void
+    
     // Bookmark Props
     let showBookmarkControls: Bool
     let onSeekToPrevBookmark: @MainActor () -> Void
@@ -28,7 +28,8 @@ struct PlayerBottomBar: View {
     let hasPrevBookmark: Bool
     let hasNextBookmark: Bool
     let isAtBookmark: Bool // To styling the center button
-    let isSubtitleEnabled: Bool // For CC red dot
+    let isSubtitleEnabled: Bool // For styling if needed
+    let onRotate: @MainActor () -> Void
     
     
     @Environment(\.verticalSizeClass) var verticalSizeClass
@@ -60,111 +61,134 @@ struct PlayerBottomBar: View {
         verticalSizeClass == .compact
     }
     
+    @State private var isShowingSpeedInline: Bool = false
+    
     var body: some View {
-        VStack(spacing: isLandscape ? 12 : 8) {
-            if isLandscape {
-                landscapeLayout
-            } else {
-                portraitLayout
-            }
-        }
-        .padding(.top, 60) // Extend hit area upwards to cover floating bookmarks
-        .padding(.horizontal, isLandscape ? 50 : 14)
-        .padding(.bottom, 20)
-        .background(Color.black.opacity(0.001)) // Transparent touch catcher
-        .contentShape(Rectangle()) // Ensure entire area captures taps
-    }
-    
-    // MARK: - Portrait Layout (Image Reference)
-    private var portraitLayout: some View {
-        VStack(spacing: 10) {
-            // 1. Seek Row + Playlist Button
-            HStack(alignment: .center, spacing: 14) {
-                VStack(spacing: 8) {
-                    seekSlider
-                    
-                    HStack {
-                        Text(formatTime(displayTime))
-                            .monospacedDigit()
-                            .frame(width: 65, alignment: .leading)
-                        Spacer()
-                        Text(formatTime(duration))
-                            .monospacedDigit()
-                            .frame(width: 65, alignment: .trailing)
-                    }
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 2)
-                }
-                
-                playlistButton
-                    .padding(.bottom, 12) // Align more with the slider track center
-            }
-            .padding(.horizontal, 4)
-            
-            // 2. Control Buttons Row (Spread out)
-            HStack(spacing: 20) {
-                // Left Group: Lock, CC, Aspect
-                controlButton(icon: "lock.fill", action: onLock)
-                ccButton
-                aspectRatioMenu
-                
-                Spacer() // Pushes Rotate to the right
-                
-                // Right Group
-                controlButton(icon: "rotate.right", action: onRotate)
-            }
-            .padding(.top, 10)
-        }
-    }
-    
-    // MARK: - Landscape Layout (Image 1)
-    private var landscapeLayout: some View {
-        VStack(spacing: 12) {
-            // 1. Seek Bar + Time Labels
-            HStack(spacing: 15) {
-                Text(formatTime(displayTime))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
-                    .monospacedDigit()
-                    .frame(width: 65, alignment: .leading)
-                
+        VStack(spacing: 8) { // Reduced from 20 to 8 for tighter fit
+            // 1. Seek Bar + Time Labels Below
+            VStack(spacing: 4) { // Reduced from 8 to 4
                 seekSlider
                 
-                Text(formatTime(duration))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
-                    .monospacedDigit()
-                    .frame(width: 65, alignment: .trailing)
+                HStack {
+                    Text(formatTime(displayTime))
+                        .font(.system(size: 11, weight: .semibold)) // Smalled font
+                        .foregroundColor(.white)
+                        .monospacedDigit()
+                    
+                    Spacer()
+                    
+                    Text(formatTime(duration))
+                        .font(.system(size: 11, weight: .semibold)) // Smalled font
+                        .foregroundColor(.white)
+                        .monospacedDigit()
+                }
             }
+            .padding(.horizontal, isLandscape ? 50 : 20)
             
-            // 2. Bottom Icon Row
-            HStack(spacing: 25) {
-                controlButton(icon: "lock.fill", action: onLock)
-                // controlButton(icon: "pip.enter", action: onPIP) // Hidden as requested "logically present, UI absent"
-                ccButton
-                aspectRatioMenu
-                controlButton(icon: "rotate.right", action: onRotate)
+            // 2. Control Buttons Row
+            ZStack {
+                // Layer 1: Center (Audio & Captions) - Always centered
+                if !isShowingSpeedInline {
+                    Button(action: onAudioCaptions) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "captions.bubble.fill")
+                                .font(.system(size: 14))
+                            Text(isLandscape ? "Audio & CC" : "Audio & CC")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(Capsule())
+                    }
+                    .transition(.opacity)
+                }
                 
-                Spacer()
-                
-                
-                playlistButton
+                // Layer 2: Left and Right Controls
+                HStack(spacing: 0) {
+                    // Left side: Aspect Ratio
+                    if !isShowingSpeedInline {
+                        Button(action: onAspectRatio) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "aspectratio")
+                                    .font(.system(size: 14))
+                                Text(currentAspectRatio.shortLabel)
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.white.opacity(0.15))
+                            .clipShape(Capsule())
+                        }
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                    }
+                    
+                    Spacer()
+                    
+                    // Right side items
+                    HStack(spacing: 8) {
+                        if isShowingSpeedInline {
+                            // In-line speed selector replaces everything in this row
+                            HStack(spacing: 12) {
+                                Button(action: { withAnimation { isShowingSpeedInline = false } }) {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(8)
+                                        .background(Color.white.opacity(0.2))
+                                        .clipShape(Circle())
+                                }
+                                
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 10) {
+                                        ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
+                                            Button(action: {
+                                                onSpeedChange(Float(speed))
+                                                withAnimation { isShowingSpeedInline = false }
+                                            }) {
+                                                Text(String(format: "%.1fx", speed))
+                                                    .font(.system(size: 13, weight: .bold))
+                                                    .foregroundColor(Float(speed) == playbackSpeed ? .red : .white)
+                                                    .padding(.horizontal, 10)
+                                                    .padding(.vertical, 6)
+                                                    .background(Color.white.opacity(0.1))
+                                                    .cornerRadius(6)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                        } else {
+                            // Speed Pill
+                            Button(action: { withAnimation { isShowingSpeedInline = true } }) {
+                                Text(String(format: "%.1fx", playbackSpeed))
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color.white.opacity(0.15))
+                                    .clipShape(Capsule())
+                            }
+                            
+                            // Rotate button
+                            Button(action: onRotate) {
+                                Image(systemName: "viewfinder")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.white)
+                            }
+                            .frame(width: 32, height: 32)
+                        }
+                    }
+                }
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, isLandscape ? 50 : 16)
         }
-    }
-    
-    // MARK: - Sub-components
-    
-    private var aspectRatioMenu: some View {
-        Button(action: onAspectRatio) {
-            Image(systemName: "rectangle.center.inset.filled")
-                .font(.system(size: 22))
-                .foregroundColor(.white)
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
-        }
+        .padding(.bottom, isLandscape ? 15 : 30) // Adjusted for safe area balance
+        .background(Color.black.opacity(0.001))
+        .contentShape(Rectangle())
     }
     
     // MARK: - Sub-components
@@ -248,7 +272,7 @@ struct PlayerBottomBar: View {
                         .padding(.vertical, 2)
                         .background(
                             ZStack {
-                                Color.black.opacity(0.8)
+                                Color.black.opacity(0.001)
                                 Button(action: {}) {
                                     Color.clear
                                 }
@@ -269,40 +293,10 @@ struct PlayerBottomBar: View {
         )
     }
     
-    private var playlistButton: some View {
-        Button(action: onQueue) {
-            Image(systemName: "list.bullet.indent")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.white)
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
-        }
-    }
-    
-    private var ccButton: some View {
-        Button(action: onCC) {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: "captions.bubble.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(.white)
-                
-                // Red dot badge
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 8, height: 8)
-                    .overlay(Circle().stroke(Color.black, lineWidth: 1))
-                    .offset(x: 3, y: -3)
-                    .opacity(isSubtitleEnabled ? 1 : 0)
-            }
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
-        }
-    }
-    
     private func controlButton(icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 22))
+                .font(.system(size: 20)) // Slightly smaller icons as per detailed look
                 .foregroundColor(.white)
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
