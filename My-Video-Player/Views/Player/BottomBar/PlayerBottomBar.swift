@@ -30,6 +30,10 @@ struct PlayerBottomBar: View {
     let isSubtitleEnabled: Bool // For styling if needed
     let onRotate: @MainActor () -> Void
     
+    // Context Menu State
+    @Binding var isAspectMenuOpen: Bool
+    @Binding var isSpeedMenuOpen: Bool
+    
     
     @Environment(\.verticalSizeClass) var verticalSizeClass
     
@@ -117,10 +121,17 @@ struct PlayerBottomBar: View {
                         .background(Color.white.opacity(0.15))
                         .clipShape(Capsule())
                     }
+                    .onLongPressGesture(minimumDuration: 0.01) {
+                        isAspectMenuOpen = true
+                    }
                     .contextMenu {
                         ForEach(PlayerViewModel.VideoAspectRatio.allCases, id: \.self) { ratio in
                             Button(action: {
                                 onAspectRatio(ratio)
+                                // Reset flag after selection with delay
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    isAspectMenuOpen = false
+                                }
                             }) {
                                 HStack {
                                     Text(ratio.rawValue)
@@ -147,10 +158,17 @@ struct PlayerBottomBar: View {
                                 .background(Color.white.opacity(0.15))
                                 .clipShape(Capsule())
                         }
+                        .onLongPressGesture(minimumDuration: 0.01) {
+                            isSpeedMenuOpen = true
+                        }
                         .contextMenu {
                             ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
                                 Button(action: {
                                     onSpeedChange(Float(speed))
+                                    // Reset flag after selection with delay
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                        isSpeedMenuOpen = false
+                                    }
                                 }) {
                                     HStack {
                                         Text(String(format: "%.1fx", speed))

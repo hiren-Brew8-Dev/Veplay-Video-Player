@@ -45,6 +45,10 @@ struct PlayerControlsView: View {
     @State private var showBookmarkButton: Bool = false
     @State private var showFloatingBookmarkControls = true
     
+    // Context Menu State
+    @State private var isAspectMenuOpen = false
+    @State private var isSpeedMenuOpen = false
+    
     // Sharing State
     @State private var shareInfo: ShareInfo?
     
@@ -287,7 +291,9 @@ struct PlayerControlsView: View {
                                     windowScene.requestGeometryUpdate(geometryRequest)
                                 }
                                 resetTimer()
-                            }
+                            },
+                            isAspectMenuOpen: $isAspectMenuOpen,
+                            isSpeedMenuOpen: $isSpeedMenuOpen
                         )
                     }
                     }
@@ -747,7 +753,8 @@ struct PlayerControlsView: View {
     private func resetTimer() {
         hideTimer?.invalidate()
         let anySheetVisible = showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet
-        if !anySheetVisible {
+        let anyMenuOpen = isAspectMenuOpen || isSpeedMenuOpen
+        if !anySheetVisible && !anyMenuOpen {
              viewModel.isControlsVisible = true
              
              hideTimer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: false) { _ in
