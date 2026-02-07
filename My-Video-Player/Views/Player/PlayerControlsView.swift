@@ -257,12 +257,6 @@ struct PlayerControlsView: View {
                                     viewModel.isControlsVisible = false
                                 }
                             },
-                            onSpeedSheet: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showPlaybackSpeedSheet = true
-                                    viewModel.isControlsVisible = false
-                                }
-                            },
                             showBookmarkControls: showBookmarkButton && showFloatingBookmarkControls,
                             onSeekToPrevBookmark: {
                                 viewModel.seekToPreviousBookmark()
