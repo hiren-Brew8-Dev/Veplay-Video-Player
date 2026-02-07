@@ -40,6 +40,8 @@ struct FolderDetailView: View {
     @State private var activeActionItem: ActionTarget?
     @State private var showSearch = false
     @State private var showImportOptions = false
+    @State private var asyncVideos: [VideoItem] = []
+    @State private var isLoading = false
     
     enum ActionTarget {
         case folder(Folder)
@@ -55,7 +57,8 @@ struct FolderDetailView: View {
     }
     
     var sortedVideos: [VideoItem] {
-        let sorted = folder.videos.sorted {
+        let sourceVideos = (folder.videos.isEmpty && !asyncVideos.isEmpty) ? asyncVideos : folder.videos
+        let sorted = sourceVideos.sorted {
             switch sortOption {
             case .dateDesc: return $0.creationDate > $1.creationDate
             case .dateAsc: return $0.creationDate < $1.creationDate
@@ -84,7 +87,10 @@ struct FolderDetailView: View {
                 
                 ScrollView(.vertical, showsIndicators: true) {
                     VStack {
-                        if isGridView {
+                        if isLoading {
+                            ProgressView()
+                                .padding(.top, 50)
+                        } else if isGridView {
                             gridView
                         } else {
                             listView
@@ -178,6 +184,9 @@ struct FolderDetailView: View {
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
             viewModel.isTabBarHidden = true
+        }
+        .task {
+            await fetchAlbumVideos()
         }
         .onDisappear {
             viewModel.isTabBarHidden = false
@@ -647,6 +656,34 @@ struct FolderDetailView: View {
             let formatter = DateFormatter()
             formatter.dateFormat = "d MMM"
             return formatter.string(from: date)
+        }
+        }
+    }
+    
+    private func fetchAlbumVideos() async {
+        guard let albumId = folder.albumIdentifier, folder.videos.isEmpty else { return }
+        
+        await MainActor.run { isLoading = true }
+        
+        // Fetch on background
+        let fetchResult = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumId], options: nil)
+        guard let album = fetchResult.firstObject else { 
+            await MainActor.run { isLoading = false }
+            return 
+        }
+        
+        let fetchOptions = PHFetchOptions()
+        fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
+        let assets = PHAsset.fetchAssets(in: album, options: fetchOptions)
+        
+        var videos: [VideoItem] = []
+        assets.enumerateObjects { asset, _, _ in
+            videos.append(viewModel.videoItem(from: asset))
+        }
+        
+        await MainActor.run {
+            self.asyncVideos = videos
+            self.isLoading = false
         }
     }
 }
