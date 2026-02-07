@@ -106,6 +106,11 @@ struct VideoSectionView: View {
         .onAppear {
             viewModel.isTabBarHidden = false
         }
+        .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
+            if newVideo == nil {
+                viewModel.isTabBarHidden = false
+            }
+        }
     }
     
     var isAllSelected: Bool {

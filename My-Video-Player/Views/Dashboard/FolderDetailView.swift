@@ -176,6 +176,17 @@ struct FolderDetailView: View {
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .tabBar)
+        .onAppear {
+            viewModel.isTabBarHidden = true
+        }
+        .onDisappear {
+            viewModel.isTabBarHidden = false
+        }
+        .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
+            if newVideo == nil {
+                viewModel.isTabBarHidden = true
+            }
+        }
         .onChange(of: viewModel.isSelectionMode) { oldVal, isSelectionMode in
             if !isSelectionMode {
                 selectedVideoIds.removeAll()

@@ -75,6 +75,11 @@ struct PhotoAlbumDetailView: View {
         .onDisappear {
             viewModel.isTabBarHidden = false
         }
+        .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
+            if newVideo == nil {
+                viewModel.isTabBarHidden = true
+            }
+        }
     }
     
     private func fetchAssets() {
