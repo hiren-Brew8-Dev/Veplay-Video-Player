@@ -60,8 +60,7 @@ class DashboardViewModel: ObservableObject {
     @Published var highlightVideoId: UUID? = nil
     @Published var activeImportFolderURL: URL? = nil
     
-    // Highlight States
-    @Published var highlightVideoId: UUID? = nil
+    
     @Published var highlightFolderId: UUID? = nil
     
     /// Highlight a video temporarily and clear it (Auto-Dismiss logic)
@@ -1078,11 +1077,10 @@ class DashboardViewModel: ObservableObject {
                             }
                             
                             if let found = existing {
-                                self.duplicateVideo = found
-                                print("🎯 Found existing video to highlight: \(found.title) at \(found.url?.path ?? "unknown")")
+                                print("🎯 Found existing video to highlight: \(found.title)")
                                 
                                 // Highlight found duplicate (auto-clear removed per request)
-                                self.highlightVideoId = found.id
+                                self.highlightWithTimeout(found.id)
                             } else {
                                 print("❓ Duplicate file exists at \(destinationURL.path) but VideoItem not found in memory")
                                 self.loadImportedVideos()
@@ -1092,7 +1090,7 @@ class DashboardViewModel: ObservableObject {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                                     let refreshedVideos = self.importedVideos + self.folders.flatMap { $0.videos }
                                     if let reFound = refreshedVideos.first(where: { $0.url?.standardized.path == destinationURL.standardized.path }) {
-                                        self.duplicateVideo = reFound
+                                        self.highlightWithTimeout(reFound.id)
                                     }
                                 }
                             }
