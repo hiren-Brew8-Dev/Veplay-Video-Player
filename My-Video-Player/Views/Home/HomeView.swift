@@ -50,6 +50,12 @@ struct HomeView: View {
             // Ensure tab bar is visible when switching between Video/Gallery/Folder
             viewModel.isTabBarHidden = false
         }
+        .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
+            // When player closes (video becomes nil), restore tab bar
+            if newVideo == nil {
+                viewModel.isTabBarHidden = false
+            }
+        }
     }
     
     private var headerView: some View {
