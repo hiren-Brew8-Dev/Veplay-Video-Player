@@ -166,6 +166,12 @@ struct DashboardView: View {
                 viewModel.isTabBarHidden = true
             }
         }
+        .onChange(of: viewModel.selectedTab) { oldTab, newTab in
+            // When switching to Home tab (0), ensure tab bar is visible
+            if newTab == 0 {
+                viewModel.isTabBarHidden = false
+            }
+        }
     }
     
     private var sharingOverlay: some View {

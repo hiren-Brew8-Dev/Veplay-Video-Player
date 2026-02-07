@@ -46,6 +46,10 @@ struct HomeView: View {
         .onAppear {
             viewModel.isTabBarHidden = false
         }
+        .onChange(of: viewModel.homeSelectedTab) { oldTab, newTab in
+            // Ensure tab bar is visible when switching between Video/Gallery/Folder
+            viewModel.isTabBarHidden = false
+        }
     }
     
     private var headerView: some View {
