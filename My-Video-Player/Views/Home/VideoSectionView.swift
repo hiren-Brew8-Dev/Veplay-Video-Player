@@ -103,6 +103,9 @@ struct VideoSectionView: View {
                 }
             }
         }
+        .onAppear {
+            viewModel.isTabBarHidden = false
+        }
     }
     
     var isAllSelected: Bool {
