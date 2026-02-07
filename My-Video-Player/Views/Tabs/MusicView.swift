@@ -4,17 +4,16 @@ struct MusicView: View {
     var body: some View {
         // NavigationView removed
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             VStack {
                 Image(systemName: "music.note.list")
-                    .font(.system(size: 80))
-                    .foregroundColor(.gray)
+                    .appSecondaryIconStyle(size: 80, color: .homeTextSecondary)
                 Text("No Music Found")
                     .font(.title2)
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                     .padding(.top)
                 Text("Import music to start listening")
-                    .foregroundColor(.gray)
+                    .foregroundColor(.homeTextSecondary)
             }
         }
     }

@@ -11,16 +11,15 @@ struct AddVideoCardView: View {
             VStack(alignment: .leading, spacing: 12) {
                 // 1. Placeholder Thumbnail Section
                 ZStack {
-                    Color.themeSurface
+                    Color.homeCardBackground
                     
                     VStack(spacing: 8) {
                         Image(systemName: "plus")
-                            .font(.system(size: 30, weight: .bold)) // Slightly smaller to match scale
-                            .foregroundColor(.orange)
+                            .appIconStyle(size: 30, weight: .bold, color: .homeAccent)
                         
                         Text("Add Video")
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white.opacity(0.3))
+                            .foregroundColor(.homeTextPrimary.opacity(0.3))
                     }
                 }
                 .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
@@ -34,19 +33,19 @@ struct AddVideoCardView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Import New")
                             .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.homeTextPrimary)
                             .lineLimit(1)
                         
                         Text("From Photos or Files")
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.gray.opacity(0.8))
+                            .foregroundColor(.homeTextSecondary)
                     }
                     Spacer()
                 }
                 .padding(.horizontal, 12)
                 .padding(.bottom, 8)
             }
-            .background(Color.themeSurface.opacity(0.4))
+            .background(Color.homeCardBackground.opacity(0.4))
             .cornerRadius(20)
         }
     }

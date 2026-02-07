@@ -5,17 +5,16 @@ struct BrowseView: View {
     
     var body: some View {
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             VStack {
                 Image(systemName: "globe")
-                    .font(.system(size: 80))
-                    .foregroundColor(.gray)
+                    .appSecondaryIconStyle(size: 80, color: .homeTextSecondary)
                 Text("Browse")
                     .font(.title2)
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                     .padding(.top)
                 Text("Network Stream & Browser")
-                    .foregroundColor(.gray)
+                    .foregroundColor(.homeTextSecondary)
             }
             // .padding(.bottom, 80) // Removed as tab bar is moved
             

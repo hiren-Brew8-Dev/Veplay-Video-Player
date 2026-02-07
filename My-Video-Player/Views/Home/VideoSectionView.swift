@@ -20,7 +20,7 @@ struct VideoSectionView: View {
 
     var body: some View {
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
                 // Header
@@ -60,26 +60,26 @@ struct VideoSectionView: View {
             // Syncing Overlay
             if viewModel.isImporting {
                 ZStack {
-                    Color.black.opacity(0.6)
+                    Color.homeBackground.opacity(0.6)
                         .edgesIgnoringSafeArea(.all)
                     
                     VStack(spacing: 16) {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .orange))
+                            .progressViewStyle(CircularProgressViewStyle(tint: .homeAccent))
                             .scaleEffect(1.5)
                         
                         Text("Syncing...")
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.homeTextPrimary)
                     }
                     .padding(40)
-                    .background(Color.themeSurface)
+                    .background(Color.sheetSurface)
                     .cornerRadius(20)
                     .shadow(radius: 20)
                 }
             }
         }
-        .background(Color.themeBackground)
+        .background(Color.homeBackground)
         .sheet(isPresented: $showSortSheet) {
             CustomSortingView(sortOptionRaw: $viewModel.videoSortOptionRaw, title: "Videos")
         }
@@ -115,7 +115,7 @@ struct VideoSectionView: View {
         HStack {
             Text("Videos")
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(.homeTextPrimary)
             
             Spacer()
             
@@ -123,7 +123,7 @@ struct VideoSectionView: View {
                 Button(action: { showSearch = true }) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 20))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.homeTint)
                 }
                 .navigationDestination(isPresented: $showSearch) {
                     SearchView(viewModel: viewModel, contextTitle: "Videos", initialVideos: viewModel.importedVideos)
@@ -131,33 +131,48 @@ struct VideoSectionView: View {
                 
                 Button(action: { showImportOptions = true }) {
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 28))
-                        .foregroundColor(.orange)
+                        .appIconStyle(size: AppDesign.Icons.toolbarSize + 4, weight: .bold, color: .homeAccent)
                 }
                 
                 Menu {
-                    Button(action: { showSortSheet = true }) {
-                        Label("Sort by", systemImage: "arrow.up.arrow.down")
-                    }
-                    
-                    Button(action: { isGridView.toggle() }) {
-                        Label(isGridView ? "List View" : "Grid View", systemImage: isGridView ? "list.bullet" : "square.grid.2x2")
-                    }
-                    
                     Button(action: { viewModel.isSelectionMode = true }) {
                         Label("Select", systemImage: "checkmark.circle")
+                    }
+                    
+                    Divider()
+                    
+                    Button(action: { isGridView = true }) {
+                        if isGridView {
+                            Label("Grid", systemImage: "checkmark")
+                        } else {
+                            Text("Grid")
+                        }
+                    }
+                    
+                    Button(action: { isGridView = false }) {
+                        if !isGridView {
+                            Label("List", systemImage: "checkmark")
+                        } else {
+                            Text("List")
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    Button(action: { showSortSheet = true }) {
+                        Label("Sort", systemImage: "arrow.up.arrow.down")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
                         .rotationEffect(.degrees(90))
                         .font(.system(size: 20))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.homeTint)
                 }
             }
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
-        .background(Color.themeBackground)
+        .background(Color.homeBackground)
     }
     
     private var selectionHeader: some View {
@@ -172,16 +187,16 @@ struct VideoSectionView: View {
             }) {
                 ZStack {
                     Circle()
-                        .stroke(Color.white, lineWidth: 1.5)
+                        .stroke(Color.homeTextPrimary, lineWidth: 1.5)
                         .frame(width: 24, height: 24)
                     
                     if isAllSelected {
                         Circle()
-                            .fill(Color.orange)
-                            .frame(width: 24, height: 24)
+                            .fill(Color.homeAccent)
+                            .frame(width: AppDesign.Icons.selectionIconSize, height: AppDesign.Icons.selectionIconSize)
                         Image(systemName: "checkmark")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.homeTextPrimary)
                     }
                 }
                 .padding(10)
@@ -192,7 +207,7 @@ struct VideoSectionView: View {
             let allVideos = viewModel.importedVideos
             Text("Selected (\(viewModel.selectedVideoIds.count)/\(allVideos.count))")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(.homeTextPrimary)
             
             Spacer()
             
@@ -201,12 +216,12 @@ struct VideoSectionView: View {
                 viewModel.selectedVideoIds.removeAll()
             }
             .font(.system(size: 16, weight: .bold))
-            .foregroundColor(.orange)
+            .foregroundColor(.homeAccent)
             .padding(10) // Larger hit area
         }
         .padding(.horizontal, 5)
         .padding(.bottom, 10)
-        .background(Color.themeBackground)
+        .background(Color.homeBackground)
     }
     
     private var selectionActionBar: some View {
@@ -229,9 +244,9 @@ struct VideoSectionView: View {
             }
             .padding(.top, 12)
             .padding(.bottom, 25)
-            .background(Color.themeSurface)
+            .background(Color.sheetSurface)
             .cornerRadius(20, corners: [.topLeft, .topRight])
-            .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: -5)
+            .shadow(color: Color.homeBackground.opacity(0.3), radius: 10, x: 0, y: -5)
         }
         .edgesIgnoringSafeArea(.bottom)
         .transition(.move(edge: .bottom))
@@ -241,11 +256,10 @@ struct VideoSectionView: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(.orange)
+                    .appIconStyle(size: AppDesign.Icons.actionSheetIconSize, weight: .semibold, color: .homeAccent)
                 Text(title)
-                    .font(.system(size: 10))
-                    .foregroundColor(.white)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.homeTextPrimary)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10) // Larger hit area
@@ -262,13 +276,13 @@ struct VideoSectionView: View {
                 .frame(height: 50)
             Image(systemName: "video.slash")
                 .font(.system(size: 50))
-                .foregroundColor(.gray)
+                .foregroundColor(.homeTextSecondary)
             Text("No Videos Imported")
                 .font(.headline)
-                .foregroundColor(.gray)
+                .foregroundColor(.homeTextSecondary)
             Text("Import videos to start watching")
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundColor(.homeTextSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 50)
@@ -291,8 +305,8 @@ struct VideoSectionView: View {
                     .padding(40)
                     .frame(maxWidth: .infinity)
                     .frame(height: 150)
-                    .background(Color.gray.opacity(0.2))
-                    .overlay(Color.black.opacity(0.3))
+                    .background(Color.homeCardBackground)
+                    .overlay(Color.homeBackground.opacity(0.3))
                     .overlay(
                         VStack {
                             Spacer()
@@ -300,15 +314,15 @@ struct VideoSectionView: View {
                                 VStack(alignment: .leading) {
                                     Text("All Videos")
                                         .font(.headline)
-                                        .foregroundColor(.white)
+                                        .foregroundColor(.homeTextPrimary)
                                     Text("\(viewModel.importedVideos.count) Videos")
                                         .font(.caption)
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(.homeTextSecondary)
                                 }
                                 Spacer()
                             }
                             .padding()
-                            .background(Color.black.opacity(0.6))
+                            .background(Color.homeBackground.opacity(0.6))
                         }
                     )
                     .cornerRadius(12)
@@ -353,12 +367,12 @@ struct VideoSectionView: View {
             HStack {
                 Text(formattedSectionDate(date))
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.gray)
+                    .foregroundColor(.homeTextSecondary)
                     .padding(.vertical, 10)
                     .padding(.horizontal)
                 Spacer()
             }
-            .background(Color.themeBackground)
+            .background(Color.homeBackground)
         }
     }
     
@@ -439,7 +453,9 @@ struct VideoSectionView: View {
         }))
         
         viewModel.actionSheetItems = items
-        viewModel.showActionSheet = true
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            viewModel.showActionSheet = true
+        }
     }
     
     private func handleVideoTap(_ video: VideoItem) {

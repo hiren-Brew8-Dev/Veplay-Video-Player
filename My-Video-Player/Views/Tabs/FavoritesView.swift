@@ -6,7 +6,7 @@ struct FavoritesView: View {
     
     var body: some View {
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             
             VStack {
                 // Header
@@ -17,9 +17,8 @@ struct FavoritesView: View {
                         // Back handled by NavLink usually, but customized here if needed
                     }
                     Text("Favorites")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                        .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
+                        .foregroundColor(.homeTextPrimary)
                     Spacer()
                 }
                 .padding()

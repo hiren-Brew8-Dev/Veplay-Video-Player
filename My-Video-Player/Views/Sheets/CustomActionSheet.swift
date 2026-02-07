@@ -17,82 +17,68 @@ struct CustomActionSheet: View {
     @Binding var isPresented: Bool
     
     var body: some View {
-        ZStack {
-            if isPresented {
-                // Dimmed Background
-                Color.black.opacity(0.4)
-                    .edgesIgnoringSafeArea(.all)
-                    .onTapGesture {
-                        isPresented = false
-                    }
-                    .transition(.opacity)
+        VStack(spacing: 0) {
+            Spacer()
+            
+            VStack(spacing: 0) {
+                // Handle
+                Capsule()
+                    .fill(Color.sheetDivider)
+                    .frame(width: 40, height: 4)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
                 
-                VStack(spacing: 0) {
-                    Spacer()
-                    
-                    VStack(spacing: 0) {
-                        // Handle
-                        Capsule()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 40, height: 4)
-                            .padding(.top, 12)
-                            .padding(.bottom, 20)
-                        
-                        // Header Section
-                        if let target = target {
-                            headerView(for: target)
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 24)
-                        }
-                        
-                        // Actions List
-                        VStack(spacing: 0) {
-                            ForEach(items) { item in
-                                Button(action: {
-                                    isPresented = false
-                                    // Small delay to allow sheet to start dismissing
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                        item.action()
-                                    }
-                                }) {
-                                    HStack {
-                                        Image(systemName: item.icon)
-                                            .font(.system(size: 18))
-                                            .foregroundColor(item.role == .destructive ? .red : .white)
-                                            .frame(width: 24)
-                                        
-                                        Text(item.title)
-                                            .font(.system(size: 16))
-                                            .foregroundColor(item.role == .destructive ? .red : .white)
-                                        
-                                        Spacer()
-                                    }
-                                    .padding(.vertical, 16)
-                                    .padding(.horizontal, 20)
-                                    .background(Color.themeSurface)
-                                }
-                                
-                                if item.id != items.last?.id {
-                                    Divider()
-                                        .background(Color.white.opacity(0.1))
-                                }
-                            }
-                        }
-                        .background(Color.themeSurface)
-                        .cornerRadius(16)
+                // Header Section
+                if let target = target {
+                    headerView(for: target)
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 40) // Extra padding for safe area
-                    }
-                    .background(Color.themeBackground)
-                    .cornerRadius(24, corners: [.topLeft, .topRight])
-                    .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: -5)
+                        .padding(.bottom, 24)
                 }
-                .edgesIgnoringSafeArea(.bottom)
-                .transition(.move(edge: .bottom))
-                .zIndex(100)
+                
+                // Actions List
+                VStack(spacing: 0) {
+                    ForEach(items) { item in
+                        Button(action: {
+                            withAnimation {
+                                isPresented = false
+                            }
+                            // Small delay to allow sheet to start dismissing
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                item.action()
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: item.icon)
+                                    .appIconStyle(size: AppDesign.Icons.actionSheetIconSize, color: item.role == .destructive ? .sheetTextDestructive : .homeTint)
+                                    .frame(width: 24)
+                                
+                                Text(item.title)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(item.role == .destructive ? .sheetTextDestructive : .sheetTextPrimary)
+                                
+                                Spacer()
+                            }
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 20)
+                            .background(Color.sheetSurface)
+                        }
+                        
+                        if item.id != items.last?.id {
+                            Divider()
+                                .background(Color.sheetDivider)
+                        }
+                    }
+                }
+                .background(Color.sheetSurface)
+                .cornerRadius(16)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 40) // Extra padding for safe area
             }
+            .background(Color.sheetBackground)
+            .cornerRadius(24, corners: [.topLeft, .topRight])
+            .shadow(color: Color.homeBackground.opacity(0.4), radius: 10, x: 0, y: -5)
         }
-        .animation(.spring(response: 0.45, dampingFraction: 0.85, blendDuration: 0), value: isPresented)
+        .edgesIgnoringSafeArea(.bottom)
     }
     
     @ViewBuilder
@@ -107,10 +93,10 @@ struct CustomActionSheet: View {
                     
                     Text(formatDuration(video.duration))
                         .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 2)
-                        .background(Color.black.opacity(0.6))
+                        .background(Color.homeBackground.opacity(0.6))
                         .cornerRadius(3)
                         .padding(4)
                 }
@@ -121,30 +107,29 @@ struct CustomActionSheet: View {
                     if video.asset != nil {
                          Text("\(formatDate(video.creationDate))")
                             .font(.system(size: 12))
-                            .foregroundColor(.gray)
+                            .foregroundColor(.homeTextSecondary)
                     } else {
                         Text("\(formatDate(video.creationDate)) • \(formatBytes(video.fileSizeBytes))")
                             .font(.system(size: 12))
-                            .foregroundColor(.gray)
+                            .foregroundColor(.homeTextSecondary)
                     }
                 }
                 
             case .folder(let folder):
                 Image(systemName: "folder.fill")
-                    .font(.system(size: 30))
-                    .foregroundColor(.orange)
+                    .appIconStyle(size: AppDesign.Icons.toolbarSize + 10, color: .homeAccent)
                     .frame(width: 80, height: 50)
-                    .background(Color.themeSurface)
+                    .background(Color.homeCardBackground)
                     .cornerRadius(8)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(folder.name)
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                     
                     Text("\(folder.videos.count) Videos")
                         .font(.system(size: 12))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.homeTextSecondary)
                 }
             }
             Spacer()
@@ -179,7 +164,7 @@ struct ActionSheetHeaderTitleView: View {
     var body: some View {
         Text(resolvedTitle.isEmpty ? video.title : resolvedTitle)
             .font(.system(size: 16, weight: .bold))
-            .foregroundColor(.white)
+            .foregroundColor(.homeTextPrimary)
             .lineLimit(2)
             .onAppear {
                 if video.title == "Loading..." || video.title == VideoItem.titlePlaceholder {
@@ -216,10 +201,10 @@ struct ActionSheetThumbnailView: View {
                     .clipped()
             } else {
                 Rectangle()
-                    .fill(Color.themeSurface)
+                    .fill(Color.homeCardBackground)
                     .overlay(
                         Image(systemName: "video.fill")
-                            .foregroundColor(.white.opacity(0.15))
+                            .foregroundColor(.homeTextPrimary.opacity(0.15))
                             .font(.system(size: 20))
                     )
             }

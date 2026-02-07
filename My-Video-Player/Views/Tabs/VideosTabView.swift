@@ -17,17 +17,16 @@ struct VideosTabView: View {
         
         } else {
             ZStack(alignment: .bottom) {
-                Color.themeBackground.edgesIgnoringSafeArea(.all)
+                Color.homeBackground.edgesIgnoringSafeArea(.all)
                 
                 VStack(spacing: 0) {
                     // Header
                     HStack {
                         Image(systemName: "play.circle.fill")
-                            .foregroundColor(.blue)
+                            .appIconStyle(size: AppDesign.Icons.headerSize, color: .homeTint)
                         Text("PLAYER")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
+                            .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
+                            .foregroundColor(.homeTextPrimary)
                         Spacer()
                         Button(action: {}) {
                             HStack(spacing: 4) {
@@ -35,11 +34,11 @@ struct VideosTabView: View {
                                     .foregroundColor(.yellow)
                                     Text("Premium")
                                     .fontWeight(.bold)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.homeTextPrimary)
                             }
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(Color.blue)
+                            .background(Color.homeAccent)
                             .cornerRadius(20)
                         }
                     }
@@ -54,12 +53,12 @@ struct VideosTabView: View {
                                     HStack {
                                         Text("History")
                                             .font(.headline)
-                                            .foregroundColor(.white)
+                                            .foregroundColor(.homeTextPrimary)
                                         Spacer()
                                         NavigationLink(destination: HistoryView(historyItems: viewModel.historyItems)) {
                                             Text("View All")
                                                 .font(.subheadline)
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(.homeTextSecondary)
                                         }
                                     }
                                     .padding(.horizontal)
@@ -85,7 +84,7 @@ struct VideosTabView: View {
                                 HStack {
                                     Text("Albums")
                                         .font(.headline)
-                                        .foregroundColor(.white)
+                                        .foregroundColor(.homeTextPrimary)
                                     Spacer()
                                     NavigationLink(destination: AlbumsView(folders: viewModel.folders, viewModel: viewModel)) {
                                         Text("View All")
@@ -112,13 +111,13 @@ struct VideosTabView: View {
                                     HStack {
                                         Text("Videos")
                                             .font(.headline)
-                                            .foregroundColor(.white)
+                                            .foregroundColor(.homeTextPrimary)
                                         Spacer()
                                         // "View All" functionality
                                         NavigationLink(destination: FolderDetailView(initialFolder: Folder(name: "All Videos", videoCount: viewModel.videos.count, videos: viewModel.videos), viewModel: viewModel)) {
                                             Text("View All")
                                                 .font(.subheadline)
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(.homeTextSecondary)
                                         }
                                     }
                                     .padding(.horizontal)
@@ -147,10 +146,9 @@ struct VideosTabView: View {
                         Spacer()
                         Button(action: { showImportMenu = true }) {
                             Image(systemName: "plus")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.white)
+                            .appIconStyle(size: 24, weight: .bold, color: .homeTextPrimary)
                             .frame(width: 56, height: 56)
-                            .background(Color.orange)
+                            .background(Color.homeAccent)
                             .cornerRadius(28)
                             .shadow(radius: 4)
                         }

@@ -16,7 +16,7 @@ struct SubtitleSettingsView: View {
             // Drag Handle
             if !isLandscape {
                 Capsule()
-                    .fill(Color.gray.opacity(0.4))
+                    .fill(Color.homeTextSecondary.opacity(0.4))
                     .frame(width: 36, height: 5)
                     .padding(.top, 10)
                     .padding(.bottom, 20)
@@ -29,7 +29,7 @@ struct SubtitleSettingsView: View {
                         Button(action: onBack) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
+                                .foregroundColor(.homeTextPrimary)
                                 .padding(10)
                         }
                     } else {
@@ -44,7 +44,7 @@ struct SubtitleSettingsView: View {
                     
                     Text("Subtitle Track")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                     
                     Spacer()
                     
@@ -74,7 +74,7 @@ struct SubtitleSettingsView: View {
                         }
                         
                         if !subtitleManager.availableTracks.isEmpty {
-                            Divider().background(Color.gray.opacity(0.2)).padding(.leading, 16)
+                            Divider().background(Color.sheetDivider).padding(.leading, 16)
                         }
                         
                         ForEach(Array(subtitleManager.availableTracks.enumerated()), id: \.element.id) { index, track in
@@ -82,7 +82,7 @@ struct SubtitleSettingsView: View {
                                 subtitleManager.selectTrack(at: index)
                             }
                             if index < subtitleManager.availableTracks.count - 1 {
-                                Divider().background(Color.gray.opacity(0.2)).padding(.leading, 16)
+                                Divider().background(Color.sheetDivider).padding(.leading, 16)
                             }
                         }
                     }
@@ -91,7 +91,7 @@ struct SubtitleSettingsView: View {
             }
         }
         .padding(.trailing, isLandscape ? 30 : 0)
-        .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
+        .background(Color.sheetBackground)
         .if(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
@@ -136,7 +136,7 @@ struct SubtitleSettingsView: View {
                 
                 Text(title)
                     .font(.system(size: 11)) 
-                    .foregroundColor(.gray)
+                    .foregroundColor(.homeTextSecondary)
                     .fixedSize(horizontal: true, vertical: false)
                     .multilineTextAlignment(.center)
             }
@@ -155,12 +155,12 @@ struct SubtitleSettingsView: View {
                 
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color.orange : Color.gray.opacity(0.5), lineWidth: 2)
+                        .stroke(isSelected ? Color.homeAccent : Color.homeTextSecondary.opacity(0.5), lineWidth: 2)
                         .frame(width: 22, height: 22)
                     
                     if isSelected {
                         Circle()
-                            .fill(Color.orange)
+                            .fill(Color.homeAccent)
                             .frame(width: 12, height: 12)
                     }
                 }

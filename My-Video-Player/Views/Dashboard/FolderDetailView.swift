@@ -72,7 +72,7 @@ struct FolderDetailView: View {
     
     var body: some View {
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
                 // Header
@@ -101,20 +101,20 @@ struct FolderDetailView: View {
             // Syncing Overlay
             if viewModel.isImporting {
                 ZStack {
-                    Color.black.opacity(0.6)
+                    Color.homeBackground.opacity(0.8)
                         .edgesIgnoringSafeArea(.all)
                     
                     VStack(spacing: 16) {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .orange))
+                            .progressViewStyle(CircularProgressViewStyle(tint: .homeAccent))
                             .scaleEffect(1.5)
                         
                         Text("Syncing...")
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.homeTextPrimary)
                     }
                     .padding(40)
-                    .background(Color.themeSurface)
+                    .background(Color.sheetSurface)
                     .cornerRadius(20)
                     .shadow(radius: 20)
                 }
@@ -202,24 +202,22 @@ struct FolderDetailView: View {
             }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                     .padding(10)
-                    .background(Color.themeSurface)
+                    .background(Color.homeCardBackground)
                     .clipShape(Circle())
             }
             
             Text(folder.name)
                 .font(.headline)
-                .foregroundColor(.white)
+                .foregroundColor(.homeTextPrimary)
             
             Spacer()
             
-            HStack(spacing: 15) {
+            HStack(spacing: 12) {
                 Button(action: { showSearch = true }) {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 20))
-                        .foregroundColor(.blue)
-                        .padding(10) // Larger hit area
+                        .appIconStyle()
                 }
                 .navigationDestination(isPresented: $showSearch) {
                     SearchView(viewModel: viewModel, contextTitle: folder.name, initialVideos: folder.videos)
@@ -246,10 +244,10 @@ struct FolderDetailView: View {
                     }
                     Divider()
                     Button(action: { isGridView = true }) {
-                        Label("Grid", systemImage: "square.grid.2x2")
+                        Label("Grid", systemImage: isGridView ? "checkmark" : "square.grid.2x2")
                     }
                     Button(action: { isGridView = false }) {
-                        Label("List", systemImage: "list.bullet")
+                        Label("List", systemImage: !isGridView ? "checkmark" : "list.bullet")
                     }
                     Divider()
                     Button(action: { showSortSheet = true }) {
@@ -258,15 +256,14 @@ struct FolderDetailView: View {
                 } label: {
                     Image(systemName: "ellipsis")
                         .rotationEffect(.degrees(90))
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.blue)
-                        .padding(10) // Larger hit area
+                        .appIconStyle()
                 }
             }
+            .padding(.trailing, 16)
         }
         .padding(.horizontal)
         .padding(.bottom, 10)
-        .background(Color.themeBackground)
+        .background(Color.homeBackground)
     }
     
     var selectionHeader: some View {
@@ -280,16 +277,16 @@ struct FolderDetailView: View {
             }) {
                 ZStack {
                     Circle()
-                        .stroke(Color.white, lineWidth: 1.5)
+                        .stroke(Color.homeTextPrimary, lineWidth: 1.5)
                         .frame(width: 24, height: 24)
                     
                     if isAllSelected {
                         Circle()
-                            .fill(Color.orange)
-                            .frame(width: 24, height: 24)
+                            .fill(Color.homeAccent)
+                            .frame(width: AppDesign.Icons.selectionIconSize, height: AppDesign.Icons.selectionIconSize)
                         Image(systemName: "checkmark")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.homeTextPrimary)
                     }
                 }
                 .padding(10)
@@ -299,7 +296,7 @@ struct FolderDetailView: View {
             
             Text("Selected (\(selectedVideoIds.count)/\(folder.videos.count))")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(.homeTextPrimary)
             
             Spacer()
             
@@ -308,12 +305,12 @@ struct FolderDetailView: View {
                 selectedVideoIds.removeAll()
             }
             .font(.system(size: 16, weight: .bold))
-            .foregroundColor(.orange)
+            .foregroundColor(.homeAccent)
             .padding(.trailing, 10)
         }
         .padding(.horizontal, 5)
         .padding(.bottom, 10)
-        .background(Color.themeBackground)
+        .background(Color.homeBackground)
     }
     
     private var gridView: some View {
@@ -367,19 +364,19 @@ struct FolderDetailView: View {
                         NavigationLink(destination: FolderDetailView(initialFolder: subfolder, viewModel: viewModel)) {
                             HStack {
                                 Image(systemName: "folder.fill")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.homeTint)
                                 Text(subfolder.name)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.homeTextPrimary)
                                 Spacer()
                                 Text("\(subfolder.videos.count) Videos")
                                     .font(.caption)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.homeTextSecondary)
                                 Image(systemName: "chevron.right")
                                     .font(.caption)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.homeTextSecondary)
                             }
                             .padding()
-                            .background(Color.themeSurface.opacity(0.3))
+                            .background(Color.homeCardBackground.opacity(0.3))
                         }
                     }
                 }
@@ -423,16 +420,16 @@ struct FolderDetailView: View {
         HStack {
             Text(text)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.gray)
+                .foregroundColor(.homeTextSecondary)
                 .padding(.vertical, 10)
                 .padding(.horizontal)
             Spacer()
         }
-        .background(Color.themeBackground)
+        .background(Color.homeBackground)
         .overlay(
             VStack {
                 Spacer()
-                Divider().background(Color.gray.opacity(0.1))
+                Divider().background(Color.sheetDivider)
             }
         )
     }
@@ -498,9 +495,9 @@ struct FolderDetailView: View {
             }
             .padding(.top, 12)
             .padding(.bottom, 25)
-            .background(Color.themeSurface)
+            .background(Color.sheetSurface)
             .cornerRadius(20, corners: [.topLeft, .topRight])
-            .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: -5)
+            .shadow(color: Color.homeBackground.opacity(0.3), radius: 10, x: 0, y: -5)
         }
         .edgesIgnoringSafeArea(.bottom)
         .transition(.move(edge: .bottom))
@@ -510,11 +507,10 @@ struct FolderDetailView: View {
         Button(action: action) {
             VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(.orange)
+                    .appIconStyle(size: AppDesign.Icons.actionSheetIconSize, weight: .semibold, color: .homeAccent)
                 Text(title)
-                    .font(.system(size: 10))
-                    .foregroundColor(.white)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.homeTextPrimary)
             }
             .frame(maxWidth: .infinity)
         }

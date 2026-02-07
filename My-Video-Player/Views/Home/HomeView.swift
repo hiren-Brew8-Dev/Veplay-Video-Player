@@ -4,7 +4,6 @@ struct HomeView: View {
     @ObservedObject var viewModel: DashboardViewModel
     @Binding var paddingBottom: CGFloat
     
-    @State private var selectedTab: String = "Video"
     let tabs = ["Video", "Gallery", "Folder"]
     @AppStorage("isGridView") private var isGridView: Bool = true
     @State private var showSortSheet: Bool = false
@@ -25,7 +24,7 @@ struct HomeView: View {
                 
                 // Content
                 // Content using stable TabView
-                TabView(selection: $selectedTab) {
+                TabView(selection: $viewModel.homeSelectedTab) {
                     VideoSectionView(viewModel: viewModel, paddingBottom: $paddingBottom)
                         .tag("Video")
                     
@@ -36,25 +35,24 @@ struct HomeView: View {
                         .tag("Folder")
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: selectedTab)
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.homeSelectedTab)
                 // Block swipes in selection mode
                 .allowsHitTesting(true) 
                 .gesture(viewModel.isSelectionMode ? DragGesture() : nil)
             }
         }
-        .background(Color.themeBackground.edgesIgnoringSafeArea(.all))
+        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
         .navigationBarHidden(true)
     }
     
     private var headerView: some View {
         HStack {
-            HStack(spacing: 8) {
+            HStack(spacing: AppDesign.Icons.internalSpacing) {
                 Image(systemName: "play.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(.blue)
+                    .appIconStyle(size: AppDesign.Icons.headerSize)
                 Text("PLAYER")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(.white)
+                    .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
+                    .foregroundColor(.homeTextPrimary)
             }
             
             Spacer()
@@ -69,8 +67,8 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
+                    .background(Color.homeTint)
+                    .foregroundColor(.homeTextPrimary)
                     .cornerRadius(20)
                 }
             }
@@ -87,18 +85,18 @@ struct HomeView: View {
                     ForEach(tabs, id: \.self) { tab in
                         Button(action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                selectedTab = tab
+                                viewModel.homeSelectedTab = tab
                             }
                         }) {
                             VStack(spacing: 6) {
                                 Text(tab)
-                                    .font(.system(size: 16, weight: selectedTab == tab ? .bold : .medium))
-                                    .foregroundColor(selectedTab == tab ? .orange : .gray)
+                                    .font(.system(size: 16, weight: viewModel.homeSelectedTab == tab ? .bold : .medium))
+                                    .foregroundColor(viewModel.homeSelectedTab == tab ? .homeAccent : .homeTextSecondary)
                                 
                                 ZStack {
-                                    if selectedTab == tab {
+                                    if viewModel.homeSelectedTab == tab {
                                         RoundedRectangle(cornerRadius: 1)
-                                            .fill(Color.orange)
+                                            .fill(Color.homeAccent)
                                             .frame(height: 3)
                                             .matchedGeometryEffect(id: "TabIndicator", in: namespace)
                                     } else {
@@ -116,55 +114,51 @@ struct HomeView: View {
                 .padding(.horizontal, 20)
             }
             
-            if selectedTab == "Video" {
-                HStack(spacing: 4) {
+            // Only show Search and Menu for Video tab
+            if viewModel.homeSelectedTab == "Video" {
+                HStack(spacing: 12) {
                     Button(action: { showSearch = true }) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.blue)
-                            .padding(10) // Larger hit area
+                            .appIconStyle()
                     }
                     .navigationDestination(isPresented: $showSearch) {
-                        if selectedTab == "Video" {
-                            SearchView(viewModel: viewModel, contextTitle: "Videos", initialVideos: viewModel.importedVideos)
-                        } else if selectedTab == "Gallery" {
-                            SearchView(viewModel: viewModel, contextTitle: "Gallery", initialVideos: viewModel.allGalleryVideos)
-                        } else {
-                            SearchView(viewModel: viewModel, contextTitle: "Files", initialVideos: viewModel.videos)
-                        }
+                        SearchView(viewModel: viewModel, contextTitle: "Videos", initialVideos: viewModel.importedVideos)
                     }
                     
                     Menu {
-                        if !viewModel.copiedVideoIds.isEmpty {
-                            Button(action: { viewModel.pasteVideos(to: viewModel.importedVideosDirectory) }) {
-                                Label("Paste", systemImage: "doc.on.clipboard")
-                            }
-                            Divider()
-                        }
-                        Button(action: { showSortSheet = true }) {
-                            Label("Sort by", systemImage: "arrow.up.arrow.down")
-                        }
-                        
-                        Button(action: { isGridView.toggle() }) {
-                            Label(isGridView ? "List View" : "Grid View", systemImage: isGridView ? "list.bullet" : "square.grid.2x2")
-                        }
-                        
-                        Button(action: { viewModel.isSelectionMode = true }) {
+                        Button(action: { 
+                            withAnimation { viewModel.isSelectionMode = true }
+                        }) {
                             Label("Select", systemImage: "checkmark.circle")
+                        }
+                        
+                        Divider()
+                        
+                        Button(action: { isGridView = true }) {
+                            Label("Grid", systemImage: isGridView ? "checkmark" : "square.grid.2x2")
+                        }
+                        
+                        Button(action: { isGridView = false }) {
+                            Label("List", systemImage: !isGridView ? "checkmark" : "list.bullet")
+                        }
+                        
+                        Divider()
+                        
+                        Button(action: { showSortSheet = true }) {
+                            Label("Sort", systemImage: "arrow.up.arrow.down")
                         }
                     } label: {
                         Image(systemName: "ellipsis")
                             .rotationEffect(.degrees(90))
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.blue)
-                            .padding(10) // Larger hit area
+                            .appIconStyle()
                     }
                 }
-                .padding(.trailing, 8)
+                .padding(.trailing, 16)
             }
         }
+        
         .sheet(isPresented: $showSortSheet) {
-            CustomSortingView(sortOptionRaw: (selectedTab == "Video" ? $viewModel.videoSortOptionRaw : (selectedTab == "Gallery" ? $viewModel.gallerySortOptionRaw : $viewModel.folderSortOptionRaw)), title: selectedTab == "Gallery" ? "Gallery" : selectedTab)
+            CustomSortingView(sortOptionRaw: (viewModel.homeSelectedTab == "Video" ? $viewModel.videoSortOptionRaw : (viewModel.homeSelectedTab == "Gallery" ? $viewModel.gallerySortOptionRaw : $viewModel.folderSortOptionRaw)), title: viewModel.homeSelectedTab == "Gallery" ? "Gallery" : viewModel.homeSelectedTab)
         }
         .frame(height: 44)
         .padding(.vertical, 8)

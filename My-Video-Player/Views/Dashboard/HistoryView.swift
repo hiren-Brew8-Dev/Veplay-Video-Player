@@ -11,7 +11,7 @@ struct HistoryView: View {
     
     var body: some View {
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
                 // Custom Navigation Bar
@@ -20,18 +20,17 @@ struct HistoryView: View {
                         presentationMode.wrappedValue.dismiss()
                     }) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
+                            .appIconStyle(size: AppDesign.Icons.toolbarSize, weight: .bold, color: .homeTextPrimary)
                             .padding(10)
-                            .background(Color.themeSurface)
+                            .background(Color.homeCardBackground)
                             .clipShape(Circle())
                     }
                     
                     Spacer()
                     
                     Text("History")
-                        .font(.headline)
-                        .foregroundColor(.white)
+                        .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
+                        .foregroundColor(.homeTextPrimary)
                     
                     Spacer()
                     
@@ -45,14 +44,13 @@ struct HistoryView: View {
                             }
                         } label: {
                             Image(systemName: "ellipsis.circle")
-                                .font(.system(size: 20))
-                                .foregroundColor(.blue)
+                                .appIconStyle()
                         }
                     }
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 10)
-                .background(Color.themeBackground)
+                .background(Color.homeBackground)
                 
                 ScrollView {
                     if isGridView {
@@ -79,7 +77,7 @@ struct HistoryView: View {
                                 }) {
                                     VideoRowView(video: video, viewModel: viewModel)
                                 }
-                                Divider().background(Color.gray.opacity(0.2))
+                                Divider().background(Color.sheetDivider)
                             }
                         }
                         .padding(.bottom, 80)

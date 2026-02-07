@@ -10,19 +10,19 @@ struct SearchBarView: View {
                 .foregroundColor(.gray)
             
             TextField(placeholder, text: $text)
-                .foregroundColor(.white)
+                .foregroundColor(.homeTextPrimary)
             
             if !text.isEmpty {
                 Button(action: {
                     text = ""
                 }) {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.gray)
+                        .foregroundColor(.homeTextSecondary)
                 }
             }
         }
         .padding(10)
-        .background(Color(red: 0.15, green: 0.15, blue: 0.18))
+        .background(Color.homeCardBackground)
         .cornerRadius(10)
     }
 }

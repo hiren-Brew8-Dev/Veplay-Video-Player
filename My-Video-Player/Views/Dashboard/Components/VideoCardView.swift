@@ -31,10 +31,9 @@ struct VideoCardView: View {
                     
                 } else {
                     ZStack {
-                        Color.themeSurface
+                        Color.homeCardBackground
                         Image(systemName: "video.fill")
-                            .foregroundColor(.white.opacity(0.15))
-                            .font(.system(size: 30))
+                            .appSecondaryIconStyle(size: AppDesign.Icons.largeIconSize - 10, color: .homeTextPrimary.opacity(0.15))
                     }
                     .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
                     .clipped()
@@ -47,7 +46,7 @@ struct VideoCardView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(Color.black.opacity(0.7))
+                    .background(Color.homeBackground.opacity(0.7))
                     .cornerRadius(4)
                     .padding(14) // Adjusted for thumbnail internal padding
                 
@@ -58,16 +57,16 @@ struct VideoCardView: View {
                             Spacer()
                             ZStack {
                                 Circle()
-                                    .fill(isSelected ? Color.orange : Color.black.opacity(0.3))
-                                    .frame(width: 24, height: 24)
+                                    .fill(isSelected ? Color.homeAccent : Color.homeBackground.opacity(0.3))
+                                    .frame(width: AppDesign.Icons.selectionIconSize, height: AppDesign.Icons.selectionIconSize)
                                 
                                 if isSelected {
                                     Image(systemName: "checkmark")
                                     .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.homeTextPrimary)
                                 } else {
                                     Circle()
-                                        .stroke(Color.white, lineWidth: 1.5)
+                                        .stroke(Color.homeTextPrimary, lineWidth: 1.5)
                                         .frame(width: 24, height: 24)
                                 }
                             }
@@ -86,7 +85,7 @@ struct VideoCardView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(resolvedTitle ?? video.title)
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                         .lineLimit(1)
                     
                     HStack(spacing: 4) {
@@ -97,51 +96,42 @@ struct VideoCardView: View {
                         }
                     }
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.gray.opacity(0.8))
+                    .foregroundColor(.homeTextSecondary)
                 }
                 
                 Spacer()
                 
-                ZStack {
-                    Circle()
-                        .fill(Color.black.opacity(0.3))
-                        .frame(width: 36, height: 36)
-                    
-                    Image(systemName: "ellipsis")
-                        .rotationEffect(.degrees(90))
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                }
-                .frame(width: 50, height: 50) // Very large hit area
-                .contentShape(Rectangle())
-                .highPriorityGesture(
-                    TapGesture().onEnded { _ in
-                        onMenuAction?()
+                if !isSelectionMode {
+                    Button(action: { onMenuAction?() }) {
+                        Image(systemName: "ellipsis")
+                            .rotationEffect(.degrees(90))
+                            .appIconStyle(size: AppDesign.Icons.rowIconSize - 2, weight: .bold, color: .homeTextPrimary)
+                            .padding(8) // Hit area
+                            .contentShape(Rectangle())
                     }
-                )
-                .offset(x: 6, y: -4)
+                    .buttonStyle(.plain)
+                }
             }
-            .padding(.horizontal, 12) // Match the 8px + 4px alignment
+            .padding(.horizontal, 12)
             .padding(.bottom, 8)
         }
-        //.padding(padding) // Removed to fix spacing
         .background(
             ZStack {
-                Color.themeSurface.opacity(0.4)
+                Color.homeCardBackground.opacity(0.4)
                 if viewModel?.highlightVideoId == video.id {
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.orange, lineWidth: 3)
+                        .stroke(Color.homeAccent, lineWidth: 3)
                 }
             }
         )
         .cornerRadius(20)
         .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.05 : 1.0)
         .animation(.spring(), value: viewModel?.highlightVideoId)
-    
         .onAppear {
             loadThumbnail()
             loadTitle()
         }
+        .contentShape(RoundedRectangle(cornerRadius: 20)) // Fix: Constrain button tap area strictly to card shape
     }
     
     // MARK: - Helpers

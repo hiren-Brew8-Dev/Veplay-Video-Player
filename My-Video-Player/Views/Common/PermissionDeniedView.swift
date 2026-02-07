@@ -3,22 +3,22 @@ import SwiftUI
 struct PermissionDeniedView: View {
     var body: some View {
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
                 Image(systemName: "lock.shield.fill")
                     .font(.system(size: 80))
-                    .foregroundColor(.orange)
+                    .foregroundColor(.homeAccent)
                     .padding(.bottom, 20)
                 
                 Text("Permission Required")
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                 
                 Text("We need access to your Photo Library to display your videos. Please enable access in Settings.")
                     .multilineTextAlignment(.center)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.homeTextSecondary)
                     .padding(.horizontal)
                 
                 Button(action: {
@@ -28,10 +28,10 @@ struct PermissionDeniedView: View {
                 }) {
                     Text("Open Settings")
                         .fontWeight(.bold)
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.blue)
+                        .background(Color.homeTint)
                         .cornerRadius(10)
                 }
                 .padding(.top, 20)

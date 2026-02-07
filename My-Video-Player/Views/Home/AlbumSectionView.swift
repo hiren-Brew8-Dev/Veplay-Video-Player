@@ -16,14 +16,13 @@ struct AlbumSectionView: View {
                     Spacer()
                         .frame(height: 50)
                     Image(systemName: "photo.on.rectangle")
-                        .font(.system(size: 50))
-                        .foregroundColor(.gray)
+                        .appSecondaryIconStyle(size: 50, color: .homeTextSecondary)
                     Text("No Gallery Albums Found")
                         .font(.headline)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.homeTextSecondary)
                     Text("Grant photo access to see gallery")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.homeTextSecondary)
                 }
                 .padding(.top, 50)
             } else {
@@ -40,7 +39,7 @@ struct AlbumSectionView: View {
             }
             }
         }
-        .background(Color.themeBackground)
+        .background(Color.homeBackground)
     }
     
     private func albumDestination(for album: PHAssetCollection) -> some View {
@@ -84,10 +83,9 @@ struct AlbumCardView: View {
                         .clipped()
                 } else {
                     ZStack {
-                        Color.themeSurface
+                        Color.homeCardBackground
                         Image(systemName: "video.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(.white.opacity(0.2))
+                            .appSecondaryIconStyle(size: 28, color: .homeTextPrimary.opacity(0.2))
                     }
                     .frame(width: thumbnailSize, height: thumbnailSize)
                     .clipped()
@@ -99,17 +97,17 @@ struct AlbumCardView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(albumTitle)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                     .lineLimit(1)
 
                 Text("\(videoCount) Videos")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.gray.opacity(0.8))
+                    .foregroundColor(.homeTextSecondary)
             }
             .padding(.horizontal, 4)
         }
         .padding(8)
-        .background(Color.themeSurface.opacity(0.4))
+        .background(Color.homeCardBackground.opacity(0.4))
         .cornerRadius(20)
         .onAppear {
             fetchAlbumInfo()

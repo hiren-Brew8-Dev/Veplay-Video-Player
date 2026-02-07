@@ -19,7 +19,7 @@ struct FoldersView: View {
     var body: some View {
         // NavigationView removed to support Global Navigation
         ZStack(alignment: .bottomTrailing) {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
                 // Custom Header with Back Button
@@ -29,9 +29,9 @@ struct FoldersView: View {
                     }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.homeTextPrimary)
                             .padding(10)
-                            .background(Color.themeSurface)
+                            .background(Color.homeCardBackground)
                             .clipShape(Circle())
                     }
                     
@@ -40,7 +40,7 @@ struct FoldersView: View {
                     Text("Folders")
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                     
                     Spacer()
                     
@@ -51,7 +51,7 @@ struct FoldersView: View {
                     }) {
                         Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
                             .font(.system(size: 20))
-                            .foregroundColor(.orange)
+                            .foregroundColor(.homeAccent)
                     }
                 }
                 .padding()
@@ -88,18 +88,18 @@ struct FoldersView: View {
                                         HStack(spacing: 16) {
                                             Image(systemName: "folder.fill")
                                                 .font(.system(size: 24))
-                                                .foregroundColor(.orange)
+                                                .foregroundColor(.homeAccent)
                                                 .frame(width: 44, height: 44)
-                                                .background(Color.themeSurface)
+                                                .background(Color.homeCardBackground)
                                                 .cornerRadius(8)
                                             
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(folder.name)
                                                     .font(.system(size: 16, weight: .semibold))
-                                                    .foregroundColor(.white)
+                                                    .foregroundColor(.homeTextPrimary)
                                                 Text("\(folder.videos.count) Videos")
                                                     .font(.system(size: 12))
-                                                    .foregroundColor(.gray)
+                                                    .foregroundColor(.homeTextSecondary)
                                             }
                                             
                                             Spacer()
@@ -119,13 +119,13 @@ struct FoldersView: View {
                                                 viewModel.showActionSheet = true
                                             }) {
                                                 Image(systemName: "ellipsis")
-                                                    .foregroundColor(.gray)
+                                                    .foregroundColor(.homeTextSecondary)
                                                     .padding(8)
                                             }
                                         }
                                         .padding(.horizontal)
                                         .padding(.vertical, 8)
-                                        .background(Color.themeSurface.opacity(0.3))
+                                        .background(Color.homeCardBackground.opacity(0.3))
                                         .cornerRadius(12)
                                     }
                                 }

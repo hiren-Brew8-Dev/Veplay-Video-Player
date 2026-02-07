@@ -13,7 +13,7 @@ struct AudioCaptionsSheet: View {
         VStack(spacing: 0) {
             // Drag Handle
             Capsule()
-                .fill(Color.gray.opacity(0.4))
+                .fill(Color.homeTextSecondary.opacity(0.4))
                 .frame(width: 36, height: 5)
                 .padding(.top, 10)
                 .padding(.bottom, 20)
@@ -27,7 +27,7 @@ struct AudioCaptionsSheet: View {
                 }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                         .padding(10)
                 }
                 
@@ -84,7 +84,7 @@ struct AudioCaptionsSheet: View {
             Spacer()
         }
         .padding(.bottom, isLandscape ? 20 : 40) // Respect safe area
-        .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
+        .background(Color.sheetBackground)
         .cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: -5)
     }
@@ -123,7 +123,7 @@ struct AudioCaptionsSheet: View {
                             .contentShape(Rectangle())
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
-                            .background(Color.red.opacity(0.15))
+                            .background(Color.homeAccent.opacity(0.15))
                         }
                         .buttonStyle(.plain)
                     } else {
@@ -134,7 +134,7 @@ struct AudioCaptionsSheet: View {
                                 HStack {
                                     Text(track)
                                         .font(.system(size: 15))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(.homeTextPrimary)
                                         .lineLimit(1)
                                     
                                     Spacer()
@@ -142,19 +142,19 @@ struct AudioCaptionsSheet: View {
                                     if index == viewModel.selectedAudioTrackIndex {
                                         Image(systemName: "checkmark")
                                             .font(.system(size: 14, weight: .bold))
-                                            .foregroundColor(.red)
+                                            .foregroundColor(.homeAccent)
                                     }
                                 }
                                 .contentShape(Rectangle())
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
-                                .background(index == viewModel.selectedAudioTrackIndex ? Color.red.opacity(0.15) : Color.clear)
+                                .background(index == viewModel.selectedAudioTrackIndex ? Color.homeAccent.opacity(0.15) : Color.clear)
                             }
                             .buttonStyle(.plain)
                             
                             if index < viewModel.availableAudioTracks.count - 1 {
                                 Divider()
-                                    .background(Color.gray.opacity(0.3))
+                                    .background(Color.sheetDivider)
                                     .padding(.leading, 16)
                             }
                         }
@@ -163,7 +163,7 @@ struct AudioCaptionsSheet: View {
             }
             
             Divider()
-                .background(Color.gray.opacity(0.3))
+                .background(Color.sheetDivider)
                 .padding(.vertical, 8)
             
             // Audio Delay Control
@@ -178,7 +178,7 @@ struct AudioCaptionsSheet: View {
                     Spacer()
                     Text(String(format: "%.2fs", viewModel.audioDelay))
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.orange)
+                        .foregroundColor(.homeAccent)
                         .monospacedDigit()
                 }
                 
@@ -188,7 +188,7 @@ struct AudioCaptionsSheet: View {
                     }) {
                         Image(systemName: "minus")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.homeTextPrimary)
                             .frame(width: 32, height: 32)
                             .background(Color.gray.opacity(0.3))
                             .clipShape(Circle())
@@ -196,7 +196,7 @@ struct AudioCaptionsSheet: View {
                     .buttonStyle(.plain)
                     
                     Slider(value: $viewModel.audioDelay, in: -5.0...5.0, step: 0.05)
-                        .accentColor(.orange)
+                        .accentColor(.homeAccent)
                     
                     Button(action: {
                         viewModel.audioDelay += 0.05
@@ -259,7 +259,7 @@ struct AudioCaptionsSheet: View {
                         .contentShape(Rectangle())
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
-                        .background(!viewModel.subtitleManager.isEnabled ? Color.red.opacity(0.15) : Color.clear)
+                        .background(!viewModel.subtitleManager.isEnabled ? Color.homeAccent.opacity(0.15) : Color.clear)
                     }
                     .buttonStyle(.plain)
                     
@@ -283,19 +283,19 @@ struct AudioCaptionsSheet: View {
                                 if viewModel.subtitleManager.isEnabled && viewModel.subtitleManager.selectedTrackIndex == index {
                                     Image(systemName: "checkmark")
                                         .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.red)
+                                        .foregroundColor(.homeAccent)
                                 }
                             }
                             .contentShape(Rectangle())
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
-                            .background((viewModel.subtitleManager.isEnabled && viewModel.subtitleManager.selectedTrackIndex == index) ? Color.red.opacity(0.15) : Color.clear)
+                            .background((viewModel.subtitleManager.isEnabled && viewModel.subtitleManager.selectedTrackIndex == index) ? Color.homeAccent.opacity(0.15) : Color.clear)
                         }
                         .buttonStyle(.plain)
                         
                         if index < viewModel.subtitleManager.availableTracks.count - 1 {
                             Divider()
-                                .background(Color.gray.opacity(0.3))
+                                .background(Color.sheetDivider)
                                 .padding(.leading, 16)
                         }
                     }

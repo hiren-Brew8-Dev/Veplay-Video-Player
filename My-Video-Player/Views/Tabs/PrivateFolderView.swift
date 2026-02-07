@@ -11,7 +11,7 @@ struct PrivateFolderView: View {
     
     var body: some View {
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             
             if isAuthenticated {
                 VStack {
@@ -21,14 +21,13 @@ struct PrivateFolderView: View {
                             presentationMode.wrappedValue.dismiss()
                         }) {
                              Image(systemName: "chevron.left")
-                                .font(.title2)
-                                .foregroundColor(.white)
+                                .appIconStyle(size: AppDesign.Icons.toolbarSize, weight: .bold, color: .homeTextPrimary)
                                 .padding()
                         }
                         
                         Text("Private Folder")
-                            .font(.headline)
-                            .foregroundColor(.white)
+                            .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
+                            .foregroundColor(.homeTextPrimary)
                         
                         Spacer()
                         
@@ -38,8 +37,7 @@ struct PrivateFolderView: View {
                              authService.lock()
                         }) {
                             Image(systemName: "lock.fill")
-                                .font(.title2)
-                                .foregroundColor(.red)
+                                .appIconStyle(size: AppDesign.Icons.toolbarSize, weight: .bold, color: .red)
                                 .padding()
                         }
                     }
@@ -70,8 +68,7 @@ struct PrivateFolderView: View {
             } else {
                 VStack(spacing: 20) {
                     Image(systemName: "lock.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.gray)
+                        .appSecondaryIconStyle(size: 80, color: .homeTextSecondary)
                     
                     Text("Private Folder Locked")
                         .font(.title2)
@@ -92,7 +89,7 @@ struct PrivateFolderView: View {
                             .foregroundColor(.white)
                             .padding()
                             .frame(width: 200)
-                            .background(Color.blue)
+                            .background(Color.homeAccent)
                             .cornerRadius(12)
                     }
                     .padding(.top, 20)

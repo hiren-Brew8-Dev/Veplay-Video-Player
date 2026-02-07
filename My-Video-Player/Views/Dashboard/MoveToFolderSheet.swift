@@ -16,14 +16,14 @@ struct MoveToFolderSheet: View {
                     }) {
                         HStack {
                             Image(systemName: "folder.fill")
-                                .foregroundColor(.blue)
+                                .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeTint)
                             Text(folder.name)
                                 .foregroundColor(.primary)
                             Spacer()
                             if folder.name == "Downloads" {
                                 Text("(Default)")
                                     .font(.caption)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.homeTextSecondary)
                             }
                         }
                     }

@@ -5,22 +5,22 @@ struct SyncingOverlayView: View {
     
     var body: some View {
         ZStack {
-            Color.black.opacity(0.6)
+            Color.homeBackground.opacity(0.8)
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .progressViewStyle(CircularProgressViewStyle(tint: .homeTextPrimary))
                     .scaleEffect(1.5)
                 
                 Text(message)
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeAccent)
             }
             .padding(40)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.themeSurface)
+                    .fill(Color.sheetSurface)
             )
             .shadow(radius: 10)
         }

@@ -6,13 +6,13 @@ struct LibraryView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.themeBackground.edgesIgnoringSafeArea(.all)
+                Color.homeBackground.edgesIgnoringSafeArea(.all)
                 
                 VStack(alignment: .leading, spacing: 20) {
                     Text("Library")
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                         .padding()
                     
                     List {
@@ -33,7 +33,7 @@ struct LibraryView: View {
                                 Label("Private Folder", systemImage: "lock.shield")
                             }
                         }
-                        .listRowBackground(Color(red: 0.17, green: 0.17, blue: 0.18))
+                        .listRowBackground(Color.homeCardBackground)
                     }
                     .listStyle(InsetGroupedListStyle())
                     .preferredColorScheme(.dark)

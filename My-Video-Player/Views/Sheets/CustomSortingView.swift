@@ -48,7 +48,7 @@ struct CustomSortingView: View {
         VStack(spacing: 0) {
             // Drag Handle
             Capsule()
-                .fill(Color.gray.opacity(0.4))
+                .fill(Color.homeTextSecondary.opacity(0.4))
                 .frame(width: 36, height: 5)
                 .padding(.top, 10)
                 .padding(.bottom, 10)
@@ -57,7 +57,7 @@ struct CustomSortingView: View {
             HStack {
                 Text("Sort by")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                 
                 Spacer()
                 
@@ -66,10 +66,10 @@ struct CustomSortingView: View {
                     presentationMode.wrappedValue.dismiss()
                 }
                 .font(.system(size: 15, weight: .bold))
-                .foregroundColor(.blue)
+                .foregroundColor(.homeTint)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(Color.white.opacity(0.1))
+                .background(Color.homeTextPrimary.opacity(0.1))
                 .cornerRadius(20)
             }
             .padding(.horizontal)
@@ -86,11 +86,11 @@ struct CustomSortingView: View {
                                 }
                             }
                             if criteria != availableCriteria.last {
-                                Divider().background(Color.gray.opacity(0.2)).padding(.leading, 16)
+                                Divider().background(Color.sheetDivider).padding(.leading, 16)
                             }
                         }
                     }
-                    .background(Color(UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0)))
+                    .background(Color.sheetSurface)
                     .cornerRadius(16)
                     
                     // Order Section
@@ -102,18 +102,18 @@ struct CustomSortingView: View {
                                 }
                             }
                             if order != SortOrder.allCases.last {
-                                Divider().background(Color.gray.opacity(0.2)).padding(.leading, 16)
+                                Divider().background(Color.sheetDivider).padding(.leading, 16)
                             }
                         }
                     }
-                    .background(Color(UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0)))
+                    .background(Color.sheetSurface)
                     .cornerRadius(16)
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }
         }
-        .background(Color(UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)).edgesIgnoringSafeArea(.all))
+        .background(Color.sheetBackground.edgesIgnoringSafeArea(.all))
         .onAppear {
             mapCurrentState()
         }
@@ -123,16 +123,16 @@ struct CustomSortingView: View {
         Button(action: action) {
             HStack {
                 Text(title)
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                     .font(.system(size: 15))
                 Spacer()
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color.orange : Color.gray.opacity(0.5), lineWidth: 2)
+                        .stroke(isSelected ? Color.homeAccent : Color.homeTextSecondary.opacity(0.5), lineWidth: 2)
                         .frame(width: 22, height: 22)
                     if isSelected {
                         Circle()
-                            .fill(Color.orange)
+                            .fill(Color.homeAccent)
                             .frame(width: 12, height: 12)
                     }
                 }

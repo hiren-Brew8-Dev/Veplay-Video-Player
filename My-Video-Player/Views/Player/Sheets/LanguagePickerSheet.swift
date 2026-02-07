@@ -26,24 +26,24 @@ struct LanguagePickerSheet: View {
                 Spacer()
                 Text("Select Language")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                 Spacer()
                 Button("Done") {
                     isPresented = false
                 }
-                .foregroundColor(.blue)
+                .foregroundColor(.homeAccent)
             }
             .padding()
-            .background(Color(UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0)))
+            .background(Color.sheetSurface)
             
             // Search Bar (Visual only for now)
             HStack {
-                Image(systemName: "magnifyingglass").foregroundColor(.gray)
-                Text("Search").foregroundColor(.gray)
+                Image(systemName: "magnifyingglass").foregroundColor(.homeTextSecondary)
+                Text("Search").foregroundColor(.homeTextSecondary)
                 Spacer()
             }
             .padding(10)
-            .background(Color(UIColor(red: 0.2, green: 0.2, blue: 0.2, alpha: 1.0)))
+            .background(Color.homeCardBackground)
             .cornerRadius(8)
             .padding()
             
@@ -57,26 +57,26 @@ struct LanguagePickerSheet: View {
                         }) {
                             HStack {
                                 Text(lang.0)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.homeTextPrimary)
                                     .font(.system(size: 16))
                                 Spacer()
                                 if selectedLanguageCode == lang.1 {
                                     Circle()
-                                        .fill(Color.blue)
+                                        .fill(Color.homeAccent)
                                         .frame(width: 8, height: 8)
                                 } else {
                                     Circle()
-                                        .fill(Color.gray.opacity(0.3))
+                                        .fill(Color.sheetDivider)
                                         .frame(width: 8, height: 8)
                                 }
                             }
                             .padding()
-                            .background(Color.black) // List item bg
+                            .background(Color.sheetBackground) // List item bg
                         }
                     }
                 }
             }
         }
-        .background(Color.black.edgesIgnoringSafeArea(.all))
+        .background(Color.sheetBackground.edgesIgnoringSafeArea(.all))
     }
 }

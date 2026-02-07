@@ -14,7 +14,7 @@ struct PhotoAlbumDetailView: View {
     
     var body: some View {
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
                 // Header
@@ -24,9 +24,9 @@ struct PhotoAlbumDetailView: View {
                     }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.homeTextPrimary)
                             .padding(10)
-                            .background(Color.themeSurface)
+                            .background(Color.homeCardBackground)
                             .clipShape(Circle())
                     }
                     
@@ -34,7 +34,7 @@ struct PhotoAlbumDetailView: View {
                     
                     Text(album.localizedTitle ?? "Album")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                     
                     Spacer()
                     
@@ -43,7 +43,7 @@ struct PhotoAlbumDetailView: View {
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 10)
-                .background(Color.themeBackground)
+                .background(Color.homeBackground)
                 
                 if isLoading {
                     Spacer()
@@ -52,7 +52,7 @@ struct PhotoAlbumDetailView: View {
                 } else if assets.isEmpty {
                      Spacer()
                      Text("No videos in this album")
-                         .foregroundColor(.gray)
+                         .foregroundColor(.homeTextSecondary)
                      Spacer()
                 } else {
                     ScrollView {
@@ -118,7 +118,7 @@ struct PhotoAssetItem: View {
                         .clipped()
                 } else {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.3))
+                        .fill(Color.homeCardBackground)
                 }
             }
             
@@ -130,11 +130,11 @@ struct PhotoAssetItem: View {
                     if !title.isEmpty && title != VideoItem.titlePlaceholder {
                         Text(title)
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.homeTextPrimary)
                             .lineLimit(1)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 2)
-                            .background(Color.black.opacity(0.4))
+                            .background(Color.homeBackground.opacity(0.4))
                             .cornerRadius(4)
                     }
                     
@@ -142,9 +142,9 @@ struct PhotoAssetItem: View {
                     
                     Text(durationString)
                         .font(.caption2)
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                         .padding(4)
-                        .background(Color.black.opacity(0.6))
+                        .background(Color.homeBackground.opacity(0.6))
                         .cornerRadius(4)
                 }
                 .padding(4)

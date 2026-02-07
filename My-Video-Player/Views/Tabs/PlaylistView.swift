@@ -5,21 +5,20 @@ struct PlaylistView: View {
     
     var body: some View {
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
             VStack {
                 Image(systemName: "play.rectangle.on.rectangle")
-                    .font(.system(size: 80))
-                    .foregroundColor(.gray)
+                    .appSecondaryIconStyle(size: 80, color: .homeTextSecondary)
                 Text("Playlists")
                     .font(.title2)
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                     .padding(.top)
                 Button(action: {}) {
                     Text("Create New Playlist")
                         .fontWeight(.bold)
                         .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
+                        .background(Color.homeAccent)
+                        .foregroundColor(.homeTextPrimary)
                         .cornerRadius(10)
                 }
                 .padding(.top)

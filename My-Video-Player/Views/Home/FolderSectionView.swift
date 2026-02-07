@@ -10,7 +10,9 @@ struct FolderSectionView: View {
     @State private var activeFolder: Folder?
     @State private var folderToRename: Folder?
     @State private var showRenameAlert = false
+    @State private var showDeleteAlert = false
     @State private var newFolderName = ""
+    @State private var folderToDelete: Folder?
     @State private var showSearch = false
     
     var body: some View {
@@ -18,55 +20,70 @@ struct FolderSectionView: View {
             // Folder sub-header
             HStack {
                 Text("Folders")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
+                    .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
+                    .foregroundColor(.homeTextPrimary)
                 Spacer()
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
             
             ZStack(alignment: .bottomTrailing) {
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 10) {
-                        ForEach(viewModel.folders) { folder in
-                            NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
-                                FolderCardView(folder: folder, onMenuAction: {
-                                    viewModel.actionSheetTarget = .folder(folder)
-                                    viewModel.actionSheetItems = [
-                                        CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
-                                            folderToRename = folder
-                                            newFolderName = folder.name
-                                            showRenameAlert = true
-                                        }),
-                                        CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
-                                            viewModel.deleteFolder(folder)
-                                        })
-                                    ]
-                                    viewModel.showActionSheet = true
-                                })
+            ZStack(alignment: .bottomTrailing) {
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 10) {
+                            ForEach(viewModel.folders) { folder in
+                                NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
+                                    FolderCardView(folder: folder, onMenuAction: {
+                                        viewModel.actionSheetTarget = .folder(folder)
+                                        viewModel.actionSheetItems = [
+                                            CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
+                                                folderToRename = folder
+                                                newFolderName = folder.name
+                                                showRenameAlert = true
+                                            }),
+                                            CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
+                                                folderToDelete = folder
+                                                showDeleteAlert = true
+                                            })
+                                        ]
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            viewModel.showActionSheet = true
+                                        }
+                                    })
+                                }
+                                .buttonStyle(.scalable)
+                                .id(folder.id) // Important for scrolling
                             }
-                            .buttonStyle(.scalable)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.bottom, 100)
+                        
+                        if viewModel.folders.isEmpty {
+                            VStack(spacing: 12) {
+                                Text("No folders yet")
+                                    .font(.headline)
+                                    .foregroundColor(.homeTextSecondary)
+                                Text("Create folders to organize your videos")
+                                    .font(.caption)
+                                    .foregroundColor(.homeTextSecondary)
+                            }
+                            .padding(.top, 40)
                         }
                     }
-                    .padding(.horizontal, 10)
-                    
-                    if viewModel.folders.isEmpty {
-                        VStack(spacing: 12) {
-                            Text("No folders yet")
-                                .font(.headline)
-                                .foregroundColor(.gray)
-                            Text("Create folders to organize your videos")
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                    .onChange(of: viewModel.highlightFolderId) { oldId, newId in
+                        if let id = newId {
+                            withAnimation {
+                                proxy.scrollTo(id, anchor: .center)
+                            }
                         }
-                        .padding(.top, 40)
                     }
                 }
                 // Removed external .padding(.bottom, 80)
             }
         }
         
-        .background(Color.themeBackground)
+        .background(Color.homeBackground)
         .alert("Rename Folder", isPresented: $showRenameAlert) {
             TextField("New Name", text: $newFolderName)
             Button("Cancel", role: .cancel) {}
@@ -77,6 +94,21 @@ struct FolderSectionView: View {
             }
         } message: {
             Text("Enter a new name for this folder")
+        }
+        .alert("Delete Folder", isPresented: $showDeleteAlert) {
+            Button("Cancel", role: .cancel) { folderToDelete = nil }
+            Button("Delete", role: .destructive) {
+                if let folder = folderToDelete {
+                    viewModel.deleteFolder(folder)
+                }
+                folderToDelete = nil
+            }
+        } message: {
+            if let folder = folderToDelete {
+                Text("Are you sure you want to delete '\(folder.name)'? All videos inside will be removed.")
+            } else {
+                Text("Are you sure you want to delete this folder?")
+            }
         }
     }
 }

@@ -1,29 +1,22 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("autoPlayNext") private var autoPlayNext = true
     @AppStorage("useFaceID") private var useFaceID = false  // Placeholder for Phase 4 completion
     @EnvironmentObject var viewModel: DashboardViewModel
 
     var body: some View {
         // NavigationView removed
         ZStack {
-            Color.themeBackground.edgesIgnoringSafeArea(.all)
+            Color.homeBackground.edgesIgnoringSafeArea(.all)
 
             Form {
-                Section(header: Text("Player").foregroundColor(.gray)) {
-                    SettingsToggleRow(
-                        icon: "play.rectangle.fill", title: "Auto Play Next Video",
-                        isOn: $autoPlayNext, iconColor: .orange)
-                }
-
-                Section(header: Text("Privacy & Security").foregroundColor(.gray)) {
+                Section(header: Text("Privacy & Security").foregroundColor(.homeTextSecondary)) {
                     SettingsToggleRow(
                         icon: "faceid", title: "Use FaceID for Private Folder", isOn: $useFaceID,
                         iconColor: .green)
                 }
 
-                Section(header: Text("Support").foregroundColor(.gray)) {
+                Section(header: Text("Support").foregroundColor(.homeTextSecondary)) {
                     Link("Privacy Policy", destination: URL(string: "https://example.com")!)
                     Link("Terms of Service", destination: URL(string: "https://example.com")!)
                     Button("Share App") {
@@ -31,16 +24,16 @@ struct SettingsView: View {
                     }
                 }
 
-                Section(header: Text("About").foregroundColor(.gray)) {
+                Section(header: Text("About").foregroundColor(.homeTextSecondary)) {
                     HStack {
                         Text("Version")
                         Spacer()
                         Text("1.0.0 (Build 1)")
-                            .foregroundColor(.gray)
+                            .foregroundColor(.homeTextSecondary)
                     }
                     Text("Video Player - All In One Clone")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.homeTextSecondary)
                 }
             }
             // Form background color tweak if needed

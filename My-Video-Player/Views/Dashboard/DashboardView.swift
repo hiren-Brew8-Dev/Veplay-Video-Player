@@ -9,8 +9,8 @@ struct DashboardView: View {
     @State private var selectedPhotoItems = [PhotosPickerItem]()
     
     init() {
-        UITabBar.appearance().barTintColor = UIColor(Color.themeSurface)
-        UITabBar.appearance().unselectedItemTintColor = UIColor.gray
+        UITabBar.appearance().barTintColor = UIColor(Color.sheetSurface)
+        UITabBar.appearance().unselectedItemTintColor = UIColor(Color.homeTextSecondary)
         UITabBar.appearance().isHidden = false
     }
     
@@ -50,11 +50,25 @@ struct DashboardView: View {
             }
             
             if viewModel.showActionSheet {
-                CustomActionSheet(
-                    target: viewModel.actionSheetTarget,
-                    items: viewModel.actionSheetItems,
-                    isPresented: $viewModel.showActionSheet
-                )
+                ZStack {
+                    // Background Dimming
+                    Color.homeBackground.opacity(0.4)
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture {
+                            withAnimation {
+                                viewModel.showActionSheet = false
+                            }
+                        }
+                        .transition(.opacity)
+                    
+                    // Sheet Content
+                    CustomActionSheet(
+                        target: viewModel.actionSheetTarget,
+                        items: viewModel.actionSheetItems,
+                        isPresented: $viewModel.showActionSheet
+                    )
+                    .transition(.move(edge: .bottom))
+                }
                 .zIndex(200)
             }
             
@@ -62,33 +76,22 @@ struct DashboardView: View {
                 CustomTabBarOverlay(viewModel: viewModel)
             }
         }
+        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: viewModel.showActionSheet)
         .environmentObject(viewModel)
         .preferredColorScheme(isDarkMode ? .dark : .light)
         .alert("Create New Folder", isPresented: $viewModel.showCreateFolderAlert) {
             TextField("Folder Name", text: $viewModel.newFolderName)
             Button("Cancel", role: .cancel) { viewModel.newFolderName = "" }
             Button("Create") {
-                viewModel.createFolder(name: viewModel.newFolderName)
-                viewModel.newFolderName = ""
-            }
-        } message: {
-            Text("Enter a name for the new folder")
-        }
-        .alert("Already Imported", isPresented: Binding(
-            get: { viewModel.duplicateVideo != nil },
-            set: { if !$0 { viewModel.duplicateVideo = nil } }
-        )) {
-            Button("Cancel", role: .cancel) { viewModel.duplicateVideo = nil }
-            Button("Show") {
-                if let video = viewModel.duplicateVideo {
-                    viewModel.highlightVideoId = video.id
-                    viewModel.duplicateVideo = nil
+                if viewModel.createFolder(name: viewModel.newFolderName) {
+                    viewModel.newFolderName = ""
+                    // Universal rule: Move to Folder section after creating folder
+                    viewModel.selectedTab = 0
+                    viewModel.homeSelectedTab = "Folder"
                 }
             }
         } message: {
-            if let video = viewModel.duplicateVideo {
-                Text("\"\(video.title)\" has already been imported.")
-            }
+            Text("Enter a name for the new folder")
         }
         .sheet(isPresented: $viewModel.showMovePicker) {
             MoveDestinationPickerView(viewModel: viewModel, videosToMove: viewModel.videosToMove, isCutOperation: viewModel.isCutMode)
@@ -101,6 +104,9 @@ struct DashboardView: View {
             switch result {
             case .success(let urls):
                 viewModel.importVideos(from: urls)
+                // Universal rule: Move to Video section after importing
+                viewModel.selectedTab = 0
+                viewModel.homeSelectedTab = "Video"
             case .failure(let error):
                 print("File import failed: \(error.localizedDescription)")
             }
@@ -137,6 +143,9 @@ struct DashboardView: View {
                 await MainActor.run {
                     viewModel.importVideos(from: importedURLs, names: importedNames)
                     selectedPhotoItems.removeAll()
+                    // Universal rule: Move to Video section after importing
+                    viewModel.selectedTab = 0
+                    viewModel.homeSelectedTab = "Video"
                 }
             }
         }
@@ -163,20 +172,20 @@ struct DashboardView: View {
     
     private var sharingOverlay: some View {
         ZStack {
-            Color.black.opacity(0.6)
+            Color.homeBackground.opacity(0.6)
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 16) {
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .orange))
+                    .progressViewStyle(CircularProgressViewStyle(tint: .homeAccent))
                     .scaleEffect(1.5)
                 
                 Text("Sharing...")
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
             }
             .padding(40)
-            .background(Color.themeSurface)
+            .background(Color.sheetSurface)
             .cornerRadius(20)
             .shadow(radius: 20)
         }
@@ -184,17 +193,17 @@ struct DashboardView: View {
     
     private var importingOverlay: some View {
         ZStack {
-            Color.black.opacity(0.4)
+            Color.homeBackground.opacity(0.4)
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 16) {
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .progressViewStyle(CircularProgressViewStyle(tint: .homeTextPrimary))
                     .scaleEffect(1.2)
                 
                 Text("Syncing...")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
             }
             .padding(.horizontal, 40)
             .padding(.vertical, 30)
@@ -223,12 +232,20 @@ struct CustomTabBarOverlay: View {
                     }
                     .padding(.top, 10)
                     .padding(.bottom, 30)
-                    .background(Color.themeSurface)
+                    .background(Color.sheetSurface)
                     .cornerRadius(30, corners: [.topLeft, .topRight])
-                    .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: -5)
+                    .shadow(color: Color.homeBackground.opacity(0.3), radius: 10, x: 0, y: -5)
                     
-                    Button(action: {}) {
+                    ZStack {
+                        // Separate Shadow
+                        Circle()
+                            .fill(Color.homeAccent.opacity(0.4))
+                            .frame(width: 50, height: 50)
+                            .blur(radius: 8)
+                            .offset(y: 5)
+                        
                         Menu {
+                            // Universal Options: Always show all options
                             Button(action: { viewModel.showCreateFolderAlert = true }) {
                                 Label("Create Folder", systemImage: "folder.badge.plus")
                             }
@@ -241,14 +258,13 @@ struct CustomTabBarOverlay: View {
                         } label: {
                             Image(systemName: "plus")
                                 .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(.homeTextPrimary) // Keep icon white for contrast on accent background
                                 .frame(width: 60, height: 60)
-                                .background(Color.orange)
+                                .background(Color.homeAccent)
                                 .clipShape(Circle())
-                                .shadow(color: Color.orange.opacity(0.4), radius: 10, x: 0, y: 5)
                                 .overlay(
                                     Circle()
-                                        .stroke(Color.themeBackground, lineWidth: 4)
+                                        .stroke(Color.homeBackground, lineWidth: 4)
                                 )
                         }
                     }
@@ -261,7 +277,9 @@ struct CustomTabBarOverlay: View {
     
     private func tabBarItem(index: Int, icon: String, title: String) -> some View {
         Button(action: {
-            viewModel.selectedTab = index
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                viewModel.selectedTab = index
+            }
         }) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
@@ -269,7 +287,7 @@ struct CustomTabBarOverlay: View {
                 Text(title)
                     .font(.caption2)
             }
-            .foregroundColor(viewModel.selectedTab == index ? .orange : .gray)
+            .foregroundColor(viewModel.selectedTab == index ? .homeAccent : .homeTextSecondary)
             .frame(maxWidth: .infinity)
         }
     }

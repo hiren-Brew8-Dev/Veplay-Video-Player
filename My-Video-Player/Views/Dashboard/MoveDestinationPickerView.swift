@@ -15,13 +15,18 @@ struct MoveDestinationPickerView: View {
                         viewModel.pasteVideos(to: viewModel.importedVideosDirectory)
                         dismiss()
                     }) {
-                        Label("Imported Videos", systemImage: "video.fill")
+                        Label {
+                            Text("Imported Videos")
+                        } icon: {
+                            Image(systemName: "video.fill")
+                                .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeAccent)
+                        }
                     }
                 }
                 
                 Section("Folders") {
                     if viewModel.folders.isEmpty {
-                        Text("No folders found").foregroundColor(.gray)
+                        Text("No folders found").foregroundColor(.homeTextSecondary)
                     } else {
                         ForEach(viewModel.folders) { folder in
                             if let url = folder.url {
@@ -31,10 +36,10 @@ struct MoveDestinationPickerView: View {
                                 }) {
                                     HStack {
                                         Image(systemName: "folder.fill")
-                                            .foregroundColor(.blue)
+                                            .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeTint)
                                         VStack(alignment: .leading) {
                                             Text(folder.name)
-                                            Text("\(folder.videos.count) Videos").font(.caption).foregroundColor(.gray)
+                                            Text("\(folder.videos.count) Videos").font(.caption).foregroundColor(.homeTextSecondary)
                                         }
                                     }
                                 }
@@ -49,8 +54,13 @@ struct MoveDestinationPickerView: View {
                         viewModel.pasteVideosToGallery(album: nil)
                         dismiss()
                     }) {
-                        Label("Photos Library", systemImage: "photo.on.rectangle.angled")
-                            .foregroundColor(.primary)
+                        Label {
+                            Text("Photos Library")
+                                .foregroundColor(.primary)
+                        } icon: {
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeAccent)
+                        }
                     }
                     
                     ForEach(viewModel.allGalleryAlbums, id: \.localIdentifier) { album in
@@ -69,7 +79,7 @@ struct MoveDestinationPickerView: View {
                                         .font(.system(size: 16, weight: .medium))
                                     Text("\(videoCount(for: album)) Videos")
                                         .font(.caption)
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(.homeTextSecondary)
                                 }
                             }
                         }
@@ -117,9 +127,9 @@ struct AlbumThumbnailView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
             } else {
-                Color.gray.opacity(0.3)
+                Color.homeCardBackground
                 Image(systemName: "photo.on.rectangle")
-                    .foregroundColor(.gray)
+                    .appSecondaryIconStyle(size: 30, color: .homeTextSecondary)
             }
         }
         .onAppear {

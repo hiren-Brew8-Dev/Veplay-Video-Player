@@ -150,7 +150,7 @@ struct PlayerBottomBar: View {
                                             }) {
                                                 Text(String(format: "%.1fx", speed))
                                                     .font(.system(size: 13, weight: .bold))
-                                                    .foregroundColor(Float(speed) == playbackSpeed ? .red : .white)
+                                                    .foregroundColor(Float(speed) == playbackSpeed ? .homeAccent : .white)
                                                     .padding(.horizontal, 10)
                                                     .padding(.vertical, 6)
                                                     .background(Color.white.opacity(0.1))
@@ -211,7 +211,7 @@ struct PlayerBottomBar: View {
                 }
             }
         )
-        .accentColor(.orange)
+        .accentColor(.homeAccent)
         .onChange(of: dragValue) { oldVal, newVal in
             if isDragging {
                 onSmoothSeek(newVal)
@@ -246,9 +246,9 @@ struct PlayerBottomBar: View {
                             Button(action: onToggleBookmark) {
                                 Image(systemName: isAtBookmark ? "bookmark.fill" : "bookmark")
                                     .font(.system(size: 16))
-                                    .foregroundColor(isAtBookmark ? .orange : .white)
+                                    .foregroundColor(isAtBookmark ? .homeAccent : .white)
                                     .padding(8)
-                                    .background(isAtBookmark ? Color.white : Color.orange)
+                                    .background(isAtBookmark ? Color.white : Color.homeAccent)
                                     .clipShape(Circle())
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -283,7 +283,7 @@ struct PlayerBottomBar: View {
                         
                         // The "Dash" (vertical line) connecting to the seekbar
                         Rectangle()
-                            .fill(Color.orange)
+                            .fill(Color.homeAccent)
                             .frame(width: 2, height: 12) // Restored dash height
                     }
                     .allowsHitTesting(true)

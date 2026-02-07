@@ -21,6 +21,7 @@ class DashboardViewModel: ObservableObject {
     @Published var currentPlaylist: [VideoItem] = []
     @Published var isImporting: Bool = false
     @Published var isShowingSearch: Bool = false
+    @Published var homeSelectedTab: String = "Video"
     
     // Data Sources
     @Published var videos: [VideoItem] = []
@@ -57,8 +58,38 @@ class DashboardViewModel: ObservableObject {
     @Published var showFileImporter = false
     @Published var newFolderName = ""
     @Published var highlightVideoId: UUID? = nil
-    @Published var duplicateVideo: VideoItem? = nil
     @Published var activeImportFolderURL: URL? = nil
+    
+    // Highlight States
+    @Published var highlightVideoId: UUID? = nil
+    @Published var highlightFolderId: UUID? = nil
+    
+    /// Highlight a video temporarily and clear it (Auto-Dismiss logic)
+    func highlightWithTimeout(_ id: UUID) {
+        self.highlightVideoId = id
+        // Reset scroll/highlight after delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self = self else { return }
+            if self.highlightVideoId == id {
+                withAnimation {
+                    self.highlightVideoId = nil
+                }
+            }
+        }
+    }
+    
+    /// Highlight a folder temporarily and clear it
+    func highlightFolderWithTimeout(_ id: UUID) {
+        self.highlightFolderId = id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self = self else { return }
+            if self.highlightFolderId == id {
+                withAnimation {
+                    self.highlightFolderId = nil
+                }
+            }
+        }
+    }
     
     // Copy/Paste State
     @Published var copiedVideoIds: Set<UUID> = []
@@ -331,17 +362,42 @@ class DashboardViewModel: ObservableObject {
         print("Toggle favorite for \(video.title)")
     }
     
-    func createFolder(name: String) {
+    func createFolder(name: String) -> Bool {
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let baseURL = documentsURL.appendingPathComponent("Folders", isDirectory: true)
         let folderURL = baseURL.appendingPathComponent(name, isDirectory: true)
+        
+        if FileManager.default.fileExists(atPath: folderURL.path) {
+            // Find existing folder and highlight it
+            if let existingFolder = folders.first(where: { $0.name == name }) {
+                highlightFolderWithTimeout(existingFolder.id)
+                // Return success (true) so the UI dismisses the creation sheet, 
+                // but the user sees the existing folder highlighted.
+                // Or maybe return false to keep sheet open? 
+                // User said "dismiss animation automatically", so implies sheet closes.
+                // So we return true to let DashboardView close sheet, 
+                // BUT we don't create a new folder.
+                return true 
+            }
+            return false
+        }
+        
+        // Ensure "Folders" directory exists
+        if !FileManager.default.fileExists(atPath: baseURL.path) {
+             try? FileManager.default.createDirectory(at: baseURL, withIntermediateDirectories: true)
+        }
         
         do {
             try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true, attributes: nil)
             print("✅ Created folder: \(name)")
             loadUserFolders() // Refresh
+            // Success: clear input and close alert
+            newFolderName = ""
+            showCreateFolderAlert = false 
+            return true
         } catch {
             print("❌ Failed to create folder: \(error.localizedDescription)")
+            return false
         }
     }
     
@@ -612,7 +668,7 @@ class DashboardViewModel: ObservableObject {
                 if assetsToAdd.isEmpty && !galleryVideos.isEmpty {
                     // All were duplicates
                     await MainActor.run {
-                        self.duplicateVideo = firstDuplicate
+                        self.highlightWithTimeout(firstDuplicate?.id ?? UUID()) // Highlight first duplicate
                         self.isImporting = false
                     }
                     return
@@ -935,7 +991,26 @@ class DashboardViewModel: ObservableObject {
         importVideos(from: [url], names: name != nil ? [name!] : nil, to: destination)
     }
     
+    private func checkDuplicate(url: URL) -> VideoItem? {
+        // Check both imported and gallery videos
+        let all = importedVideos + allGalleryVideos + folders.flatMap { $0.videos }
+        // Simple check by filename or usage of identifier if possible
+        // Ideally we check if we already have this URL imported
+        // For now, let's just check filename match which is common for "duplicate import" logic
+        return all.first(where: { $0.url?.lastPathComponent == url.lastPathComponent })
+    }
+    
+    // Import logic
     func importVideos(from urls: [URL], names: [String]? = nil, to destination: URL? = nil) {
+        // 1. Check for duplicates FIRST (User request: "copy duplicate file then highlight... remove show option")
+        // If single file import and it exists, just highlight and return.
+        if urls.count == 1, let first = urls.first, let duplicate = checkDuplicate(url: first) {
+             print("Duplicate found: \(duplicate.title)")
+             // Auto highlight and dismiss
+             highlightWithTimeout(duplicate.id)
+             return
+        }
+        
         // Start Loading
         DispatchQueue.main.async {
             self.isImporting = true

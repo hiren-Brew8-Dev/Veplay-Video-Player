@@ -26,7 +26,7 @@ struct AudioTrackSettingsView: View {
             // Drag Handle (Only visible in portrait)
             if !isLandscape {
                 Capsule()
-                    .fill(Color.gray.opacity(0.4))
+                    .fill(Color.homeTextSecondary.opacity(0.4))
                     .frame(width: 36, height: 5)
                     .padding(.top, 10)
                     .padding(.bottom, 10)
@@ -37,7 +37,7 @@ struct AudioTrackSettingsView: View {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                         .padding(10)
                 }
                 
@@ -45,7 +45,7 @@ struct AudioTrackSettingsView: View {
                 
                 Text("Audio Track")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                 
                 Spacer()
                 
@@ -68,12 +68,12 @@ struct AudioTrackSettingsView: View {
                         VStack(spacing: 12) {
                             Image(systemName: "speaker.slash.fill")
                                 .font(.system(size: 32))
-                                .foregroundColor(.gray)
+                                .foregroundColor(.homeTextSecondary)
                                 .padding(.top, 40)
                             
                             Text("No Audio Tracks Available")
                                 .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.gray)
+                                .foregroundColor(.homeTextSecondary)
                         }
                         .frame(maxWidth: .infinity)
                     } else {
@@ -95,7 +95,7 @@ struct AudioTrackSettingsView: View {
                             )
                             
                             if index < viewModel.availableAudioTracks.count - 1 {
-                                Divider().background(Color.gray.opacity(0.2)).padding(.leading, 16)
+                                Divider().background(Color.sheetDivider).padding(.leading, 16)
                             }
                         }
                     }
@@ -111,40 +111,40 @@ struct AudioTrackSettingsView: View {
                 HStack {
                     Text("Audio delay")
                         .font(.system(size: 15))
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                     
                     Spacer()
                     
                     Text(String(format: "%.1f ms", viewModel.audioDelay * 1000))
                         .font(.system(size: 15))
-                        .foregroundColor(.white)
+                        .foregroundColor(.homeTextPrimary)
                     
                     Button(action: {
                         viewModel.audioDelay = 0.0
                     }) {
                         Text("Reset")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.black)
+                            .foregroundColor(.homeBackground)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.white)
+                            .background(Color.homeTextPrimary)
                             .cornerRadius(4)
                     }
                     .padding(.leading, 8)
                 }
                 
                 Slider(value: $viewModel.audioDelay, in: -5.0...5.0, step: 0.1)
-                    .accentColor(.orange)
+                    .accentColor(.homeAccent)
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
             .padding(.bottom, isLandscape ? 20 : 40)
-            .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
+            .background(Color.sheetBackground)
             .opacity(viewModel.selectedAudioTrackIndex == -1 ? 0.5 : 1.0)
             .allowsHitTesting(viewModel.selectedAudioTrackIndex != -1)
         }
         .padding(.trailing, isLandscape ? 30 : 0)
-        .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
+        .background(Color.sheetBackground)
         .if(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
@@ -158,19 +158,19 @@ struct AudioTrackSettingsView: View {
             HStack {
                 Text(title)
                     .font(.system(size: 15))
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                     .padding(.leading, 16)
                 
                 Spacer()
                 
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color.orange : Color.gray.opacity(0.5), lineWidth: 2)
+                        .stroke(isSelected ? Color.homeAccent : Color.homeTextSecondary.opacity(0.5), lineWidth: 2)
                         .frame(width: 22, height: 22)
                     
                     if isSelected {
                         Circle()
-                            .fill(Color.orange)
+                            .fill(Color.homeAccent)
                             .frame(width: 12, height: 12)
                     }
                 }

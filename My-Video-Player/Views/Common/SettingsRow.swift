@@ -4,14 +4,13 @@ struct SettingsRow<Destination: View>: View {
     let icon: String
     let title: String
     let destination: Destination
-    var iconColor: Color = .blue
+    var iconColor: Color = .homeTint
     
     var body: some View {
         NavigationLink(destination: destination) {
             HStack(spacing: 15) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(iconColor)
+                    .appIconStyle(size: AppDesign.Icons.toolbarSize, color: iconColor)
                     .frame(width: 30) // Fixed width for alignment
                 
                 Text(title)
@@ -30,13 +29,12 @@ struct SettingsToggleRow: View {
     let icon: String
     let title: String
     @Binding var isOn: Bool
-    var iconColor: Color = .blue
+    var iconColor: Color = .homeTint
     
     var body: some View {
         HStack(spacing: 15) {
             Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(iconColor)
+                .appIconStyle(size: AppDesign.Icons.toolbarSize, color: iconColor)
                 .frame(width: 30)
             
             Toggle(title, isOn: $isOn)

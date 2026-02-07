@@ -12,17 +12,16 @@ struct FolderCardView: View {
         VStack(spacing: 12) {
             ZStack {
                 // Folder Surface
-                Color.themeSurface
+                Color.homeCardBackground
                 
                 // Icon / Preview
-                VStack(spacing: 6) {
+                VStack(spacing: AppDesign.Icons.internalSpacing) {
                     Image(systemName: "folder.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.orange)
+                        .appIconStyle(size: AppDesign.Icons.largeIconSize, color: .homeAccent)
                     
                     Text("\(folder.videos.count) Videos")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.homeTextSecondary)
                 }
             }
             .frame(width: thumbnailSize, height: thumbnailSize)
@@ -32,7 +31,7 @@ struct FolderCardView: View {
             HStack(alignment: .top) {
                 Text(folder.name)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                     .lineLimit(1)
                 
                 Spacer()
@@ -43,7 +42,7 @@ struct FolderCardView: View {
                     Image(systemName: "ellipsis")
                         .rotationEffect(.degrees(90))
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.homeTextSecondary)
                         .padding(6)
                         .contentShape(Rectangle())
                 }
@@ -52,7 +51,7 @@ struct FolderCardView: View {
             .padding(.horizontal, 8)
         }
         .padding(8)
-        .background(Color.themeSurface.opacity(0.4))
+        .background(Color.homeCardBackground.opacity(0.4))
         .cornerRadius(20)
     }
 }

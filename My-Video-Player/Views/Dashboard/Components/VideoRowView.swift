@@ -17,16 +17,16 @@ struct VideoRowView: View {
             if isSelectionMode {
                 ZStack {
                     Circle()
-                        .fill(isSelected ? Color.orange : Color.clear)
-                        .frame(width: 22, height: 22)
+                        .fill(isSelected ? Color.homeAccent : Color.clear)
+                        .frame(width: AppDesign.Icons.selectionIconSize - 2, height: AppDesign.Icons.selectionIconSize - 2)
                     
                     if isSelected {
                         Image(systemName: "checkmark")
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.homeTextPrimary)
                     } else {
                         Circle()
-                            .stroke(Color.gray, lineWidth: 1.5)
+                            .stroke(Color.homeTextSecondary, lineWidth: 1.5)
                             .frame(width: 22, height: 22)
                     }
                 }
@@ -42,45 +42,47 @@ struct VideoRowView: View {
                         .cornerRadius(8)
                 } else {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.3))
+                        .fill(Color.homeCardBackground)
                         .frame(width: 100, height: 60)
                         .cornerRadius(8)
                 }
 
                 Text(video.formattedDuration)
                     .font(.caption2)
-                    .foregroundColor(.white)
+                    .foregroundColor(.homeTextPrimary)
                     .padding(2)
-                    .background(Color.black.opacity(0.7))
+                    .background(Color.homeBackground.opacity(0.7))
                     .cornerRadius(2)
                     .padding(2)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(resolvedTitle ?? video.title)
-                    .font(.system(size: 16))
-                    .foregroundColor(.white)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.homeTextPrimary)
                     .lineLimit(1)
 
-                HStack {
+                HStack(spacing: 8) {
+                    Text(video.formattedDuration) // The "time"
+                    Text("•")
                     Text(formattedDate(video.creationDate))
-                    if video.url != nil {
-                        Text("•")
-                        Text(formatBytes(video.fileSizeBytes))
-                    }
                 }
-                .font(.caption)
-                .foregroundColor(.gray)
+                .font(.system(size: 12))
+                .foregroundColor(.homeTextSecondary)
             }
 
             Spacer()
 
+            if video.url != nil {
+                Text(formatBytes(video.fileSizeBytes)) // The "size"
+                    .font(.system(size: 12))
+                    .foregroundColor(.homeTextSecondary)
+                    .padding(.trailing, 2) // Close to the dots
+            }
             if !isSelectionMode {
                 Image(systemName: "ellipsis")
                     .rotationEffect(.degrees(90))
-                    .foregroundColor(.gray)
-                    .padding(.vertical, 15)
-                    .padding(.horizontal, 20)
+                    .appIconStyle(size: AppDesign.Icons.rowIconSize - 2, weight: .bold, color: .homeTint)
                     .contentShape(Rectangle())
                     .highPriorityGesture(
                         TapGesture().onEnded { _ in
@@ -89,18 +91,20 @@ struct VideoRowView: View {
                     )
             }
         }
-        .padding(.horizontal)
+        .padding(.leading, 16)
+        .padding(.trailing, 16) // Exactly 16 to match header
         .padding(.vertical, 8)
-        .contentShape(Rectangle())
         .background(
             ZStack {
+                Color.homeBackground
                 if viewModel?.highlightVideoId == video.id {
-                    Color.orange.opacity(0.1)
+                    Color.homeAccent.opacity(0.1)
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.orange, lineWidth: 2)
+                        .stroke(Color.homeAccent, lineWidth: 2)
                 }
             }
         )
+        .contentShape(Rectangle())
         .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.02 : 1.0)
         .animation(.spring(), value: viewModel?.highlightVideoId)
         .onAppear { 
@@ -129,12 +133,10 @@ struct VideoRowView: View {
 
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
+        formatter.dateFormat = "d MMM"
         return formatter.string(from: date)
     }
-
-    private func loadThumbnail() {
+     private func loadThumbnail() {
         // Use the persistent cache manager for instant loading
         ThumbnailCacheManager.shared.getThumbnail(for: video) { [self] image in
             DispatchQueue.main.async {
