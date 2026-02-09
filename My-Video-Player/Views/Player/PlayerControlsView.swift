@@ -116,13 +116,13 @@ struct PlayerControlsView: View {
             controlsOverlay // Indice 3, fades out when isLocked
                 .zIndex(3)
             
-            persistentLockIcon // The ONLY lock icon instance
-                .zIndex(100)
-            
             lockCornerAnchor // Invisible target in the corner
                 .zIndex(0)
             
             lockOverlay // Tap catcher
+                .zIndex(100)
+            
+            persistentLockIcon // The ONLY lock icon instance - HIGHEST Z
                 .zIndex(101)
             
             settingsOverlay
@@ -431,7 +431,7 @@ struct PlayerControlsView: View {
                 .padding(12) // Ensure good tap area
         }
         .matchedGeometryEffect(id: "lockIcon", in: lockNamespace, isSource: false)
-        .opacity(viewModel.isLocked ? (viewModel.isControlsVisible ? 1.0 : 0.6) : 1.0)
+        .opacity(viewModel.isControlsVisible ? 1.0 : 0.0)
     }
     
     @ViewBuilder
