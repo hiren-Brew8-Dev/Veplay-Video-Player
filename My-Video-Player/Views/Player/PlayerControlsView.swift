@@ -496,7 +496,7 @@ struct PlayerControlsView: View {
                                 Spacer()
                                 sheetContent(isLandscape: false)
                                     .frame(maxWidth: .infinity)
-                                    .if(showSettingsSheet) { $0.frame(height: 300) } // Custom Height for Settings
+                                    .if(showSettingsSheet) { $0.frame(height: UIScreen.main.bounds.height * 0.5) } // Half phone height
                                     .background(Color.clear)
                                     .edgesIgnoringSafeArea(.all) 
                             }
@@ -916,20 +916,9 @@ struct SettingsSheetView: View {
                 SettingsGridItem(icon: "timer", title: "Sleep Timer", isActive: viewModel.isSleepTimerActive, action: onSleepTimer)
                 SettingsGridItem(icon: "camera", title: "Screenshot", action: onScreenshot)
                 SettingsGridItem(icon: "square.and.arrow.up", title: "Share", action: onShare)
-                SettingsGridItem(icon: "airplayaudio", title: "AirPlay", action: onAirPlay)
+                AirPlayGridItem(viewModel: viewModel, onDismiss: { showSettingsSheet = false })
             }
             
-            Divider().background(Color.gray.opacity(0.3))
-            
-            VStack(spacing: 0) {
-                SettingsListItem(
-                    icon: "infinity", 
-                    title: "Queue", 
-                    value: viewModel.playingMode.rawValue,
-                    rightIcon: viewModel.playingMode.iconName,
-                    action: onPlayingMode
-                )
-            }
         }
     }
     
@@ -951,38 +940,56 @@ struct SettingsSheetView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
             
-            Divider().background(Color.gray.opacity(0.3))
-                .padding(.top, 12)
-            
             queueList
         }
     }
     
-    
     private var queueList: some View {
-        ScrollViewReader { proxy in
-            List {
-                ForEach(Array(viewModel.playlist.enumerated()), id: \.element.id) { index, video in
-                    VideoQueueRow(
-                        video: video,
-                        isCurrent: index == viewModel.currentIndex,
-                        onTap: {
-                            viewModel.selectFromQueue(at: index, forceAutoPlay: true)
-                        }
-                    )
-                    .id(video.id)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets())
+        VStack(alignment: .leading, spacing: 3) { // 3px spacing between header and list
+            HStack {
+                Text("Queue")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Button(action: onPlayingMode) {
+                    HStack(spacing: 4) {
+                        Image(systemName: viewModel.playingMode.iconName)
+                            .font(.system(size: 14))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(.gray)
                 }
-                .onMove(perform: move)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .environment(\.editMode, .constant(.active))
-            .onAppear {
-                if let currentVideoId = viewModel.currentVideoItem?.id {
-                    proxy.scrollTo(currentVideoId, anchor: .center)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            
+            ScrollViewReader { proxy in
+                List {
+                    ForEach(Array(viewModel.playlist.enumerated()), id: \.element.id) { index, video in
+                        VideoQueueRow(
+                            video: video,
+                            isCurrent: index == viewModel.currentIndex,
+                            onTap: {
+                                viewModel.selectFromQueue(at: index, forceAutoPlay: true)
+                            }
+                        )
+                        .id(video.id)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets())
+                    }
+                    .onMove(perform: move)
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .environment(\.editMode, .constant(.active))
+                .onAppear {
+                    if let currentVideoId = viewModel.currentVideoItem?.id {
+                        proxy.scrollTo(currentVideoId, anchor: .center)
+                    }
                 }
             }
         }
@@ -1032,11 +1039,7 @@ struct SettingsListItem: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
-                Image(systemName: icon)
-                    .font(.system(size: 20)) // Slightly larger for list
-                    .foregroundColor(.white)
-                    .frame(width: 24)
-                
+              
                 Text(title)
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(.white)
@@ -1061,7 +1064,7 @@ struct SettingsListItem: View {
                         .foregroundColor(.gray)
                 }
             }
-            .padding(.vertical, 12) // Reduced from 16
+            .padding(.vertical, 6) // Reduced from 16
         }
     }
 }
