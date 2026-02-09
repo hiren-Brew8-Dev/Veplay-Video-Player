@@ -496,8 +496,9 @@ struct PlayerControlsView: View {
                                 Spacer()
                                 sheetContent(isLandscape: false)
                                     .frame(maxWidth: .infinity)
+                                    .if(showSettingsSheet) { $0.frame(height: 300) } // Custom Height for Settings
                                     .background(Color.clear)
-                                    .edgesIgnoringSafeArea(.all) // Ensure full height touch
+                                    .edgesIgnoringSafeArea(.all) 
                             }
                             .transition(.move(edge: .bottom))
                         }
@@ -915,9 +916,7 @@ struct SettingsSheetView: View {
                 SettingsGridItem(icon: "timer", title: "Sleep Timer", isActive: viewModel.isSleepTimerActive, action: onSleepTimer)
                 SettingsGridItem(icon: "camera", title: "Screenshot", action: onScreenshot)
                 SettingsGridItem(icon: "square.and.arrow.up", title: "Share", action: onShare)
-                SettingsGridItem(icon: "list.bullet", title: "Queue", action: {
-                    // Portrait: Scroll to queue, Landscape: already visible
-                })
+                SettingsGridItem(icon: "airplayaudio", title: "AirPlay", action: onAirPlay)
             }
             
             Divider().background(Color.gray.opacity(0.3))
@@ -925,7 +924,7 @@ struct SettingsSheetView: View {
             VStack(spacing: 0) {
                 SettingsListItem(
                     icon: "infinity", 
-                    title: "Playing Mode", 
+                    title: "Queue", 
                     value: viewModel.playingMode.rawValue,
                     rightIcon: viewModel.playingMode.iconName,
                     action: onPlayingMode
@@ -935,34 +934,15 @@ struct SettingsSheetView: View {
     }
     
     private var portraitBody: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                settingsControls
-                    .padding(16)
-                
-                Divider().background(Color.gray.opacity(0.3))
-                
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text("Queue")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
-                        
-                        Spacer()
-                        
-                        Image(systemName: viewModel.playingMode.iconName)
-                            .font(.system(size: 16))
-                            .foregroundColor(.gray)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    
-                    queueList
-                        .frame(height: 400)
-                }
-            }
-            .padding(.bottom, 20)
+        VStack(spacing: 0) {
+            settingsControls
+                .padding(16)
+            
+            Divider().background(Color.gray.opacity(0.3))
+            
+            queueList
         }
+        .padding(.bottom, 20)
     }
     
     private var landscapeBody: some View {
@@ -974,25 +954,10 @@ struct SettingsSheetView: View {
             Divider().background(Color.gray.opacity(0.3))
                 .padding(.top, 12)
             
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text("Queue")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Spacer()
-                    
-                    Image(systemName: viewModel.playingMode.iconName)
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                
-                queueList
-            }
+            queueList
         }
     }
+    
     
     private var queueList: some View {
         ScrollViewReader { proxy in
@@ -1096,7 +1061,7 @@ struct SettingsListItem: View {
                         .foregroundColor(.gray)
                 }
             }
-            .padding(.vertical, 16)
+            .padding(.vertical, 12) // Reduced from 16
         }
     }
 }
