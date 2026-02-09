@@ -15,7 +15,7 @@ struct CastButton: View {
             AVRoutePickerViewWrapper(isActive: viewModel.isExternalPlaybackActive)
                 .opacity(0.01)
         }
-        .frame(width: 35, height: 44)
+        .frame(width: 30, height: 44)
     }
 }
 
