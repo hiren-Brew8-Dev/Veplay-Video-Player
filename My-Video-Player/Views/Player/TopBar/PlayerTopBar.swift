@@ -4,16 +4,32 @@ struct PlayerTopBar: View {
     let title: String
     var onBack: @MainActor () -> Void
     @ObservedObject var viewModel: PlayerViewModel
+    let lockNamespace: Namespace.ID
     var onMenu: @MainActor () -> Void
     var onLock: @MainActor () -> Void
-    var onUnlock: (@MainActor () -> Void)? = nil // Optional for non-locked view
+    var onUnlock: (@MainActor () -> Void)?
+    
     @Environment(\.verticalSizeClass) var verticalSizeClass
     
     private var isLandscape: Bool {
         verticalSizeClass == .compact
     }
     
-    let lockNamespace: Namespace.ID
+    init(title: String, 
+         onBack: @escaping @MainActor () -> Void, 
+         viewModel: PlayerViewModel, 
+         lockNamespace: Namespace.ID, 
+         onMenu: @escaping @MainActor () -> Void, 
+         onLock: @escaping @MainActor () -> Void, 
+         onUnlock: (@MainActor () -> Void)? = nil) {
+        self.title = title
+        self.onBack = onBack
+        self.viewModel = viewModel
+        self.lockNamespace = lockNamespace
+        self.onMenu = onMenu
+        self.onLock = onLock
+        self.onUnlock = onUnlock
+    }
     
     var body: some View {
         VStack(spacing: 0) {
