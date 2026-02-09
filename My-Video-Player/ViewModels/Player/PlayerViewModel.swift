@@ -223,9 +223,6 @@ class PlayerViewModel: NSObject, ObservableObject {
     func performDoubleTapSeek(forward: Bool) {
         let baseSkip: Double = 10
         
-        // Force controls hidden during skip
-        isControlsVisible = false
-        
         // 1. Determine if we continue an existing sequence or start a new one
         // If UI isn't active, OR direction changed, we start fresh sequence from CURRENT playback time
         if !isSeekUIActive || lastSeekForward != forward {
@@ -243,18 +240,21 @@ class PlayerViewModel: NSObject, ObservableObject {
         
         // 4. Boundary checks
         if duration > 0 {
+            // "if the available seconds are < 10 secs the show that second"
+            // We clamp to boundaries
             targetTime = max(0, min(targetTime, duration))
         } else {
             targetTime = max(0, targetTime)
         }
         
         // 5. Update display amount to what we actually skipped
+        // This ensures if we hit the end/start, it shows the actual remaining distance
         accumulatedSkipAmount = abs(targetTime - seekAnchorTime)
         
         // 6. Seek
         seek(to: targetTime)
         
-        // 7. Reset the 1.5s hide timer
+        // 7. Reset the 0.8s hide timer
         showSeekUI(forward: forward)
     }
 
@@ -265,8 +265,8 @@ class PlayerViewModel: NSObject, ObservableObject {
         
         skipResetTask?.cancel()
         skipResetTask = Task {
-            // Updated to 1.5s as requested
-            try? await Task.sleep(nanoseconds: 1_500_000_000) 
+            // Updated to 0.8s as requested
+            try? await Task.sleep(nanoseconds: 800_000_000) 
             
             if !Task.isCancelled {
                 await MainActor.run {
@@ -1968,8 +1968,10 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
             case .stopped, .ended:
                 // When video ends, set currentTime to full duration so seek bar shows complete
                 if currentPlayer.state == .ended {
+                    // Force UI current time = total duration as requested for state-based completion
                     self.currentTime = self.duration
                     self.currentTimeString = self.formatTime(seconds: self.duration)
+                    self.isPlaying = false
                 }
                 
                 // Check Sleep Timer End of Track
@@ -2018,7 +2020,18 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
     private func updateTimeFromVLC() {
         guard let player = vlcPlayer, !isSeeking else { return }
         
-        let vlcTime = Double(player.time.intValue) / 1000.0
+        // If the video has ended, don't update time from player to avoid 
+        // VLC's imprecise end-time reporting (e.g., 00:04 / 00:05)
+        if player.state == .ended {
+            self.currentTime = self.duration
+            self.currentTimeString = formatTime(seconds: self.duration)
+            return
+        }
+        
+        var vlcTime = Double(player.time.intValue) / 1000.0
+        
+        // Clamp time to ensure it never exceeds duration or goes below zero
+        vlcTime = min(max(0, vlcTime), duration)
         
         // If paused and we have a recent manual seek position, prevent overwrite
         if !isPlaying, let intendedPosition = lastIntendedSeekPosition {

@@ -10,56 +10,53 @@ struct DoubleTapOverlay: View {
         verticalSizeClass == .compact
     }
     
-    private var skipAmount: String {
-        let seconds = Int(viewModel.accumulatedSkipAmount)
-        let mins = seconds / 60
-        let secs = seconds % 60
-        return String(format: "%02d:%02d", mins, secs)
+    private var skipAmountText: String {
+        let totalSeconds = Int(viewModel.accumulatedSkipAmount)
+        return "\(isForward ? ">>" : "<<") \(totalSeconds) secs"
     }
     
     var body: some View {
         ZStack {
-            // Invisible touch area to capture taps for dismissal
-            Color.black.opacity(0.001)
-                .edgesIgnoringSafeArea(.all)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    onClose()
-                }
+            // Invisible area - no hit testing anyway
+            Color.clear
             
-            // Central Indicator
-            VStack {
-                Spacer()
-                HStack {
+            if isLandscape {
+                // LANDSCAPE: Show near the side skip buttons, perfectly centered vertically
+                HStack(spacing: 0) {
+                    if !isForward {
+                        // Backward indicator on the left
+                        indicatorText
+                            .padding(.leading, 120) // Increased to clear the skip button icon
+                        Spacer()
+                    } else {
+                        // Forward indicator on the right
+                        Spacer()
+                        indicatorText
+                            .padding(.trailing, 120) // Increased to clear the skip button icon
+                    }
+                }
+            } else {
+                // PORTRAIT: Show centered below play/pause
+                VStack {
                     Spacer()
-                    skipIndicator
+                    indicatorText
+                        // Offset to push it further below the center play button
+                        .padding(.top, 120) 
                     Spacer()
                 }
-                Spacer()
             }
         }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { // Matched VM duration
-                onClose()
-            }
-        }
+        .allowsHitTesting(false)
     }
     
-    private var skipIndicator: some View {
-        HStack(spacing: 4) {
-            if !isForward {
-                // Backward
-                Text("< \(skipAmount)")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
-                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
-            } else {
-                // Forward
-                Text("> \(skipAmount)")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
-                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
-            }
-        }
+    private var indicatorText: some View {
+        Text(skipAmountText)
+            .font(.system(size: 16, weight: .bold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.2), radius: 4)
     }
 }
