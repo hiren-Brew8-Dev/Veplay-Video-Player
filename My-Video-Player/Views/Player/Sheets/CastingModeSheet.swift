@@ -24,15 +24,21 @@ struct CastingModeSheet: View {
             
             // Overlay sheet - Device List (appears on top)
             if showDiscovery {
-                CastDevicePickerView(
-                    isLandscape: isLandscape,
-                    onBack: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showDiscovery = false
+                GeometryReader { geometry in
+                    CastDevicePickerView(
+                        isLandscape: isLandscape,
+                        onBack: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showDiscovery = false
+                            }
                         }
+                    )
+                    .if(!isLandscape) { view in
+                        view.frame(height: geometry.size.height * 0.5)
+                            .frame(maxHeight: .infinity, alignment: .bottom)
                     }
-                )
-                .transition(.move(edge: isLandscape ? .trailing : .bottom))
+                    .transition(.move(edge: isLandscape ? .trailing : .bottom))
+                }
                 .zIndex(1)
             }
 

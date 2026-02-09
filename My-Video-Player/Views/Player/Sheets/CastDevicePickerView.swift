@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct CastDevicePickerView: View {
     @ObservedObject var discoveryManager = DiscoveryManager()
@@ -26,7 +25,7 @@ struct CastDevicePickerView: View {
             // Header
             HStack {
                 Button(action: onBack) {
-                    Image(systemName: "chevron.left")
+                    Image(systemName: isLandscape ? "xmark" : "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.sheetTextPrimary)
                         .padding(10)
@@ -41,33 +40,31 @@ struct CastDevicePickerView: View {
                 Spacer()
                 
                 // Invisible spacer for symmetry
-                Image(systemName: "chevron.left")
+                Image(systemName: isLandscape ? "xmark" : "chevron.left")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.clear)
                     .padding(10)
             }
-            .padding(.horizontal)
+            
             .padding(.top, isLandscape ? 10 : 0)
             
             Divider()
                 .background(Color.sheetDivider)
-            
-            localNetworkStatusRow
             
             // Content
             if showPermissionView && !hasShownPermissionPrompt {
                 permissionContent
             } else if discoveryManager.permissionDenied {
                 permissionDeniedContent
-        } else {
-            discoveryContent
+            } else {
+                discoveryContent
+            }
         }
-    }
-    .padding(.horizontal, isLandscape ? 15 : 0)
-    .padding(.bottom, isLandscape ? 0 : 0) // No bottom padding, safe area handles it
-    .if(isLandscape) { $0.frame(maxHeight: .infinity, alignment: .top) }
-    .if(!isLandscape) { $0.padding(.bottom, 20) } // Safe area padding for portrait
-    .background(Color.sheetBackground)
+        .padding(.horizontal, isLandscape ? 15 : 0)
+        .padding(.bottom, 0)
+        .if(isLandscape) { $0.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top) }
+        .if(!isLandscape) { $0.padding(.bottom, 20) } // Safe area padding for portrait
+        .background(Color.sheetBackground)
         .if(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
@@ -82,80 +79,6 @@ struct CastDevicePickerView: View {
             } else {
                 showPermissionView = true
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-            // When user returns from Settings after toggling Local Network access.
-            if hasShownPermissionPrompt {
-                discoveryManager.startScanning()
-            }
-        }
-    }
-    
-    private var localNetworkStatusRow: some View {
-        HStack(spacing: 10) {
-            Image(systemName: iconForLocalNetworkAccess)
-                .foregroundColor(colorForLocalNetworkAccess)
-            
-            Text(textForLocalNetworkAccess)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.sheetTextPrimary)
-            
-            Spacer()
-            
-            if discoveryManager.localNetworkAccess == .denied {
-                Button("Settings") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                }
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.themeAccent)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 10)
-        .background(Color.sheetSurface.opacity(0.7))
-    }
-    
-    private var iconForLocalNetworkAccess: String {
-        if !hasShownPermissionPrompt {
-            return "questionmark.circle.fill"
-        }
-        switch discoveryManager.localNetworkAccess {
-        case .granted:
-            return "checkmark.circle.fill"
-        case .denied:
-            return "xmark.octagon.fill"
-        case .unknown:
-            return "exclamationmark.triangle.fill"
-        }
-    }
-    
-    private var textForLocalNetworkAccess: String {
-        if !hasShownPermissionPrompt {
-            return "Local Network: Not requested"
-        }
-        switch discoveryManager.localNetworkAccess {
-        case .granted:
-            return "Local Network: Allowed"
-        case .denied:
-            return "Local Network: Denied"
-        case .unknown:
-            return "Local Network: Checking..."
-        }
-    }
-    
-    private var colorForLocalNetworkAccess: Color {
-        if !hasShownPermissionPrompt {
-            return .themeSecondary
-        }
-        switch discoveryManager.localNetworkAccess {
-        case .granted:
-            return .green
-        case .denied:
-            return .sheetTextDestructive
-        case .unknown:
-            return .themeSecondary
         }
     }
     
@@ -355,9 +278,9 @@ struct CastDevicePickerView: View {
                     .padding(.top, 4)
             }
         }
-        .padding(20)
+        .padding()
         .background(Color.homeAccent.opacity(0.1))
         .cornerRadius(12)
-        .padding(.horizontal, 20)
+        .padding(.horizontal)
     }
 }
