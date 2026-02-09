@@ -6,8 +6,6 @@ struct PlayerTopBar: View {
     @ObservedObject var viewModel: PlayerViewModel
     let lockNamespace: Namespace.ID
     var onMenu: @MainActor () -> Void
-    var onLock: @MainActor () -> Void
-    var onUnlock: (@MainActor () -> Void)?
     
     @Environment(\.verticalSizeClass) var verticalSizeClass
     
@@ -18,17 +16,13 @@ struct PlayerTopBar: View {
     init(title: String, 
          onBack: @escaping @MainActor () -> Void, 
          viewModel: PlayerViewModel, 
-         lockNamespace: Namespace.ID, 
-         onMenu: @escaping @MainActor () -> Void, 
-         onLock: @escaping @MainActor () -> Void, 
-         onUnlock: (@MainActor () -> Void)? = nil) {
+         lockNamespace: Namespace.ID,
+         onMenu: @escaping @MainActor () -> Void) {
         self.title = title
         self.onBack = onBack
         self.viewModel = viewModel
         self.lockNamespace = lockNamespace
         self.onMenu = onMenu
-        self.onLock = onLock
-        self.onUnlock = onUnlock
     }
     
     var body: some View {
@@ -52,35 +46,19 @@ struct PlayerTopBar: View {
                 
                 // Right Group
                 HStack(spacing: 8) {
-                    if !viewModel.isLocked {
-                        CastButton(viewModel: viewModel)
-                        
-                        Button(action: onLock) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.white)
-                        }
+                    CastButton(viewModel: viewModel)
+                    
+                    // The Lock Icon Placeholder (always present for layout and alignment)
+                    Color.clear
                         .frame(width: 44, height: 44)
-                        .matchedGeometryEffect(id: "lockButton", in: lockNamespace)
-                        
-                        Button(action: onMenu) {
-                            Image(systemName: "gearshape")
-                                .font(.system(size: 20))
-                                .foregroundColor(.white)
-                        }
-                        .frame(width: 44, height: 44)
-                    } else {
-                        // When locked, show only the lock icon at the settings position
-                        Button(action: {
-                            onUnlock?()
-                        }) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.white)
-                        }
-                        .frame(width: 44, height: 44)
-                        .matchedGeometryEffect(id: "lockButton", in: lockNamespace)
+                        .matchedGeometryEffect(id: "lockIcon", in: lockNamespace, isSource: !viewModel.isLocked)
+                    
+                    Button(action: onMenu) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white)
                     }
+                    .frame(width: 44, height: 44)
                 }
             }
             .padding(.horizontal, isLandscape ? 50 : 8)

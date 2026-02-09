@@ -92,81 +92,17 @@ struct PlayerControlsView: View {
         isSystemMenuActive = false
     }
     
-    private func showTapFeedback(forward: Bool) {
-        showDoubleTapFeedback = forward
-    }
-    
-    private func triggerLockAnimation() {
+    private func handleLockToggle() {
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         
-        // Reset state
-        viewModel.lockAnimationText = ""
-        viewModel.isUnlockAnimation = false
-        
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            viewModel.lockAnimationActive = true
-            viewModel.lockAnimationStage = 1
-        }
-        
-        // Snap typing animation
-        let text = "Lock"
-        for i in 1...text.count {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.04) {
-                if viewModel.lockAnimationActive {
-                    viewModel.lockAnimationText = String(text.prefix(i))
-                }
-            }
-        }
-        
-        // Start movement sooner
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
-                viewModel.lockAnimationStage = 2 // Moving to corner
-                viewModel.isLocked = true
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+            viewModel.isLocked.toggle()
+            if viewModel.isLocked {
                 viewModel.isControlsVisible = false
-            }
-        }
-        
-        // Dismiss flying overlay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            withAnimation(.easeOut(duration: 0.2)) {
-                viewModel.lockAnimationActive = false
-                viewModel.lockAnimationStage = 3
-                viewModel.lockAnimationText = ""
-            }
-        }
-    }
-    
-    private func triggerUnlockAnimation() {
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
-        
-        viewModel.lockAnimationText = ""
-        viewModel.isUnlockAnimation = true
-        
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            viewModel.lockAnimationActive = true
-            viewModel.lockAnimationStage = 2 // Start at corner
-        }
-        
-        // No text for unlock as requested
-        
-        // Immediate move back
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
-                viewModel.lockAnimationStage = 1 // Move back to button
-                viewModel.isLocked = false
+            } else {
                 viewModel.isControlsVisible = true
                 resetTimer()
-            }
-        }
-        
-        // Dismiss
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            withAnimation(.easeOut(duration: 0.2)) {
-                viewModel.lockAnimationActive = false
-                viewModel.lockAnimationStage = 0
             }
         }
     }
@@ -177,13 +113,16 @@ struct PlayerControlsView: View {
                 .allowsHitTesting(!isSystemMenuActive)
                 .zIndex(1)
             
-            controlsOverlay
+            controlsOverlay // Indice 3, fades out when isLocked
                 .zIndex(3)
             
-            lockOverlay
+            persistentLockIcon // The ONLY lock icon instance
                 .zIndex(100)
             
-            lockAnimationOverlay
+            lockCornerAnchor // Invisible target in the corner
+                .zIndex(0)
+            
+            lockOverlay // Tap catcher
                 .zIndex(101)
             
             settingsOverlay
@@ -293,9 +232,6 @@ struct PlayerControlsView: View {
                                 showSettingsSheet = true
                                 viewModel.isControlsVisible = false
                             }
-                        },
-                        onLock: {
-                            triggerLockAnimation()
                         }
                     )
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -350,7 +286,7 @@ struct PlayerControlsView: View {
                                 resetTimer()
                             },
                             onLock: {
-                                triggerLockAnimation()
+                                handleLockToggle()
                             },
                             onAudioCaptions: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -468,92 +404,52 @@ struct PlayerControlsView: View {
     @ViewBuilder
     private var lockOverlay: some View {
         if viewModel.isLocked {
-            ZStack {
-                // Layout-filling transparent view to capture all touches
-                Color.black.opacity(0.001)
-                    .contentShape(Rectangle())
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            viewModel.isControlsVisible.toggle()
-                        }
-                        if viewModel.isControlsVisible {
-                            resetTimer()
-                        }
+            Color.black.opacity(0.001)
+                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.isControlsVisible.toggle()
                     }
-                    .highPriorityGesture(DragGesture().onChanged { _ in })
-                    .highPriorityGesture(MagnificationGesture().onChanged { _ in })
-                    .highPriorityGesture(TapGesture(count: 2).onEnded { }) 
-                
-                if viewModel.isControlsVisible {
-                    VStack {
-                        PlayerTopBar(
-                            title: videoTitle,
-                            onBack: onBack,
-                            viewModel: viewModel,
-                            lockNamespace: lockNamespace,
-                            onMenu: { },
-                            onLock: { },
-                            onUnlock: {
-                                triggerUnlockAnimation()
-                            }
-                        )
-                        Spacer()
-                    }
-                } else {
-                    // Final locked state: icon only at top-right
-                    VStack {
-                        HStack {
-                            Spacer()
-                            
-                            // Re-use same icon button styling for consistency
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    viewModel.isControlsVisible = true
-                                    resetTimer()
-                                }
-                            }) {
-                                Image(systemName: "lock.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.white)
-                                    .opacity(0.8)
-                            }
-                            .frame(width: 44, height: 44)
-                            .padding(.trailing, isLandscape ? 50 : 8)
-                            .matchedGeometryEffect(id: "lockButton", in: lockNamespace)
-                        }
-                        .padding(.top, isLandscape ? 20 : 40)
-                        Spacer()
+                    if viewModel.isControlsVisible {
+                        resetTimer()
                     }
                 }
-            }
-            .ignoresSafeArea()
+                .highPriorityGesture(DragGesture().onChanged { _ in })
+                .highPriorityGesture(MagnificationGesture().onChanged { _ in })
+                .highPriorityGesture(TapGesture(count: 2).onEnded { }) 
+                .ignoresSafeArea()
         }
     }
     
     @ViewBuilder
-    private var lockAnimationOverlay: some View {
-        if viewModel.lockAnimationActive {
-            ZStack {
-                HStack(spacing: 12) {
-                    Image(systemName: viewModel.isUnlockAnimation ? "lock.open.fill" : "lock.fill")
-                        .font(.system(size: 22, weight: .bold))
-                    
-                    if !viewModel.lockAnimationText.isEmpty && !viewModel.isUnlockAnimation {
-                        Text(viewModel.lockAnimationText)
-                            .font(.system(size: 20, weight: .bold))
-                            .fixedSize(horizontal: true, vertical: false) // Prevent label cutting
-                    }
-                }
+    private var persistentLockIcon: some View {
+        Button(action: handleLockToggle) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 20))
                 .foregroundColor(.white)
-                .shadow(color: .black.opacity(0.5), radius: 5, x: 0, y: 3)
-                .scaleEffect(viewModel.lockAnimationStage == 1 ? 1.1 : 1.0)
-                .matchedGeometryEffect(id: "lockButton", in: lockNamespace, isSource: false)
-            }
-            .transition(.opacity)
-            .zIndex(100)
-            .ignoresSafeArea()
+                .padding(12) // Ensure good tap area
         }
+        .matchedGeometryEffect(id: "lockIcon", in: lockNamespace, isSource: false)
+        .opacity(viewModel.isLocked ? (viewModel.isControlsVisible ? 1.0 : 0.6) : 1.0)
+    }
+    
+    @ViewBuilder
+    private var lockCornerAnchor: some View {
+        VStack {
+            HStack {
+                Spacer()
+                // Mirror the TopBar placeholder position when locked
+                Color.clear
+                    .frame(width: 44, height: 44)
+                    .padding(.trailing, isLandscape ? 50 : 8)
+                    .padding(.top, isLandscape ? 20 : 40)
+                    .matchedGeometryEffect(id: "lockIcon", in: lockNamespace, isSource: viewModel.isLocked)
+            }
+            Spacer()
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
     
     @ViewBuilder
