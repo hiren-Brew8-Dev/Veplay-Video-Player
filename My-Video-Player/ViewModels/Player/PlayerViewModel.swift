@@ -1782,7 +1782,7 @@ class PlayerViewModel: NSObject, ObservableObject {
         // Update local state for UI responsiveness
         self.currentTime = time
         self.currentTimeString = self.formatTime(seconds: time)
-        self.subtitleManager.update(currentTime: time)
+        self.subtitleManager.update(currentTime: time, audioDelay: self.audioDelay)
         
         if isVLC {
             isSeeking = true
