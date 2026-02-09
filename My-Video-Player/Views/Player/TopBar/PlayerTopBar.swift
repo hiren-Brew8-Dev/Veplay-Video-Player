@@ -63,7 +63,7 @@ struct PlayerTopBar: View {
                     
                     // The Lock Icon Placeholder (always present for layout and alignment)
                     Color.clear
-                        .frame(width: 44, height: 44)
+                        .frame(width: 24, height: 44)
                         .matchedGeometryEffect(id: "lockIcon", in: lockNamespace, isSource: !viewModel.isLocked)
                     
                     Button(action: onMenu) {
@@ -71,7 +71,7 @@ struct PlayerTopBar: View {
                             .font(.system(size: 20))
                             .foregroundColor(.white)
                     }
-                    .frame(width: 44, height: 44)
+                    .frame(width: 24, height: 44)
                 }
             }
             .padding(.horizontal, isLandscape ? 50 : 8)
