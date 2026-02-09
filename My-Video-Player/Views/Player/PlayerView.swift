@@ -78,7 +78,9 @@ struct PlayerView: View {
                 viewModel: viewModel,
                 videoTitle: viewModel.videoTitle,
                 toggleControls: {
-                    viewModel.isControlsVisible.toggle()
+                    if viewModel.activeMenu == .none {
+                        viewModel.isControlsVisible.toggle()
+                    }
                 },
                 onBack: {
                     guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {

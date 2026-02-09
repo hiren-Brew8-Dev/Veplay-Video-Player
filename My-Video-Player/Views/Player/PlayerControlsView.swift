@@ -39,15 +39,13 @@ struct PlayerControlsView: View {
     @State private var showPlayingModeSheet = false
     @State private var showPlaybackSpeedSheet = false
     @State private var showAudioCaptionsSheet = false
+    @State private var isSystemMenuActive = false
+    @State private var systemMenuDeactivateWorkItem: DispatchWorkItem?
     
     // Navigation State
     @State private var returnToSettings = false
     @State private var showBookmarkButton: Bool = false
     @State private var showFloatingBookmarkControls = true
-    
-    // Context Menu State
-    @State private var isAspectMenuOpen = false
-    @State private var isSpeedMenuOpen = false
     
     // Sharing State
     @State private var shareInfo: ShareInfo?
@@ -68,6 +66,29 @@ struct PlayerControlsView: View {
         return "none"
     }
     
+    private func beginSystemMenuInteraction(timeout: TimeInterval = 8.0) {
+        systemMenuDeactivateWorkItem?.cancel()
+        isSystemMenuActive = true
+        
+        // Keep controls visible + stop auto-hide while the system menu is up.
+        hideTimer?.invalidate()
+        hideTimer = nil
+        viewModel.isControlsVisible = true
+        
+        let workItem = DispatchWorkItem {
+            isSystemMenuActive = false
+            resetTimer()
+        }
+        systemMenuDeactivateWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout, execute: workItem)
+    }
+    
+    private func endSystemMenuInteraction() {
+        systemMenuDeactivateWorkItem?.cancel()
+        systemMenuDeactivateWorkItem = nil
+        isSystemMenuActive = false
+    }
+    
     private func showTapFeedback(forward: Bool) {
         showDoubleTapFeedback = forward
     }
@@ -75,6 +96,7 @@ struct PlayerControlsView: View {
     var body: some View {
         ZStack {
             gestureOverlay
+                .allowsHitTesting(!isSystemMenuActive)
                 .zIndex(1)
             
             controlsOverlay
@@ -146,63 +168,14 @@ struct PlayerControlsView: View {
         .onChange(of: viewModel.bookmarks) { _ in
             // If bookmarks exist on load, enable the feature so indicator shows
             if !viewModel.bookmarks.isEmpty {
-                 showBookmarkButton = true
+                showBookmarkButton = true
             }
             // If all bookmarks removed (and feature was on), disable it (auto-hide logic)
             // But wait, user said "if any video has not" - so this is correct.
             else if viewModel.bookmarks.isEmpty && showBookmarkButton {
-                 showBookmarkButton = false
+                showBookmarkButton = false
             }
         }
-        .onChange(of: isAspectMenuOpen) { oldVal, newVal in
-            if !newVal && oldVal {
-                resetTimer()
-            }
-        }
-        .onChange(of: isSpeedMenuOpen) { oldVal, newVal in
-            if !newVal && oldVal {
-                resetTimer()
-            }
-        }
-        .overlay(
-            Group {
-                if isAspectMenuOpen {
-                    FloatingSelectionMenu(
-                        title: "Aspect Ratio",
-                        items: PlayerViewModel.VideoAspectRatio.allCases,
-                        selectedItem: viewModel.aspectRatio,
-                        itemLabel: { $0.rawValue },
-                        onSelect: { ratio in
-                            viewModel.updateAspectRatio(to: ratio)
-                            withAnimation { isAspectMenuOpen = false }
-                            resetTimer()
-                        },
-                        onClose: {
-                            withAnimation { isAspectMenuOpen = false }
-                            resetTimer()
-                        }
-                    )
-                }
-                
-                if isSpeedMenuOpen {
-                    FloatingSelectionMenu(
-                        title: "Playback Speed",
-                        items: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0],
-                        selectedItem: Double(viewModel.playbackSpeed),
-                        itemLabel: { String(format: "%.2fx", $0) },
-                        onSelect: { speed in
-                            viewModel.setSpeed(Float(speed))
-                            withAnimation { isSpeedMenuOpen = false }
-                            resetTimer()
-                        },
-                        onClose: {
-                            withAnimation { isSpeedMenuOpen = false }
-                            resetTimer()
-                        }
-                    )
-                }
-            }
-        )
     }
     
     // MARK: - Subviews
@@ -283,6 +256,7 @@ struct PlayerControlsView: View {
                             playbackSpeed: viewModel.playbackSpeed,
                             onSpeedChange: { speed in
                                 viewModel.setSpeed(speed)
+                                endSystemMenuInteraction()
                                 resetTimer()
                             },
                             onPIP: {
@@ -291,6 +265,7 @@ struct PlayerControlsView: View {
                             },
                             onAspectRatio: { ratio in
                                 viewModel.updateAspectRatio(to: ratio)
+                                endSystemMenuInteraction()
                                 resetTimer()
                             },
                             onLock: {
@@ -341,8 +316,18 @@ struct PlayerControlsView: View {
                                 }
                                 resetTimer()
                             },
-                            isAspectMenuOpen: $isAspectMenuOpen,
-                            isSpeedMenuOpen: $isSpeedMenuOpen
+                            activeMenu: Binding(
+                                get: { viewModel.activeMenu },
+                                set: { viewModel.activeMenu = $0 }
+                            ),
+                            onMenuOpened: {
+                                beginSystemMenuInteraction(timeout: 3600) // Effectively infinite, as requested
+                            },
+                            onDismissMenu: {
+                                viewModel.activeMenu = .none
+                                endSystemMenuInteraction()
+                                resetTimer()
+                            }
                         )
                     }
                     }
@@ -800,8 +785,7 @@ struct PlayerControlsView: View {
     private func resetTimer() {
         hideTimer?.invalidate()
         let anySheetVisible = showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet
-        let anyMenuOpen = isAspectMenuOpen || isSpeedMenuOpen
-        if !anySheetVisible && !anyMenuOpen {
+        if !anySheetVisible && !isSystemMenuActive && viewModel.activeMenu == .none {
              viewModel.isControlsVisible = true
              
              hideTimer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: false) { _ in

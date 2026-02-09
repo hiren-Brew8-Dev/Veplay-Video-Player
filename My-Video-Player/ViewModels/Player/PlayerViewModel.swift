@@ -31,6 +31,13 @@ class PlayerViewModel: NSObject, ObservableObject {
     @MainActor @Published var isSeekUIActive: Bool = false
     @MainActor @Published var isSeekForward: Bool = true
     
+    enum ActiveMenu {
+        case none
+        case aspectRatio
+        case playbackSpeed
+    }
+    @MainActor @Published var activeMenu: ActiveMenu = .none
+    
     // Internal state
     private var timeObserver: Any?
     private var timeControlStatusObserver: NSKeyValueObservation?
@@ -146,14 +153,12 @@ class PlayerViewModel: NSObject, ObservableObject {
         case sixteenByNine = "16:9"
         case fourByThree = "4:3"
         case sixteenByTen = "16:10"
-        case twoThirtyFiveByOne = "2.35:1"
-        case oneEightyFiveByOne = "1.85:1"
 
         var gravity: AVLayerVideoGravity {
             switch self {
             case .fit, .original: return .resizeAspect
             case .fill: return .resizeAspectFill
-            case .stretch, .sixteenByNine, .fourByThree, .sixteenByTen, .twoThirtyFiveByOne, .oneEightyFiveByOne: return .resize
+            case .stretch, .sixteenByNine, .fourByThree, .sixteenByTen: return .resize
             }
         }
 
@@ -162,8 +167,6 @@ class PlayerViewModel: NSObject, ObservableObject {
             case .sixteenByNine: return 16.0 / 9.0
             case .fourByThree: return 4.0 / 3.0
             case .sixteenByTen: return 16.0 / 10.0
-            case .twoThirtyFiveByOne: return 2.35 / 1.0
-            case .oneEightyFiveByOne: return 1.85 / 1.0
             default: return nil
             }
         }
@@ -180,12 +183,10 @@ class PlayerViewModel: NSObject, ObservableObject {
             case .fit: return "Fit"
             case .fill: return "Fill"
             case .stretch: return "Stretch"
-            case .original: return "Orig"
+            case .original: return "Original"
             case .sixteenByNine: return "16:9"
             case .fourByThree: return "4:3"
             case .sixteenByTen: return "16:10"
-            case .twoThirtyFiveByOne: return "2.35"
-            case .oneEightyFiveByOne: return "1.85"
             }
         }
         
@@ -199,7 +200,6 @@ class PlayerViewModel: NSObject, ObservableObject {
             case .sixteenByNine: return .fourByThree
             case .fourByThree: return .sixteenByTen
             case .sixteenByTen: return .fit
-            default: return .fit // Reset to start for others
             }
         }
     }
@@ -1541,20 +1541,31 @@ class PlayerViewModel: NSObject, ObservableObject {
                 vlcPlayer?.pause()
                 isPlaying = false
             } else {
-                // Check if playback ended, if so, restart
-                // FIX: Only restart if we are actually near the end.
-                // If user sought back manually while paused (at end), position should be < 0.99
-                // However, VLC might report old position unless updated.
-                // Rely on our local currentTime if available?
-                // Best check: If time/duration >= 0.99
-                let safeDuration = max(duration, 0.1)
-                let isAtEnd = (currentTime / safeDuration) >= 0.99
+                // Check if playback ended, if so, restart from beginning
+                let vlcState = vlcPlayer?.state
+                let isVlcEnded = vlcState == .ended || vlcState == .stopped
                 
-                if (vlcPlayer?.state == .ended || (vlcPlayer?.state == .stopped)) && isAtEnd {
-                    vlcPlayer?.position = 0
-                    currentTime = 0 // Sync local time
+                // Check if we're at the end - multiple ways to detect:
+                // 1. VLC position is near end
+                // 2. Local currentTime is near end
+                // 3. VLC is in .ended state (most reliable)
+                let vlcPosition = vlcPlayer?.position ?? 0
+                let safeDuration = max(duration, 0.1)
+                let timeRatio = currentTime / safeDuration
+                
+                // Lower threshold to 0.95 (95%) and also check VLC position
+                let isAtEnd = vlcPosition >= 0.99 || timeRatio >= 0.99
+                
+                // If VLC is ended OR we're at the end position, restart from 00:00
+                if isVlcEnded || (isAtEnd && vlcPlayer?.isPlaying == false) {
+                    // User tapped play when video is at the end - restart from 00:00
+                    isPlaying = true // Set intent to play
+                    currentTime = 0
+                    currentTimeString = formatTime(seconds: 0)
+                    seek(to: 0) // This will handle the VLC reset and start playing
+                } else {
+                    self.play()
                 }
-                self.play()
             }
             return
         }
@@ -1612,65 +1623,110 @@ class PlayerViewModel: NSObject, ObservableObject {
         
         if isVLC {
             isSeeking = true
-            lastIntendedSeekPosition = time // Set tracker
+            lastIntendedSeekPosition = time 
             
-            // Capture current play state BEFORE seeking
-            let wasPlaying = vlcPlayer?.isPlaying ?? false
-            let wasEnded = vlcPlayer?.state == .ended || vlcPlayer?.state == .stopped
+            // Identify if we need to wake up the player (Ended or Stopped)
+            let vlcState = vlcPlayer?.state
+            let isVlcEnded = vlcState == .ended || vlcState == .stopped
             
-            // For VLC, we need to ensure the player updates the frame.
-            // If playing, pause first to ensure frame update happens.
-            if wasPlaying {
-                vlcPlayer?.pause()
-            }
-            
-            // If the player was ended/stopped, we need to wake it up to process the seek.
-            if wasEnded {
+            if isVlcEnded {
+                // AGGRESSIVE WAKE UP SEQUENCE FOR ENDED STATE
+                // VLC in .ended state is essentially dead and needs a full reset
+                
+                seekRequestID += 1
+                let currentID = seekRequestID
+                
+                // 1. Stop the player completely to reset its internal state
+                vlcPlayer?.stop()
+                
+                // 2. Re-set the media (same media, but forces VLC to re-initialize)
+                if let currentMedia = vlcPlayer?.media {
+                    vlcPlayer?.media = currentMedia
+                }
+                
+                // 3. Set position BEFORE play (VLC accepts position on stopped player sometimes)
+                if duration > 0 {
+                    vlcPlayer?.position = Float(time / duration)
+                }
+                
+                // 4. Mute to prevent audio blip
+                let wasMuted = vlcPlayer?.audio?.isMuted ?? false
+                vlcPlayer?.audio?.isMuted = true
+                
+                // 5. Start playing
                 vlcPlayer?.play()
-            }
-            
-            let vlcTime = VLCTime(int: Int32(time * 1000))
-            vlcPlayer?.time = vlcTime
-            
-            // Force VLC to process the time change
-            // Small delay to let VLC update the frame
-            seekRequestID += 1
-            let currentID = seekRequestID
-            Task {
-                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms for frame update
-                await MainActor.run {
-                    // Check if user changed play state during this wait
-                    let userWantsPlay = self.isPlaying
+                
+                Task {
+                    // 6. Wait for player to become active
+                    var attempts = 0
+                    while attempts < 15 { // 1.5 seconds max
+                        let state = await MainActor.run { self.vlcPlayer?.state }
+                        if state == .playing || state == .buffering {
+                            break
+                        }
+                        try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+                        attempts += 1
+                    }
                     
-                    if wasPlaying {
-                        // Resuming playback
-                        self.vlcPlayer?.play()
-                        self.isPlaying = true
-                    } else {
-                        // Was paused (or ended).
-                        // If user tapped Play manually during seek (userWantsPlay is true),
-                        // we should respect that and ensure it plays.
-                        if userWantsPlay {
-                             self.vlcPlayer?.play()
+                    await MainActor.run {
+                        // 7. Apply seek time again (redundancy)
+                        let vlcTime = VLCTime(int: Int32(time * 1000))
+                        self.vlcPlayer?.time = vlcTime
+                        
+                        // Also set position as double-redundancy
+                        if self.duration > 0 {
+                            self.vlcPlayer?.position = Float(time / self.duration)
+                        }
+                    }
+                    
+                    // 8. Wait for frame to render
+                    try? await Task.sleep(nanoseconds: 300_000_000) // 300ms
+                    
+                    await MainActor.run {
+                        // 9. Restore mute
+                        if !wasMuted {
+                            self.vlcPlayer?.audio?.isMuted = false
+                        }
+                        
+                        // 10. Enforce user intent (pause if user didn't want to play)
+                        if !self.isPlaying {
+                            self.vlcPlayer?.pause()
+                        }
+                        
+                        if self.seekRequestID == currentID {
+                            self.isSeeking = false
+                        }
+                    }
+                }
+            } else {
+                // NORMAL SEEK SEQUENCE (Playing or Paused but active)
+                
+                let wasVlcPlaying = vlcPlayer?.isPlaying ?? false
+                // Pause briefly to ensure frame update consistency (legacy logic)
+                if wasVlcPlaying {
+                    vlcPlayer?.pause()
+                }
+                
+                let vlcTime = VLCTime(int: Int32(time * 1000))
+                vlcPlayer?.time = vlcTime
+                
+                seekRequestID += 1
+                let currentID = seekRequestID
+                
+                Task {
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+                    await MainActor.run {
+                        // Restore state based on intent
+                        if self.isPlaying {
+                            self.vlcPlayer?.play()
                         } else {
-                             // Otherwise stay paused (or pause if we forced it to play from ended)
                              if self.vlcPlayer?.isPlaying == true {
                                  self.vlcPlayer?.pause()
                              }
                         }
-                    }
-                }
-                
-                try? await Task.sleep(nanoseconds: 500_000_000) // Additional wait for stability
-                await MainActor.run {
-                    if self.seekRequestID == currentID {
-                        self.isSeeking = false
-                        // Final state verification
-                        if !wasPlaying && !self.isPlaying {
-                             // Correct potential phantom playing
-                             if self.vlcPlayer?.isPlaying == true {
-                                 self.vlcPlayer?.pause()
-                             }
+                        
+                        if self.seekRequestID == currentID {
+                            self.isSeeking = false
                         }
                     }
                 }
@@ -1910,6 +1966,12 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
             case .paused:
                 self.isPlaying = false
             case .stopped, .ended:
+                // When video ends, set currentTime to full duration so seek bar shows complete
+                if currentPlayer.state == .ended {
+                    self.currentTime = self.duration
+                    self.currentTimeString = self.formatTime(seconds: self.duration)
+                }
+                
                 // Check Sleep Timer End of Track
                 // Refinement: Only trigger on .ended (natural finish) to avoid killing player on manual change?
                 // Or check if it was explicitly stopped by user?
@@ -2100,13 +2162,6 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
             setAR("16:10")
             player.scaleFactor = 0
             
-        case .twoThirtyFiveByOne:
-            setAR("2.35:1")
-            player.scaleFactor = 0
-            
-        case .oneEightyFiveByOne:
-            setAR("1.85:1")
-            player.scaleFactor = 0
         }
     }
     
