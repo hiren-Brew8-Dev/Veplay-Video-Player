@@ -15,6 +15,12 @@ struct CastingModeSheet: View {
     
     var body: some View {
         ZStack {
+            // Base sheet - Select Device (always present)
+            mainLayout
+                .opacity(showDiscovery ? 0 : 1)
+                .allowsHitTesting(!showDiscovery)
+            
+            // Overlay sheet - Device List (appears on top)
             if showDiscovery {
                 CastDevicePickerView(
                     isLandscape: isLandscape,
@@ -24,8 +30,8 @@ struct CastingModeSheet: View {
                         }
                     }
                 )
-            } else {
-                mainLayout
+                .transition(.move(edge: isLandscape ? .trailing : .bottom))
+                .zIndex(1)
             }
         }
     }
@@ -121,7 +127,7 @@ struct CastingModeSheet: View {
                 
                 // Invisible AirPlay picker overlay
                 SettingsAirPlayPicker()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: 50)
                     .opacity(0.02)
             }
             
@@ -186,7 +192,7 @@ struct CastingModeSheet: View {
                 
                 // Invisible AirPlay picker overlay
                 SettingsAirPlayPicker()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: 50)
                     .opacity(0.02)
             }
             
@@ -220,6 +226,8 @@ struct CastingModeSheet: View {
                 .frame(height: 50)
                 .contentShape(Rectangle())
             }
+            
+            Spacer()
         }
         .padding(.top, 5)
     }
