@@ -230,6 +230,12 @@ struct PlayerControlsView: View {
                                 showSettingsSheet = true
                                 viewModel.isControlsVisible = false
                             }
+                        },
+                        onTimer: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showSleepTimer = true
+                                viewModel.isControlsVisible = false
+                            }
                         }
                     )
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -1322,19 +1328,23 @@ struct SleepTimerView: View {
             
             // Header
             HStack {
-                Button(action: {
-                    if let onBack = onBack {
+                if let onBack = onBack {
+                    Button(action: {
                         onBack()
-                    } else {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            isPresented = false
-                        }
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(10)
                     }
-                }) {
+                } else {
+                    // Spacer to maintain title alignment if back button is hidden, 
+                    // or we can just left align the title. 
+                    // Given the layout, let's keep the title centered.
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(10)
+                         .font(.system(size: 18, weight: .semibold))
+                         .foregroundColor(.clear)
+                         .padding(10)
                 }
                 
                 Spacer()

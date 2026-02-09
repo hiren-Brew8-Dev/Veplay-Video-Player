@@ -6,6 +6,7 @@ struct PlayerTopBar: View {
     @ObservedObject var viewModel: PlayerViewModel
     let lockNamespace: Namespace.ID
     var onMenu: @MainActor () -> Void
+    var onTimer: @MainActor () -> Void
     
     @Environment(\.verticalSizeClass) var verticalSizeClass
     
@@ -17,13 +18,16 @@ struct PlayerTopBar: View {
         onBack: @escaping @MainActor () -> Void,
         viewModel: PlayerViewModel,
         lockNamespace: Namespace.ID,
-        onMenu: @escaping @MainActor () -> Void) {
+        onMenu: @escaping @MainActor () -> Void,
+        onTimer: @escaping @MainActor () -> Void) {
         self.title = title
         self.onBack = onBack
         self.viewModel = viewModel
         self.lockNamespace = lockNamespace
         self.onMenu = onMenu
+        self.onTimer = onTimer
     }
+    
     
     var body: some View {
         VStack(spacing: 0) {
@@ -45,20 +49,21 @@ struct PlayerTopBar: View {
                 }
                 
                 // Right Group
-                HStack(spacing: 3) {
+                HStack(spacing: 5) {
                     // Active Sleep Timer Indicator
                     if viewModel.isSleepTimerActive {
-                        Image(systemName: "timer")
-                            .font(.system(size: 20))
-                            .foregroundColor(.orange)
-                            
+                        Button(action: onTimer) {
+                            Image(systemName: "timer")
+                                .font(.system(size: 20))
+                                .foregroundColor(.orange)
+                        }
                     }
                     
                     CastButton(viewModel: viewModel)
                     
                     // The Lock Icon Placeholder (always present for layout and alignment)
                     Color.clear
-                        .frame(width: 35, height: 44)
+                        .frame(width: 44, height: 44)
                         .matchedGeometryEffect(id: "lockIcon", in: lockNamespace, isSource: !viewModel.isLocked)
                     
                     Button(action: onMenu) {
@@ -66,7 +71,7 @@ struct PlayerTopBar: View {
                             .font(.system(size: 20))
                             .foregroundColor(.white)
                     }
-                    .frame(width: 35, height: 44)
+                    .frame(width: 44, height: 44)
                 }
             }
             .padding(.horizontal, isLandscape ? 50 : 8)
