@@ -484,18 +484,30 @@ struct PlayerControlsView: View {
                 
                 // Sheet Content
                 if anySheetVisible {
-                    VStack(spacing: 0) {
-                        Spacer()
-                        sheetContent(isLandscape: isLandscape)
-                            .frame(maxWidth: .infinity)
-                            .if(showSettingsSheet && !isLandscape) { $0.frame(height: UIScreen.main.bounds.height * 0.5) }
-                            .if(isLandscape) { 
-                                $0.if(showSettingsSheet) { $0.frame(height: 250) }
+                    Group {
+                        if isLandscape {
+                            // Landscape: right-to-left transition
+                            HStack(spacing: 0) {
+                                Spacer()
+                                sheetContent(isLandscape: true)
+                                    .frame(width: 400)
+                                    .background(Color.clear)
+                                    .edgesIgnoringSafeArea(.all)
                             }
-                            .background(Color.clear)
-                            .edgesIgnoringSafeArea(.all)
+                            .transition(.move(edge: .trailing))
+                        } else {
+                            // Portrait: bottom-to-top transition
+                            VStack(spacing: 0) {
+                                Spacer()
+                                sheetContent(isLandscape: false)
+                                    .frame(maxWidth: .infinity)
+                                    .if(showSettingsSheet) { $0.frame(height: UIScreen.main.bounds.height * 0.5) }
+                                    .background(Color.clear)
+                                    .edgesIgnoringSafeArea(.all)
+                            }
+                            .transition(.move(edge: .bottom))
+                        }
                     }
-                    .transition(.move(edge: .bottom))
                     .id(activeSheetType)
                     .zIndex(1)
                 }

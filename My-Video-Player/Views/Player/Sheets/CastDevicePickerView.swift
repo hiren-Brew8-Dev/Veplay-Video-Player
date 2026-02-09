@@ -7,11 +7,13 @@ struct CastDevicePickerView: View {
     let isLandscape: Bool
     var onBack: () -> Void
     
-    @State private var showPermissionView = true // Should be driven by discoveryManager.needsPermission
+    // Check if we've already shown permission prompt before
+    @AppStorage("hasShownCastPermissionPrompt") private var hasShownPermissionPrompt = false
+    @State private var showPermissionView: Bool = false
     
     var body: some View {
         VStack(spacing: 0) {
-            if showPermissionView {
+            if showPermissionView && !hasShownPermissionPrompt {
                 permissionView
             } else if discoveryManager.permissionDenied {
                 permissionDeniedView
@@ -19,7 +21,16 @@ struct CastDevicePickerView: View {
                 discoveryView
             }
         }
-        .background(Color.clear)
+        .background(Color.sheetBackground)
+        .onAppear {
+            // If we've already shown the permission prompt before, skip to discovery
+            if hasShownPermissionPrompt {
+                showPermissionView = false
+                discoveryManager.startScanning()
+            } else {
+                showPermissionView = true
+            }
+        }
     }
     
     // MARK: - Permission Denied View
@@ -29,7 +40,7 @@ struct CastDevicePickerView: View {
                 Button(action: { onBack() }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.sheetTextPrimary)
                         .padding(10)
                 }
                 Spacer()
@@ -38,17 +49,17 @@ struct CastDevicePickerView: View {
             
             Image(systemName: "network.badge.shield.half.filled")
                 .font(.system(size: 60))
-                .foregroundColor(.red)
-                .padding(.top, 40)
+                .foregroundColor(.sheetTextDestructive)
+                .padding(.top, 30)
             
             Text("Local Network Access Denied")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(.sheetTextPrimary)
                 .padding(.top, 10)
             
             Text("Please enable Local Network access in settings to discover casting devices.")
                 .font(.system(size: 16))
-                .foregroundColor(.gray)
+                .foregroundColor(.themeSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
                 .padding(.bottom, 20)
@@ -60,14 +71,14 @@ struct CastDevicePickerView: View {
             }) {
                 Text("Open Settings")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.sheetTextPrimary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
-                    .background(Color.blue)
+                    .background(Color.themeAccent)
                     .cornerRadius(10)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 40)
+            .padding(.bottom, 30)
         }
     }
     
@@ -78,31 +89,32 @@ struct CastDevicePickerView: View {
                 Spacer()
                 Button(action: { onBack() }) {
                     Image(systemName: "xmark")
-                        .foregroundColor(.white)
+                        .foregroundColor(.sheetTextPrimary)
                         .padding()
                 }
             }
             
             Text("This app needs Local Network Access to Cast")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(.sheetTextPrimary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
             Text("To connect to your devices, this app needs access to your Wi-Fi network.")
                 .font(.system(size: 16))
-                .foregroundColor(.gray)
+                .foregroundColor(.themeSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
             Text("To Cast, select \"OK\" when the app asks to connect to your local network. You can also allow this later in iOS Settings for this app.")
                 .font(.system(size: 16))
-                .foregroundColor(.gray)
+                .foregroundColor(.themeSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
                 .padding(.bottom, 30)
             
             Button(action: {
+                hasShownPermissionPrompt = true
                 withAnimation {
                     showPermissionView = false
                     discoveryManager.startScanning()
@@ -110,10 +122,10 @@ struct CastDevicePickerView: View {
             }) {
                 Text("OK")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.sheetTextPrimary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
-                    .background(Color.blue)
+                    .background(Color.themeAccent)
                     .cornerRadius(10)
             }
             .padding(.horizontal, 20)
@@ -126,7 +138,7 @@ struct CastDevicePickerView: View {
             }) {
                 Text("Learn more")
                     .font(.system(size: 16))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.themeAccent)
             }
             .padding(.bottom, 30)
         }
@@ -140,7 +152,7 @@ struct CastDevicePickerView: View {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.sheetTextPrimary)
                         .padding(10)
                 }
                 
@@ -148,7 +160,7 @@ struct CastDevicePickerView: View {
                 
                 Text("Device List")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(.sheetTextPrimary)
                 
                 Spacer()
                 
@@ -160,24 +172,24 @@ struct CastDevicePickerView: View {
             .padding(.horizontal)
             
             Divider()
-                .background(Color.gray.opacity(0.3))
+                .background(Color.sheetDivider)
             
             ScrollView {
                 VStack(spacing: 20) {
-                    // Illustration placeholder (Image from user)
+                    // Illustration placeholder
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.05))
-                            .frame(height: 180)
+                            .fill(Color.sheetSurface)
+                            .frame(height: 150)
                         
                         VStack(spacing: 12) {
                             Image(systemName: "tv.and.mediabox.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(.gray.opacity(0.5))
+                                .font(.system(size: 50))
+                                .foregroundColor(.themeSecondary)
                             
                             Text("Make sure your phone and TV are connected to the same WiFi network.")
                                 .font(.system(size: 14))
-                                .foregroundColor(.gray)
+                                .foregroundColor(.themeSecondary)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 40)
                         }
@@ -187,11 +199,11 @@ struct CastDevicePickerView: View {
                     if discoveryManager.isScanning {
                         VStack(spacing: 12) {
                             ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .progressViewStyle(CircularProgressViewStyle(tint: .sheetTextPrimary))
                                 .scaleEffect(1.5)
                             
                             Text("Loading...")
-                                .foregroundColor(.white)
+                                .foregroundColor(.sheetTextPrimary)
                                 .font(.system(size: 16))
                         }
                         .frame(height: 100)
@@ -202,6 +214,7 @@ struct CastDevicePickerView: View {
                     }
                 }
                 .padding(.top, 10)
+                .padding(.bottom, 20)
             }
         }
     }
@@ -214,22 +227,22 @@ struct CastDevicePickerView: View {
                 }) {
                     HStack(spacing: 16) {
                         Image(systemName: "airplayvideo")
-                            .foregroundColor(.white)
+                            .foregroundColor(.sheetTextPrimary)
                             .font(.system(size: 20))
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text(device.name)
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.white)
+                                .foregroundColor(.sheetTextPrimary)
                             Text(device.model)
                                 .font(.system(size: 14))
-                                .foregroundColor(.gray)
+                                .foregroundColor(.themeSecondary)
                         }
                         
                         Spacer()
                     }
                     .padding()
-                    .background(Color.white.opacity(0.05))
+                    .background(Color.sheetSurface)
                     .cornerRadius(10)
                 }
                 .padding(.horizontal)
@@ -242,19 +255,19 @@ struct CastDevicePickerView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "tv.and.mediabox")
-                    .foregroundColor(.orange)
+                    .foregroundColor(.homeAccent)
                 Text("No Cast devices are found")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.orange)
+                    .foregroundColor(.homeAccent)
             }
             
             VStack(alignment: .leading, spacing: 8) {
                 Text("• Allow Local Network access in your phone settings.")
                     .font(.system(size: 13))
-                    .foregroundColor(.orange.opacity(0.8))
+                    .foregroundColor(.homeAccent.opacity(0.8))
                 Text("• Try restarting your Wi-Fi router or casting device.")
                     .font(.system(size: 13))
-                    .foregroundColor(.orange.opacity(0.8))
+                    .foregroundColor(.homeAccent.opacity(0.8))
             }
             
             Button(action: {
@@ -264,12 +277,12 @@ struct CastDevicePickerView: View {
             }) {
                 Text("Settings")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.themeAccent)
                     .padding(.top, 4)
             }
         }
         .padding()
-        .background(Color.orange.opacity(0.1))
+        .background(Color.homeAccent.opacity(0.1))
         .cornerRadius(12)
         .padding(.horizontal)
     }

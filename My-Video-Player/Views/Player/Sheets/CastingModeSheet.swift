@@ -34,10 +34,10 @@ struct CastingModeSheet: View {
         VStack(spacing: 0) {
             // Drag Handle (Always visible when bottom-to-top)
             Capsule()
-                .fill(Color.gray.opacity(0.4))
+                .fill(Color.sheetDivider)
                 .frame(width: 36, height: 5)
                 .padding(.top, 10)
-                .padding(.bottom, 20)
+                .padding(.bottom, 10)
             
             // Header
             HStack {
@@ -77,11 +77,17 @@ struct CastingModeSheet: View {
                 portraitContent
             }
         }
-        .padding(.horizontal, isLandscape ? 50 : 0)
-        .padding(.bottom, 30) // Add bottom padding for better spacing at the sheet edge
-        .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
-        .cornerRadiusLocal(20, corners: [.topLeft, .topRight])
-        .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: -5)
+        .padding(.horizontal, isLandscape ? 20 : 0)
+        .padding(.bottom, 20)
+        .padding(.trailing, isLandscape ? 20 : 0)
+        .background(Color.sheetBackground)
+        .if(isLandscape) { view in
+            view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
+        }
+        .if(!isLandscape) { view in
+            view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
+        }
+        .shadow(color: Color.black.opacity(0.5), radius: 10, x: isLandscape ? -5 : 0, y: isLandscape ? 0 : -5)
     }
     
     private var portraitContent: some View {
@@ -145,23 +151,22 @@ struct CastingModeSheet: View {
         }
         .padding(.top, 10)
     }
-    
     private var landscapeContent: some View {
         HStack(spacing: 30) {
             // AirPlay & BT
             ZStack {
                 VStack(spacing: 12) {
                     Image(systemName: "airplayaudio")
-                        .font(.system(size: 30))
-                        .foregroundColor(.white)
+                        .font(.system(size: 28))
+                        .foregroundColor(.sheetTextPrimary)
                     
                     Text("AirPlay & BT")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white)
+                        .foregroundColor(.sheetTextPrimary)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 120)
-                .background(Color.white.opacity(0.05))
+                .frame(height: 100)
+                .background(Color.sheetSurface)
                 .cornerRadius(12)
                 
                 RoutePickerViewWrapper()
@@ -177,20 +182,20 @@ struct CastingModeSheet: View {
             }) {
                 VStack(spacing: 12) {
                     Image(systemName: "airplayvideo")
-                        .font(.system(size: 30))
-                        .foregroundColor(.white)
+                        .font(.system(size: 28))
+                        .foregroundColor(.sheetTextPrimary)
                     
                     Text("Cast Device")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white)
+                        .foregroundColor(.sheetTextPrimary)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 120)
-                .background(Color.white.opacity(0.05))
+                .frame(height: 100)
+                .background(Color.sheetSurface)
                 .cornerRadius(12)
             }
         }
-        .padding(.top, 20)
+        .padding(.top, 15)
     }
 }
 
@@ -199,9 +204,18 @@ import AVKit
 struct RoutePickerViewWrapper: UIViewRepresentable {
     func makeUIView(context: Context) -> AVRoutePickerView {
         let picker = AVRoutePickerView()
-        picker.activeTintColor = .white
-        picker.tintColor = .clear
+        picker.activeTintColor = .systemBlue
+        picker.tintColor = .white
         picker.prioritizesVideoDevices = true
+        
+        // Make the picker button fill the entire view
+        picker.isUserInteractionEnabled = true
+        
+        // Make the button inside the picker fully visible and tappable
+        if let button = picker.subviews.first(where: { $0 is UIButton }) as? UIButton {
+            button.isUserInteractionEnabled = true
+        }
+        
         return picker
     }
     
