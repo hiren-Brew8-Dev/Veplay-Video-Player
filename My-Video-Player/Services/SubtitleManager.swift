@@ -80,6 +80,13 @@ class SubtitleManager: ObservableObject {
             if !availableTracks.contains(where: { $0.url == url }) {
                 let track = SubtitleTrack(name: name, url: url)
                 availableTracks.append(track)
+                // Set the newly added track as selected
+                selectedTrackIndex = availableTracks.count - 1
+            } else {
+                // If track already exists, find and select it
+                if let existingIndex = availableTracks.firstIndex(where: { $0.url == url }) {
+                    selectedTrackIndex = existingIndex
+                }
             }
             
             // IMPORTANT: Enable subtitles after loading

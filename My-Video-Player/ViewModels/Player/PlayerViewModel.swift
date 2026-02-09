@@ -1902,6 +1902,8 @@ class PlayerViewModel: NSObject, ObservableObject {
         }
         
         subtitleManager.clear()
+        subtitleManager.availableTracks.removeAll() // Clear subtitle tracks list
+        subtitleManager.selectedTrackIndex = -1 // Reset selection
         
         // Clean up audio engine for AVPlayer audio delay
         cleanupAudioEngine()

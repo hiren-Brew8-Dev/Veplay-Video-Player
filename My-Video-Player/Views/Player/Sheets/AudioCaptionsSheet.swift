@@ -12,11 +12,13 @@ struct AudioCaptionsSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             // Drag Handle
-            Capsule()
-                .fill(Color.white.opacity(0.3))
-                .frame(width: 40, height: 5)
-                .padding(.top, 12)
-                .padding(.bottom, 20)
+            if !isLandscape {
+                Capsule()
+                    .fill(Color.white.opacity(0.3))
+                    .frame(width: 40, height: 5)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
+            }
             
             // Header
             HStack {
@@ -46,22 +48,42 @@ struct AudioCaptionsSheet: View {
                     .frame(width: 44, height: 44)
             }
             .padding(.horizontal, 20)
+            .padding(.top, isLandscape ? 16 : 0)
             .padding(.bottom, 20)
             
             // Content
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 20) {
-                    // Audio Track Section
-                    audioTrackSection
+            if isLandscape {
+                // Landscape: Side by side layout
+                HStack(alignment: .top, spacing: 20) {
+                    // Left Column: Audio Track + Audio Delay
+                    VStack(spacing: 20) {
+                        audioTrackSection
+                        audioDelaySection
+                    }
+                    .frame(maxWidth: .infinity)
                     
-                    // Audio Delay Section
-                    audioDelaySection
-                    
-                    // Subtitles Section
+                    // Right Column: Subtitles
                     subtitlesSection
+                        .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 30)
+            } else {
+                // Portrait: Stacked layout
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 20) {
+                        // Audio Track Section
+                        audioTrackSection
+                        
+                        // Audio Delay Section
+                        audioDelaySection
+                        
+                        // Subtitles Section
+                        subtitlesSection
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 30)
+                }
             }
         }
         .background(
@@ -104,25 +126,28 @@ struct AudioCaptionsSheet: View {
             .padding(.top, 4)
             
             // Track List
-            VStack(spacing: 8) {
-                if viewModel.availableAudioTracks.isEmpty {
-                    audioTrackRow(title: "No Audio", isSelected: true, isDisabled: true)
-                } else {
-                    ForEach(Array(viewModel.availableAudioTracks.enumerated()), id: \.offset) { index, track in
-                        audioTrackRow(
-                            title: track,
-                            isSelected: index == viewModel.selectedAudioTrackIndex,
-                            isDisabled: false
-                        ) {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                viewModel.selectAudioTrack(at: index)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 8) {
+                    if viewModel.availableAudioTracks.isEmpty {
+                        audioTrackRow(title: "No Audio", isSelected: true, isDisabled: true)
+                    } else {
+                        ForEach(Array(viewModel.availableAudioTracks.enumerated()), id: \.offset) { index, track in
+                            audioTrackRow(
+                                title: track,
+                                isSelected: index == viewModel.selectedAudioTrackIndex,
+                                isDisabled: false
+                            ) {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    viewModel.selectAudioTrack(at: index)
+                                }
                             }
                         }
                     }
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
+            .frame(maxHeight: isLandscape ? 200 : 300)
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
@@ -303,33 +328,36 @@ struct AudioCaptionsSheet: View {
             .padding(.top, 4)
             
             // Subtitle List
-            VStack(spacing: 8) {
-                // Off option
-                subtitleTrackRow(
-                    title: "Off",
-                    isSelected: !viewModel.subtitleManager.isEnabled,
-                    isOff: true
-                ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        viewModel.selectSubtitleTrack(at: -1)
-                    }
-                }
-                
-                // Available subtitles
-                ForEach(Array(viewModel.subtitleManager.availableTracks.enumerated()), id: \.offset) { index, subtitle in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 8) {
+                    // Off option
                     subtitleTrackRow(
-                        title: subtitle.name,
-                        isSelected: viewModel.subtitleManager.isEnabled && viewModel.subtitleManager.selectedTrackIndex == index,
-                        isOff: false
+                        title: "Off",
+                        isSelected: !viewModel.subtitleManager.isEnabled,
+                        isOff: true
                     ) {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            viewModel.selectSubtitleTrack(at: index)
+                            viewModel.selectSubtitleTrack(at: -1)
+                        }
+                    }
+                    
+                    // Available subtitles
+                    ForEach(Array(viewModel.subtitleManager.availableTracks.enumerated()), id: \.offset) { index, subtitle in
+                        subtitleTrackRow(
+                            title: subtitle.name,
+                            isSelected: viewModel.subtitleManager.isEnabled && viewModel.subtitleManager.selectedTrackIndex == index,
+                            isOff: false
+                        ) {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                viewModel.selectSubtitleTrack(at: index)
+                            }
                         }
                     }
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
+            .frame(maxHeight: isLandscape ? 300 : 400)
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
