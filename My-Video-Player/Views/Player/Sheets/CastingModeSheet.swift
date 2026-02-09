@@ -78,7 +78,7 @@ struct CastingModeSheet: View {
             }
         }
         .padding(.horizontal, isLandscape ? 20 : 0)
-        .padding(.bottom, 20)
+        .padding(.bottom, 15)
         .padding(.trailing, isLandscape ? 20 : 0)
         .background(Color.sheetBackground)
         .if(isLandscape) { view in
@@ -96,22 +96,22 @@ struct CastingModeSheet: View {
             ZStack {
                 HStack(spacing: 16) {
                     Image(systemName: "airplayaudio")
-                        .font(.system(size: 24))
-                        .foregroundColor(.white)
+                        .font(.system(size: 22))
+                        .foregroundColor(.sheetTextPrimary)
                         .frame(width: 32)
                     
                     Text("AirPlay & Bluetooth")
-                        .font(.system(size: 17))
-                        .foregroundColor(.white)
+                        .font(.system(size: 16))
+                        .foregroundColor(.sheetTextPrimary)
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
                         .font(.system(size: 14))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.themeSecondary)
                 }
-                .padding(.horizontal, 24)
-                .frame(height: 60)
+                .padding(.horizontal, 20)
+                .frame(height: 50)
                 
                 RoutePickerViewWrapper()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -119,8 +119,8 @@ struct CastingModeSheet: View {
             }
             
             Divider()
-                .background(Color.gray.opacity(0.2))
-                .padding(.leading, 72)
+                .background(Color.sheetDivider)
+                .padding(.leading, 68)
             
             // Cast row
             Button(action: {
@@ -130,42 +130,42 @@ struct CastingModeSheet: View {
             }) {
                 HStack(spacing: 16) {
                     Image(systemName: "airplayvideo")
-                        .font(.system(size: 24))
-                        .foregroundColor(.white)
+                        .font(.system(size: 22))
+                        .foregroundColor(.sheetTextPrimary)
                         .frame(width: 32)
                     
                     Text("Casting Device")
-                        .font(.system(size: 17))
-                        .foregroundColor(.white)
+                        .font(.system(size: 16))
+                        .foregroundColor(.sheetTextPrimary)
                     
                     Spacer()
                     
                     Image(systemName: "chevron.right")
                         .font(.system(size: 14))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.themeSecondary)
                 }
-                .padding(.horizontal, 24)
-                .frame(height: 60)
+                .padding(.horizontal, 20)
+                .frame(height: 50)
                 .contentShape(Rectangle())
             }
         }
-        .padding(.top, 10)
+        .padding(.top, 5)
     }
     private var landscapeContent: some View {
-        HStack(spacing: 30) {
+        HStack(spacing: 20) {
             // AirPlay & BT
             ZStack {
-                VStack(spacing: 12) {
+                VStack(spacing: 8) {
                     Image(systemName: "airplayaudio")
-                        .font(.system(size: 28))
+                        .font(.system(size: 24))
                         .foregroundColor(.sheetTextPrimary)
                     
                     Text("AirPlay & BT")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.sheetTextPrimary)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 100)
+                .frame(height: 80)
                 .background(Color.sheetSurface)
                 .cornerRadius(12)
                 
@@ -180,22 +180,23 @@ struct CastingModeSheet: View {
                     showDiscovery = true
                 }
             }) {
-                VStack(spacing: 12) {
+                VStack(spacing: 8) {
                     Image(systemName: "airplayvideo")
-                        .font(.system(size: 28))
+                        .font(.system(size: 24))
                         .foregroundColor(.sheetTextPrimary)
                     
                     Text("Cast Device")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.sheetTextPrimary)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 100)
+                .frame(height: 80)
                 .background(Color.sheetSurface)
                 .cornerRadius(12)
             }
         }
-        .padding(.top, 15)
+        .padding(.top, 10)
+        .padding(.horizontal, 10)
     }
 }
 
