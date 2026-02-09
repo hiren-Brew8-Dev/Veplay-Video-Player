@@ -485,12 +485,14 @@ struct PlayerControlsView: View {
                 // Sheet Content
                 if anySheetVisible {
                     Group {
-                        if showAudioCaptionsSheet {
+                        if showAudioCaptionsSheet || showCastingSheet {
                             // Point 6: Audio & Captions sheet is full height bottom-to-top ALWAYS
+                            // Also Casting sheet as requested
                             VStack(spacing: 0) {
                                 Spacer()
                                 sheetContent(isLandscape: isLandscape)
                                     .frame(maxWidth: .infinity)
+                                    .if(showCastingSheet && isLandscape) { $0.frame(height: 250) }
                                     .background(Color.clear)
                                     .edgesIgnoringSafeArea(.all)
                             }
@@ -510,6 +512,7 @@ struct PlayerControlsView: View {
                                 sheetContent(isLandscape: false)
                                     .frame(maxWidth: .infinity)
                                     .if(showSettingsSheet) { $0.frame(height: UIScreen.main.bounds.height * 0.5) } // Half phone height
+                                    .if(showCastingSheet) { $0.frame(height: 300) } // Shorter as requested
                                     .background(Color.clear)
                                     .edgesIgnoringSafeArea(.all) 
                             }

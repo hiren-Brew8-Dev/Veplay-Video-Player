@@ -32,14 +32,12 @@ struct CastingModeSheet: View {
     
     private var mainLayout: some View {
         VStack(spacing: 0) {
-            // Drag Handle (Only visible in portrait)
-            if !isLandscape {
-                Capsule()
-                    .fill(Color.gray.opacity(0.4))
-                    .frame(width: 36, height: 5)
-                    .padding(.top, 10)
-                    .padding(.bottom, 20)
-            }
+            // Drag Handle (Always visible when bottom-to-top)
+            Capsule()
+                .fill(Color.gray.opacity(0.4))
+                .frame(width: 36, height: 5)
+                .padding(.top, 10)
+                .padding(.bottom, 20)
             
             // Header
             HStack {
@@ -73,62 +71,127 @@ struct CastingModeSheet: View {
             Divider()
                 .background(Color.gray.opacity(0.3))
             
-            // Options Grid (Matching Settings style)
-            VStack(spacing: 30) {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
-                    // AirPlay & Bluetooth Option (One-click system picker)
-                    ZStack {
-                        VStack(spacing: 12) {
-                            Image(systemName: "airplayaudio")
-                                .font(.system(size: 24))
-                                .foregroundColor(.white)
-                            
-                            Text("AirPlay & BT")
-                                .font(.system(size: 11))
-                                .foregroundColor(.gray)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .multilineTextAlignment(.center)
-                        }
-                        
-                        // Overlaid hidden picker
-                        RoutePickerViewWrapper()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .opacity(0.02)
-                    }
+            if isLandscape {
+                landscapeContent
+            } else {
+                portraitContent
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, isLandscape ? 50 : 0)
+        .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
+        .cornerRadiusLocal(20, corners: [.topLeft, .topRight])
+        .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: -5)
+    }
+    
+    private var portraitContent: some View {
+        VStack(spacing: 0) {
+            // AirPlay row
+            ZStack {
+                HStack(spacing: 16) {
+                    Image(systemName: "airplayaudio")
+                        .font(.system(size: 24))
+                        .foregroundColor(.white)
+                        .frame(width: 32)
                     
-                    // Cast Device Option (Leads to discovery)
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showDiscovery = true
-                        }
-                    }) {
-                        VStack(spacing: 12) {
-                            Image(systemName: "airplayvideo")
-                                .font(.system(size: 24))
-                                .foregroundColor(.white)
-                            
-                            Text("Cast Device")
-                                .font(.system(size: 11))
-                                .foregroundColor(.gray)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .multilineTextAlignment(.center)
-                        }
-                    }
+                    Text("AirPlay & Bluetooth")
+                        .font(.system(size: 17))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
                 }
-                .padding(20)
+                .padding(.horizontal, 24)
+                .frame(height: 60)
                 
-                Spacer()
+                RoutePickerViewWrapper()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .opacity(0.02)
+            }
+            
+            Divider()
+                .background(Color.gray.opacity(0.2))
+                .padding(.leading, 72)
+            
+            // Cast row
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showDiscovery = true
+                }
+            }) {
+                HStack(spacing: 16) {
+                    Image(systemName: "airplayvideo")
+                        .font(.system(size: 24))
+                        .foregroundColor(.white)
+                        .frame(width: 32)
+                    
+                    Text("Casting Device")
+                        .font(.system(size: 17))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                .padding(.horizontal, 24)
+                .frame(height: 60)
+                .contentShape(Rectangle())
             }
         }
-        .padding(.trailing, isLandscape ? 30 : 0)
-        .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
-        .if(isLandscape) { view in
-            view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
+        .padding(.top, 10)
+    }
+    
+    private var landscapeContent: some View {
+        HStack(spacing: 30) {
+            // AirPlay & BT
+            ZStack {
+                VStack(spacing: 12) {
+                    Image(systemName: "airplayaudio")
+                        .font(.system(size: 30))
+                        .foregroundColor(.white)
+                    
+                    Text("AirPlay & BT")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 120)
+                .background(Color.white.opacity(0.05))
+                .cornerRadius(12)
+                
+                RoutePickerViewWrapper()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .opacity(0.02)
+            }
+            
+            // Cast Device
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showDiscovery = true
+                }
+            }) {
+                VStack(spacing: 12) {
+                    Image(systemName: "airplayvideo")
+                        .font(.system(size: 30))
+                        .foregroundColor(.white)
+                    
+                    Text("Cast Device")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 120)
+                .background(Color.white.opacity(0.05))
+                .cornerRadius(12)
+            }
         }
-        .if(!isLandscape) { view in
-            view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
-        }
-        .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: isLandscape ? 0 : -5)
+        .padding(.top, 20)
     }
 }
 
