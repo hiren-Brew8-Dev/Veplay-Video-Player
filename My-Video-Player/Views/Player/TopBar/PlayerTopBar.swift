@@ -49,7 +49,7 @@ struct PlayerTopBar: View {
                 }
                 
                 // Right Group
-                HStack(spacing: 2) {
+                HStack(spacing: 0) {
                     // Active Sleep Timer Indicator
                     if viewModel.isSleepTimerActive {
                         Button(action: onTimer) {
@@ -57,12 +57,13 @@ struct PlayerTopBar: View {
                                 .font(.system(size: 20))
                                 .foregroundColor(.orange)
                         }
+                        .frame(width: 44, height: 44)
                     }
                     
                     CastButton(viewModel: viewModel)
                     
                     Color.clear
-                        .frame(width: 30, height: 44)
+                        .frame(width: 44, height: 44)
                         .matchedGeometryEffect(id: "lockIcon", in: lockNamespace, isSource: !viewModel.isLocked)
                     
                     Button(action: onMenu) {
@@ -70,7 +71,7 @@ struct PlayerTopBar: View {
                             .font(.system(size: 20))
                             .foregroundColor(.white)
                     }
-                    .frame(width: 30, height: 44)
+                    .frame(width: 44, height: 44)
                 }
             }
             .padding(.horizontal, isLandscape ? 50 : 8)
