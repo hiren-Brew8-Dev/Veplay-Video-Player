@@ -92,7 +92,7 @@ struct CastingModeSheet: View {
     
     private var portraitContent: some View {
         VStack(spacing: 0) {
-            // AirPlay row - Wrapped with RoutePickerViewWrapper for tap handling
+            // AirPlay row - Wrapped with SettingsAirPlayPicker for tap handling
             ZStack {
                 HStack(spacing: 16) {
                     Image(systemName: "airplayaudio")
@@ -114,10 +114,10 @@ struct CastingModeSheet: View {
                 .frame(height: 50)
                 .contentShape(Rectangle())
                 
-                // Invisible route picker overlay to capture taps
-                RoutePickerViewWrapper()
+                // Invisible AirPlay picker overlay
+                SettingsAirPlayPicker()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .opacity(0.011) // Nearly invisible but still tappable
+                    .opacity(0.02)
             }
             
             Divider()
@@ -153,76 +153,71 @@ struct CastingModeSheet: View {
         }
         .padding(.top, 5)
     }
+    
+    // Landscape uses same list-style layout as portrait
     private var landscapeContent: some View {
-        HStack(spacing: 20) {
-            // AirPlay & BT
+        VStack(spacing: 0) {
+            // AirPlay row - same as portrait
             ZStack {
-                VStack(spacing: 8) {
+                HStack(spacing: 16) {
                     Image(systemName: "airplayaudio")
-                        .font(.system(size: 24))
+                        .font(.system(size: 22))
+                        .foregroundColor(.sheetTextPrimary)
+                        .frame(width: 32)
+                    
+                    Text("AirPlay & Bluetooth")
+                        .font(.system(size: 16))
                         .foregroundColor(.sheetTextPrimary)
                     
-                    Text("AirPlay & BT")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.sheetTextPrimary)
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.themeSecondary)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 80)
-                .background(Color.sheetSurface)
-                .cornerRadius(12)
+                .padding(.horizontal, 20)
+                .frame(height: 50)
+                .contentShape(Rectangle())
                 
-                RoutePickerViewWrapper()
+                // Invisible AirPlay picker overlay
+                SettingsAirPlayPicker()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .opacity(0.011) // Nearly invisible but still tappable
+                    .opacity(0.02)
             }
             
-            // Cast Device
+            Divider()
+                .background(Color.sheetDivider)
+                .padding(.leading, 68)
+            
+            // Cast row - same as portrait
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     showDiscovery = true
                 }
             }) {
-                VStack(spacing: 8) {
+                HStack(spacing: 16) {
                     Image(systemName: "airplayvideo")
-                        .font(.system(size: 24))
+                        .font(.system(size: 22))
+                        .foregroundColor(.sheetTextPrimary)
+                        .frame(width: 32)
+                    
+                    Text("Casting Device")
+                        .font(.system(size: 16))
                         .foregroundColor(.sheetTextPrimary)
                     
-                    Text("Cast Device")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.sheetTextPrimary)
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.themeSecondary)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 80)
-                .background(Color.sheetSurface)
-                .cornerRadius(12)
+                .padding(.horizontal, 20)
+                .frame(height: 50)
+                .contentShape(Rectangle())
             }
         }
-        .padding(.top, 10)
-        .padding(.horizontal, 10)
+        .padding(.top, 5)
     }
-}
-
-// Helper for system route picker
-import AVKit
-struct RoutePickerViewWrapper: UIViewRepresentable {
-    func makeUIView(context: Context) -> AVRoutePickerView {
-        let picker = AVRoutePickerView()
-        picker.activeTintColor = .systemBlue
-        picker.tintColor = .white
-        picker.prioritizesVideoDevices = true
-        
-        // Make the picker button fill the entire view
-        picker.isUserInteractionEnabled = true
-        
-        // Make the button inside the picker fully visible and tappable
-        if let button = picker.subviews.first(where: { $0 is UIButton }) as? UIButton {
-            button.isUserInteractionEnabled = true
-        }
-        
-        return picker
-    }
-    
-    func updateUIView(_ uiView: AVRoutePickerView, context: Context) {}
 }
 
 // MARK: - PlayingModeSheet
