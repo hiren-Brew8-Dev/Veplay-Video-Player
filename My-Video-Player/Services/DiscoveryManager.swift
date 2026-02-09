@@ -88,9 +88,8 @@ class DiscoveryManager: NSObject, ObservableObject {
     private func handleChanges(results: Set<NWBrowser.Result>) {
         var newDevices: [DiscoveredDevice] = []
         for result in results {
-            if case let .bonjour(endpoint) = result.endpoint {
-                let name = endpoint.name
-                let id = endpoint.name // Simple ID for now
+            if case let .service(name, _, _, _) = result.endpoint {
+                let id = name // Simple ID for now
                 
                 // Avoid duplicates
                 if !newDevices.contains(where: { $0.id == id }) {
