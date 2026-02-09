@@ -13,296 +13,332 @@ struct AudioCaptionsSheet: View {
         VStack(spacing: 0) {
             // Drag Handle
             Capsule()
-                .fill(Color.homeTextSecondary.opacity(0.4))
-                .frame(width: 36, height: 5)
-                .padding(.top, 10)
+                .fill(Color.white.opacity(0.3))
+                .frame(width: 40, height: 5)
+                .padding(.top, 12)
                 .padding(.bottom, 20)
             
             // Header
             HStack {
-                StandardIconButton(icon: "chevron.left", action: {
+                Button(action: {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         isPresented = false
                     }
-                })
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.1))
+                        .clipShape(Circle())
+                }
                 
                 Spacer()
                 
                 Text("Audio & CC")
-                    .font(.headline)
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white)
                 
                 Spacer()
                 
                 // Invisible spacer to balance
-                StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
+                Color.clear
+                    .frame(width: 44, height: 44)
             }
-            .padding(.horizontal, isLandscape ? 40 : 20)
-            
-            Divider()
-                .background(Color.gray.opacity(0.3))
-                .padding(.bottom, 16)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
             
             // Content
-            if isLandscape {
-                HStack(spacing: 0) {
-                    // Audio Column
-                    VStack(alignment: .leading, spacing: 12) {
-                        audioHeaderView
-                        ScrollView {
-                            audioTracksListContent
-                        }
-                        Divider()
-                            .background(Color.sheetDivider)
-                            .padding(.vertical, 8)
-                        audioDelayControlView
-                    }
-                    .frame(maxWidth: .infinity)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 20) {
+                    // Audio Track Section
+                    audioTrackSection
                     
-                    Divider()
-                        .background(Color.gray.opacity(0.3))
-                        .padding(.horizontal, 20)
+                    // Audio Delay Section
+                    audioDelaySection
                     
-                    // Captions Column
-                    VStack(alignment: .leading, spacing: 12) {
-                        captionsHeaderView
-                        ScrollView {
-                            captionsTracksListContent
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
+                    // Subtitles Section
+                    subtitlesSection
                 }
-                .padding(.horizontal, 40)
-            } else {
-                // Portrait - Stacked Layout
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        audioHeaderView
-                            .padding(.bottom, 12)
-                        audioTracksListContent
-                        
-                        Divider()
-                            .background(Color.sheetDivider)
-                            .padding(.vertical, 20)
-                        
-                        audioDelayControlView
-                        
-                        Divider()
-                            .background(Color.sheetDivider)
-                            .padding(.vertical, 20)
-                        
-                        captionsHeaderView
-                            .padding(.bottom, 12)
-                        captionsTracksListContent
-                            .padding(.bottom, 20)
-                    }
-                    .padding(.horizontal, 20)
-                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
             }
         }
-        .padding(.bottom, isLandscape ? 20 : 40)
-        .background(Color.sheetBackground)
-        .cornerRadiusLocal(20, corners: [.topLeft, .topRight])
-        .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: -5)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(red: 0.15, green: 0.15, blue: 0.17),
+                    Color(red: 0.12, green: 0.12, blue: 0.14)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .cornerRadiusLocal(24, corners: [.topLeft, .topRight])
+        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: -10)
     }
     
-    // MARK: - Components
+    // MARK: - Audio Track Section
     
-    private var audioHeaderView: some View {
-        HStack {
-            Image(systemName: "speaker.wave.2.fill")
-                .font(.system(size: 16))
-                .foregroundColor(.white)
-            Text("Audio Track")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-        }
-        .padding(.horizontal, 4)
-    }
-    
-    private var audioTracksListContent: some View {
-        VStack(spacing: 0) {
-            if viewModel.availableAudioTracks.isEmpty {
-                Button(action: {}) {
-                    HStack {
-                        Text("No Audio")
-                            .font(.system(size: 15))
-                            .foregroundColor(.white)
-                        Spacer()
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.red)
-                    }
-                    .contentShape(Rectangle())
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.homeAccent.opacity(0.15))
+    private var audioTrackSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Section Header
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.homeAccent.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: "speaker.wave.2.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.homeAccent)
                 }
-                .buttonStyle(.plain)
-            } else {
-                ForEach(Array(viewModel.availableAudioTracks.enumerated()), id: \.offset) { index, track in
-                    Button(action: {
-                        viewModel.selectAudioTrack(at: index)
-                    }) {
-                        HStack {
-                            Text(track)
-                                .font(.system(size: 15))
-                                .foregroundColor(.homeTextPrimary)
-                                .lineLimit(1)
-                            
-                            Spacer()
-                            
-                            if index == viewModel.selectedAudioTrackIndex {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.homeAccent)
+                
+                Text("Audio Track")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+            
+            // Track List
+            VStack(spacing: 8) {
+                if viewModel.availableAudioTracks.isEmpty {
+                    audioTrackRow(title: "No Audio", isSelected: true, isDisabled: true)
+                } else {
+                    ForEach(Array(viewModel.availableAudioTracks.enumerated()), id: \.offset) { index, track in
+                        audioTrackRow(
+                            title: track,
+                            isSelected: index == viewModel.selectedAudioTrackIndex,
+                            isDisabled: false
+                        ) {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                viewModel.selectAudioTrack(at: index)
                             }
                         }
-                        .contentShape(Rectangle())
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(index == viewModel.selectedAudioTrackIndex ? Color.homeAccent.opacity(0.15) : Color.clear)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    if index < viewModel.availableAudioTracks.count - 1 {
-                        Divider()
-                            .background(Color.sheetDivider)
-                            .padding(.leading, 16)
                     }
                 }
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
         }
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        )
     }
     
-    private var audioDelayControlView: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 16))
-                    .foregroundColor(.white)
-                Text("Audio Delay")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer()
-                Text(String(format: "%.2fs", viewModel.audioDelay))
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.homeAccent)
-                    .monospacedDigit()
-            }
-            
+    private func audioTrackRow(title: String, isSelected: Bool, isDisabled: Bool, action: (() -> Void)? = nil) -> some View {
+        Button(action: {
+            action?()
+        }) {
             HStack(spacing: 12) {
-                Button(action: { viewModel.audioDelay -= 0.05 }) {
+                Text(title)
+                    .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? .white : .white.opacity(0.8))
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(isDisabled ? .red : .homeAccent)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.homeAccent.opacity(0.15) : Color.white.opacity(0.03))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.homeAccent.opacity(0.3) : Color.clear, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(action == nil)
+    }
+    
+    // MARK: - Audio Delay Section
+    
+    private var audioDelaySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Section Header
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.orange)
+                }
+                
+                Text("Audio Delay")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Text(String(format: "%.2fs", viewModel.audioDelay))
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.orange)
+                    .monospacedDigit()
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(Color.orange.opacity(0.15))
+                    )
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+            
+            // Slider Control
+            HStack(spacing: 16) {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        viewModel.audioDelay -= 0.05
+                    }
+                }) {
                     Image(systemName: "minus")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.homeTextPrimary)
-                        .frame(width: 32, height: 32)
-                        .background(Color.gray.opacity(0.3))
-                        .clipShape(Circle())
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 40, height: 40)
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.1))
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
                 
                 Slider(value: $viewModel.audioDelay, in: -5.0...5.0, step: 0.05)
-                    .accentColor(.homeAccent)
+                    .accentColor(.orange)
                 
-                Button(action: { viewModel.audioDelay += 0.05 }) {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        viewModel.audioDelay += 0.05
+                    }
+                }) {
                     Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.white)
-                        .frame(width: 32, height: 32)
-                        .background(Color.gray.opacity(0.3))
-                        .clipShape(Circle())
+                        .frame(width: 40, height: 40)
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.1))
+                        )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
         }
-        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        )
     }
     
-    private var captionsHeaderView: some View {
-        HStack {
-            Image(systemName: "captions.bubble.fill")
-                .font(.system(size: 16))
-                .foregroundColor(.white)
-            Text("Subtitles")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            Button(action: { showingFileImporter = true }) {
-                Image(systemName: "folder.badge.plus")
-                    .font(.system(size: 18))
+    // MARK: - Subtitles Section
+    
+    private var subtitlesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Section Header
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: "captions.bubble.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.blue)
+                }
+                
+                Text("Subtitles")
+                    .font(.system(size: 17, weight: .bold))
                     .foregroundColor(.white)
-                    .padding(4)
+                
+                Spacer()
+                
+                Button(action: { showingFileImporter = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Import")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(Color.blue.opacity(0.15))
+                    )
+                }
             }
-        }
-        .padding(.horizontal, 4)
-    }
-    
-    private var captionsTracksListContent: some View {
-        VStack(spacing: 0) {
-            // Off option
-            Button(action: {
-                viewModel.selectSubtitleTrack(at: -1)
-            }) {
-                HStack {
-                    Text("Off")
-                        .font(.system(size: 15))
-                        .foregroundColor(.white)
-                    
-                    Spacer()
-                    
-                    if !viewModel.subtitleManager.isEnabled {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.red)
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+            
+            // Subtitle List
+            VStack(spacing: 8) {
+                // Off option
+                subtitleTrackRow(
+                    title: "Off",
+                    isSelected: !viewModel.subtitleManager.isEnabled,
+                    isOff: true
+                ) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.selectSubtitleTrack(at: -1)
                     }
                 }
-                .contentShape(Rectangle())
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(!viewModel.subtitleManager.isEnabled ? Color.homeAccent.opacity(0.15) : Color.clear)
-            }
-            .buttonStyle(.plain)
-            
-            Divider()
-                .background(Color.gray.opacity(0.3))
-                .padding(.leading, 16)
-            
-            // Available subtitles
-            ForEach(Array(viewModel.subtitleManager.availableTracks.enumerated()), id: \.offset) { index, subtitle in
-                Button(action: {
-                    viewModel.selectSubtitleTrack(at: index)
-                }) {
-                    HStack {
-                        Text(subtitle.name)
-                            .font(.system(size: 15))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                        
-                        Spacer()
-                        
-                        if viewModel.subtitleManager.isEnabled && viewModel.subtitleManager.selectedTrackIndex == index {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.homeAccent)
+                
+                // Available subtitles
+                ForEach(Array(viewModel.subtitleManager.availableTracks.enumerated()), id: \.offset) { index, subtitle in
+                    subtitleTrackRow(
+                        title: subtitle.name,
+                        isSelected: viewModel.subtitleManager.isEnabled && viewModel.subtitleManager.selectedTrackIndex == index,
+                        isOff: false
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            viewModel.selectSubtitleTrack(at: index)
                         }
                     }
-                    .contentShape(Rectangle())
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background((viewModel.subtitleManager.isEnabled && viewModel.subtitleManager.selectedTrackIndex == index) ? Color.homeAccent.opacity(0.15) : Color.clear)
-                }
-                .buttonStyle(.plain)
-                
-                if index < viewModel.subtitleManager.availableTracks.count - 1 {
-                    Divider()
-                        .background(Color.sheetDivider)
-                        .padding(.leading, 16)
                 }
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
         }
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        )
         .fileImporter(
             isPresented: $showingFileImporter,
             allowedContentTypes: [UTType.plainText, UTType(filenameExtension: "srt")!, UTType.text],
@@ -315,5 +351,35 @@ struct AudioCaptionsSheet: View {
                 }
             }
         }
+    }
+    
+    private func subtitleTrackRow(title: String, isSelected: Bool, isOff: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? .white : .white.opacity(0.8))
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(isOff ? .red : .homeAccent)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.homeAccent.opacity(0.15) : Color.white.opacity(0.03))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.homeAccent.opacity(0.3) : Color.clear, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }

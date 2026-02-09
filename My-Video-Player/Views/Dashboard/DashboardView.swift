@@ -216,6 +216,9 @@ struct DashboardView: View {
         .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
             if newVideo != nil {
                 viewModel.isTabBarHidden = true
+            } else {
+                // Restore tab bar when video player is closed
+                viewModel.isTabBarHidden = false
             }
         }
         .onChange(of: viewModel.selectedTab) { oldTab, newTab in

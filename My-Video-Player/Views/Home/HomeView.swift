@@ -43,6 +43,10 @@ struct HomeView: View {
         }
         .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
         .navigationBarHidden(true)
+        .onAppear {
+            // Ensure tab bar is visible when home view appears
+            viewModel.isTabBarHidden = false
+        }
         .onChange(of: viewModel.homeSelectedTab) { oldTab, newTab in
             // Ensure tab bar is visible when switching between Video/Gallery/Folder
             viewModel.isTabBarHidden = false
