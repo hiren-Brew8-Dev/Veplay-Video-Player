@@ -27,7 +27,8 @@ class SystemVolumeManager: NSObject, ObservableObject {
         // Find the internal UISlider
         if let slider = volumeView.subviews.first(where: { $0 is UISlider }) as? UISlider {
             self.slider = slider
-            self.currentVolume = slider.value
+            // Initialize with AudioSession volume which is more reliable on start
+            self.currentVolume = AVAudioSession.sharedInstance().outputVolume
         }
         
         self.volumeView = volumeView

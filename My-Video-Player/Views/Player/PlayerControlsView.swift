@@ -154,6 +154,55 @@ struct PlayerControlsView: View {
                  showBookmarkButton = false
             }
         }
+        .onChange(of: isAspectMenuOpen) { oldVal, newVal in
+            if !newVal && oldVal {
+                resetTimer()
+            }
+        }
+        .onChange(of: isSpeedMenuOpen) { oldVal, newVal in
+            if !newVal && oldVal {
+                resetTimer()
+            }
+        }
+        .overlay(
+            Group {
+                if isAspectMenuOpen {
+                    FloatingSelectionMenu(
+                        title: "Aspect Ratio",
+                        items: PlayerViewModel.VideoAspectRatio.allCases,
+                        selectedItem: viewModel.aspectRatio,
+                        itemLabel: { $0.rawValue },
+                        onSelect: { ratio in
+                            viewModel.updateAspectRatio(to: ratio)
+                            withAnimation { isAspectMenuOpen = false }
+                            resetTimer()
+                        },
+                        onClose: {
+                            withAnimation { isAspectMenuOpen = false }
+                            resetTimer()
+                        }
+                    )
+                }
+                
+                if isSpeedMenuOpen {
+                    FloatingSelectionMenu(
+                        title: "Playback Speed",
+                        items: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0],
+                        selectedItem: Double(viewModel.playbackSpeed),
+                        itemLabel: { String(format: "%.2fx", $0) },
+                        onSelect: { speed in
+                            viewModel.setSpeed(Float(speed))
+                            withAnimation { isSpeedMenuOpen = false }
+                            resetTimer()
+                        },
+                        onClose: {
+                            withAnimation { isSpeedMenuOpen = false }
+                            resetTimer()
+                        }
+                    )
+                }
+            }
+        )
     }
     
     // MARK: - Subviews
@@ -305,21 +354,18 @@ struct PlayerControlsView: View {
     }
     
     private var centerControls: some View {
-        HStack(spacing: 50) {
+        HStack(spacing: isLandscape ? 50 : 30) {
             // Skip Backward 10s
             Button(action: {
-                viewModel.seek(to: viewModel.currentTime - 10)
+                viewModel.performDoubleTapSeek(forward: false)
+                showDoubleTapFeedback = false
                 resetTimer()
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.black.opacity(0.15))
-                        .frame(width: 54, height: 54)
-                    
-                    Image(systemName: "gobackward.10")
-                        .font(.system(size: 24, weight: .regular))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: "gobackward.10")
+                    .font(.system(size: 30, weight: .regular))
+                    .foregroundColor(.white)
+                    .frame(width: 54, height: 54)
+                    .contentShape(Rectangle())
             }
             
             // Play/Pause
@@ -340,18 +386,15 @@ struct PlayerControlsView: View {
             
             // Skip Forward 10s
             Button(action: {
-                viewModel.seek(to: viewModel.currentTime + 10)
+                viewModel.performDoubleTapSeek(forward: true)
+                showDoubleTapFeedback = true
                 resetTimer()
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.black.opacity(0.15))
-                        .frame(width: 54, height: 54)
-                    
-                    Image(systemName: "goforward.10")
-                        .font(.system(size: 24, weight: .regular))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: "goforward.10")
+                    .font(.system(size: 30, weight: .regular))
+                    .foregroundColor(.white)
+                    .frame(width: 54, height: 54)
+                    .contentShape(Rectangle())
             }
         }
     }
@@ -366,7 +409,11 @@ struct PlayerControlsView: View {
                     .contentShape(Rectangle())
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .onTapGesture {
-                        withAnimation {
+                        // Toggle visibility instantly without animation if the user desires "direct show"
+                        // But standard toggle usually implies some feedback.
+                        // User said: "locked icon is not show with animation, direct show that not conflict the animation"
+                        // Let's use snappy animation or none for the visibility toggle
+                        withAnimation(.easeInOut(duration: 0.2)) {
                             viewModel.isControlsVisible.toggle()
                         }
                         if viewModel.isControlsVisible {
@@ -396,7 +443,7 @@ struct PlayerControlsView: View {
                         )
                         Spacer()
                     }
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(.opacity) // User requested "direct show" / "not with animation" - opacity is simplest non-conflicting
                 }
             }
             .ignoresSafeArea()

@@ -1542,8 +1542,17 @@ class PlayerViewModel: NSObject, ObservableObject {
                 isPlaying = false
             } else {
                 // Check if playback ended, if so, restart
-                if vlcPlayer?.state == .ended || (vlcPlayer?.state == .stopped && vlcPlayer?.position ?? 0 >= 0.99) {
+                // FIX: Only restart if we are actually near the end.
+                // If user sought back manually while paused (at end), position should be < 0.99
+                // However, VLC might report old position unless updated.
+                // Rely on our local currentTime if available?
+                // Best check: If time/duration >= 0.99
+                let safeDuration = max(duration, 0.1)
+                let isAtEnd = (currentTime / safeDuration) >= 0.99
+                
+                if (vlcPlayer?.state == .ended || (vlcPlayer?.state == .stopped)) && isAtEnd {
                     vlcPlayer?.position = 0
+                    currentTime = 0 // Sync local time
                 }
                 self.play()
             }
@@ -1607,11 +1616,17 @@ class PlayerViewModel: NSObject, ObservableObject {
             
             // Capture current play state BEFORE seeking
             let wasPlaying = vlcPlayer?.isPlaying ?? false
+            let wasEnded = vlcPlayer?.state == .ended || vlcPlayer?.state == .stopped
             
-            // For VLC, we need to ensure the player updates the frame
-            // Pause first to ensure frame update happens
+            // For VLC, we need to ensure the player updates the frame.
+            // If playing, pause first to ensure frame update happens.
             if wasPlaying {
                 vlcPlayer?.pause()
+            }
+            
+            // If the player was ended/stopped, we need to wake it up to process the seek.
+            if wasEnded {
+                vlcPlayer?.play()
             }
             
             let vlcTime = VLCTime(int: Int32(time * 1000))
@@ -1624,25 +1639,38 @@ class PlayerViewModel: NSObject, ObservableObject {
             Task {
                 try? await Task.sleep(nanoseconds: 100_000_000) // 100ms for frame update
                 await MainActor.run {
-                    // Restore play state after seek
+                    // Check if user changed play state during this wait
+                    let userWantsPlay = self.isPlaying
+                    
                     if wasPlaying {
+                        // Resuming playback
                         self.vlcPlayer?.play()
                         self.isPlaying = true
                     } else {
-                        // Ensure it stays paused
-                        self.vlcPlayer?.pause()
-                        self.isPlaying = false
+                        // Was paused (or ended).
+                        // If user tapped Play manually during seek (userWantsPlay is true),
+                        // we should respect that and ensure it plays.
+                        if userWantsPlay {
+                             self.vlcPlayer?.play()
+                        } else {
+                             // Otherwise stay paused (or pause if we forced it to play from ended)
+                             if self.vlcPlayer?.isPlaying == true {
+                                 self.vlcPlayer?.pause()
+                             }
+                        }
                     }
                 }
                 
-                try? await Task.sleep(nanoseconds: 700_000_000) // Additional wait for stability
+                try? await Task.sleep(nanoseconds: 500_000_000) // Additional wait for stability
                 await MainActor.run {
                     if self.seekRequestID == currentID {
                         self.isSeeking = false
                         // Final state verification
-                        if !wasPlaying && self.vlcPlayer?.isPlaying == true {
-                            self.vlcPlayer?.pause()
-                            self.isPlaying = false
+                        if !wasPlaying && !self.isPlaying {
+                             // Correct potential phantom playing
+                             if self.vlcPlayer?.isPlaying == true {
+                                 self.vlcPlayer?.pause()
+                             }
                         }
                     }
                 }

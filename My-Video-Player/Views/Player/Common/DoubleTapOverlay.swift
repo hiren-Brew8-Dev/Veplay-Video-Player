@@ -12,77 +12,54 @@ struct DoubleTapOverlay: View {
     
     private var skipAmount: String {
         let seconds = Int(viewModel.accumulatedSkipAmount)
-        return "\(seconds)s"
+        let mins = seconds / 60
+        let secs = seconds % 60
+        return String(format: "%02d:%02d", mins, secs)
     }
     
     var body: some View {
         ZStack {
-            if isLandscape {
-                // Landscape: Show on sides
+            // Invisible touch area to capture taps for dismissal
+            Color.black.opacity(0.001)
+                .edgesIgnoringSafeArea(.all)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onClose()
+                }
+            
+            // Central Indicator
+            VStack {
+                Spacer()
                 HStack {
-                    if !isForward {
-                        skipIndicator
-                            .transition(.move(edge: .leading).combined(with: .opacity))
-                    }
-                    
                     Spacer()
-                    
-                    if isForward {
-                        skipIndicator
-                            .transition(.move(edge: .trailing).combined(with: .opacity))
-                    }
-                }
-                .padding(.horizontal, 40)
-            } else {
-                // Portrait: Show below center (below play/pause button area)
-                VStack {
-                    Spacer()
-                    
                     skipIndicator
-                        .padding(.bottom, 120) // Position above bottom bar
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    
                     Spacer()
-                        .frame(height: 100) // Space for bottom controls
                 }
+                Spacer()
             }
         }
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { // Matched VM duration
                 onClose()
             }
         }
     }
     
     private var skipIndicator: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 4) {
-                if !isForward {
-                    Image(systemName: "backward.fill")
-                    Image(systemName: "backward.fill")
-                    Image(systemName: "backward.fill")
-                } else {
-                    Image(systemName: "forward.fill")
-                    Image(systemName: "forward.fill")
-                    Image(systemName: "forward.fill")
-                }
+        HStack(spacing: 4) {
+            if !isForward {
+                // Backward
+                Text("< \(skipAmount)")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
+            } else {
+                // Forward
+                Text("> \(skipAmount)")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
             }
-            .font(.system(size: 24))
-            .foregroundColor(.white)
-            
-            Text(skipAmount)
-                .font(.headline)
-                .foregroundColor(.white)
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.6))
-                .blur(radius: 8)
-        )
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.8))
-        )
     }
 }

@@ -108,7 +108,9 @@ struct PlayerBottomBar: View {
                 // Layer 2: Left and Right Controls
                 HStack(spacing: 0) {
                     // Left side: Aspect Ratio
-                    Button(action: { onAspectRatio(currentAspectRatio.next) }) {
+                    Button(action: {
+                        isAspectMenuOpen = true
+                    }) {
                         HStack(spacing: 6) {
                             Image(systemName: "aspectratio")
                                 .font(.system(size: 14))
@@ -121,35 +123,16 @@ struct PlayerBottomBar: View {
                         .background(Color.white.opacity(0.15))
                         .clipShape(Capsule())
                     }
-                    .onLongPressGesture(minimumDuration: 0.01) {
-                        isAspectMenuOpen = true
-                    }
-                    .contextMenu {
-                        ForEach(PlayerViewModel.VideoAspectRatio.allCases, id: \.self) { ratio in
-                            Button(action: {
-                                onAspectRatio(ratio)
-                                // Reset flag after selection with delay
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    isAspectMenuOpen = false
-                                }
-                            }) {
-                                HStack {
-                                    Text(ratio.rawValue)
-                                    if ratio == currentAspectRatio {
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                    }
                     
                     Spacer()
                     
                     
                     // Right side items
                     HStack(spacing: 8) {
-                        // Speed Pill with Context Menu
-                        Button(action: {}) {
+                        // Speed Pill with Menu
+                        Button(action: {
+                            isSpeedMenuOpen = true
+                        }) {
                             Text(String(format: "%.1fx", playbackSpeed))
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(.white)
@@ -157,27 +140,6 @@ struct PlayerBottomBar: View {
                                 .padding(.vertical, 6)
                                 .background(Color.white.opacity(0.15))
                                 .clipShape(Capsule())
-                        }
-                        .onLongPressGesture(minimumDuration: 0.01) {
-                            isSpeedMenuOpen = true
-                        }
-                        .contextMenu {
-                            ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { speed in
-                                Button(action: {
-                                    onSpeedChange(Float(speed))
-                                    // Reset flag after selection with delay
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                        isSpeedMenuOpen = false
-                                    }
-                                }) {
-                                    HStack {
-                                        Text(String(format: "%.1fx", speed))
-                                        if abs(Float(speed) - playbackSpeed) < 0.01 {
-                                            Image(systemName: "checkmark")
-                                        }
-                                    }
-                                }
-                            }
                         }
                         
                         // Rotate button
