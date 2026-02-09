@@ -1,4 +1,5 @@
 import SwiftUI
+import AVKit
 
 struct CastingModeSheet: View {
     @ObservedObject var viewModel: PlayerViewModel
@@ -12,6 +13,7 @@ struct CastingModeSheet: View {
     }
     
     @State private var showDiscovery = false
+    @State private var airPlayTrigger: Int = 0
     
     var body: some View {
         ZStack {
@@ -33,6 +35,12 @@ struct CastingModeSheet: View {
                 .transition(.move(edge: isLandscape ? .trailing : .bottom))
                 .zIndex(1)
             }
+
+            // Hidden route picker used for programmatic open from the row button.
+            ProgrammaticAirPlayPicker(trigger: $airPlayTrigger)
+                .frame(width: 1, height: 1)
+                .opacity(0.01)
+                .allowsHitTesting(false)
         }
     }
     
@@ -103,33 +111,7 @@ struct CastingModeSheet: View {
     
     private var portraitContent: some View {
         VStack(spacing: 0) {
-            // AirPlay row - Wrapped with SettingsAirPlayPicker for tap handling
-            ZStack {
-                HStack(spacing: 16) {
-                    Image(systemName: "airplayaudio")
-                        .font(.system(size: 22))
-                        .foregroundColor(.sheetTextPrimary)
-                        .frame(width: 32)
-                    
-                    Text("AirPlay & Bluetooth")
-                        .font(.system(size: 16))
-                        .foregroundColor(.sheetTextPrimary)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(.themeSecondary)
-                }
-                .padding(.horizontal, 20)
-                .frame(height: 50)
-                .contentShape(Rectangle())
-                
-                // Invisible AirPlay picker overlay
-                SettingsAirPlayPicker()
-                    .frame(maxWidth: .infinity, maxHeight: 50)
-                    .opacity(0.02)
-            }
+            airPlayRow
             
             Divider()
                 .background(Color.sheetDivider)
@@ -168,33 +150,7 @@ struct CastingModeSheet: View {
     // Landscape uses same list-style layout as portrait
     private var landscapeContent: some View {
         VStack(spacing: 0) {
-            // AirPlay row - same as portrait
-            ZStack {
-                HStack(spacing: 16) {
-                    Image(systemName: "airplayaudio")
-                        .font(.system(size: 22))
-                        .foregroundColor(.sheetTextPrimary)
-                        .frame(width: 32)
-                    
-                    Text("AirPlay & Bluetooth")
-                        .font(.system(size: 16))
-                        .foregroundColor(.sheetTextPrimary)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(.themeSecondary)
-                }
-                .padding(.horizontal, 20)
-                .frame(height: 50)
-                .contentShape(Rectangle())
-                
-                // Invisible AirPlay picker overlay
-                SettingsAirPlayPicker()
-                    .frame(maxWidth: .infinity, maxHeight: 50)
-                    .opacity(0.02)
-            }
+            airPlayRow
             
             Divider()
                 .background(Color.sheetDivider)
@@ -230,6 +186,63 @@ struct CastingModeSheet: View {
             Spacer()
         }
         .padding(.top, 5)
+    }
+
+    private var airPlayRow: some View {
+        Button(action: {
+            airPlayTrigger += 1
+        }) {
+            HStack(spacing: 16) {
+                Image(systemName: "airplayaudio")
+                    .font(.system(size: 22))
+                    .foregroundColor(.sheetTextPrimary)
+                    .frame(width: 32)
+                
+                Text("AirPlay & Bluetooth")
+                    .font(.system(size: 16))
+                    .foregroundColor(.sheetTextPrimary)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(.themeSecondary)
+            }
+            .padding(.horizontal, 20)
+            .frame(height: 50)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+private struct ProgrammaticAirPlayPicker: UIViewRepresentable {
+    @Binding var trigger: Int
+    
+    func makeUIView(context: Context) -> AVRoutePickerView {
+        let picker = AVRoutePickerView()
+        picker.activeTintColor = .white
+        picker.tintColor = .clear
+        picker.prioritizesVideoDevices = true
+        return picker
+    }
+    
+    func updateUIView(_ uiView: AVRoutePickerView, context: Context) {
+        guard context.coordinator.lastTrigger != trigger else { return }
+        context.coordinator.lastTrigger = trigger
+        
+        // AVRoutePickerView embeds a UIButton; trigger it programmatically.
+        if let button = uiView.subviews.first(where: { $0 is UIButton }) as? UIButton {
+            button.sendActions(for: .touchUpInside)
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+    
+    final class Coordinator {
+        var lastTrigger: Int = 0
     }
 }
 

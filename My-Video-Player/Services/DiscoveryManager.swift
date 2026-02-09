@@ -7,9 +7,17 @@ class DiscoveryManager: NSObject, ObservableObject {
     @Published var isScanning = false
     @Published var permissionDenied = false
     @Published var needsPermission = true // Initial state before check
+    @Published var localNetworkAccess: LocalNetworkAccess = .unknown
+    @Published var lastScanErrorDescription: String?
     
     private var browser: NWBrowser?
     private var cancellables = Set<AnyCancellable>()
+
+    enum LocalNetworkAccess: Equatable {
+        case unknown
+        case granted
+        case denied
+    }
     
     struct DiscoveredDevice: Identifiable, Hashable {
         let id: String
@@ -28,13 +36,15 @@ class DiscoveryManager: NSObject, ObservableObject {
         super.init()
         checkPermission()
     }
-    
+
     func startScanning() {
         // Ensure browser is cleaned up
         stopScanning()
         
         discoveredDevices.removeAll()
         isScanning = true
+        lastScanErrorDescription = nil
+        localNetworkAccess = .unknown
         
         // Browsing for Google Cast (_googlecast._tcp)
         let parameters = NWParameters()
@@ -54,16 +64,31 @@ class DiscoveryManager: NSObject, ObservableObject {
                 switch state {
                 case .failed(let error):
                     print("Discovery error: \(error)")
-                    self?.permissionDenied = true
+                    self?.lastScanErrorDescription = String(describing: error)
+                    if Self.isLocalNetworkDenied(error) {
+                        self?.localNetworkAccess = .denied
+                        self?.permissionDenied = true
+                        self?.needsPermission = false
+                    } else {
+                        // Don't treat general network failures as "permission denied".
+                        self?.permissionDenied = false
+                        self?.localNetworkAccess = .unknown
+                    }
                     self?.isScanning = false
                 case .waiting(let error):
                     print("Discovery waiting: \(error)")
-                    // This can happen if the network is down or permission is pending/denied
-                    // For now, we don't treat it as a hard failure immediately
+                    self?.lastScanErrorDescription = String(describing: error)
+                    if Self.isLocalNetworkDenied(error) {
+                        self?.localNetworkAccess = .denied
+                        self?.permissionDenied = true
+                        self?.needsPermission = false
+                        self?.isScanning = false
+                    }
                     break
                 case .ready:
                     self?.needsPermission = false
                     self?.permissionDenied = false
+                    self?.localNetworkAccess = .granted
                 default:
                     break
                 }
@@ -82,6 +107,7 @@ class DiscoveryManager: NSObject, ObservableObject {
     
     func stopScanning() {
         browser?.cancel()
+        browser = nil
         isScanning = false
     }
     
@@ -109,5 +135,15 @@ class DiscoveryManager: NSObject, ObservableObject {
         // There is no direct API, but we can try a dummy browse
         // or just let the first scan trigger it.
         // For UI purposes, we'll assume we need to check.
+    }
+
+    private static func isLocalNetworkDenied(_ error: NWError) -> Bool {
+        switch error {
+        case .posix(let code):
+            // Local Network privacy denial typically surfaces as EPERM/EACCES.
+            return code == .EPERM || code == .EACCES
+        default:
+            return false
+        }
     }
 }

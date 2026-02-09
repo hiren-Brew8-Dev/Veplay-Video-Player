@@ -501,7 +501,7 @@ struct PlayerControlsView: View {
                                 Spacer()
                                 sheetContent(isLandscape: false)
                                     .frame(maxWidth: .infinity)
-                                    .if(showSettingsSheet) { $0.frame(height: UIScreen.main.bounds.height * 0.5) }
+                                    .if(showSettingsSheet) { $0.frame(height: geometry.size.height * 0.5) }
                                     .background(Color.clear)
                             }
                             .transition(.move(edge: .bottom))
