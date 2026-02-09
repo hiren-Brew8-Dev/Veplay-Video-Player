@@ -46,6 +46,14 @@ struct PlayerTopBar: View {
                 
                 // Right Group
                 HStack(spacing: 8) {
+                    // Active Sleep Timer Indicator
+                    if viewModel.isSleepTimerActive {
+                        Image(systemName: "timer")
+                            .font(.system(size: 20))
+                            .foregroundColor(.orange)
+                            .padding(.trailing, 4)
+                    }
+
                     CastButton(viewModel: viewModel)
                     
                     // The Lock Icon Placeholder (always present for layout and alignment)
