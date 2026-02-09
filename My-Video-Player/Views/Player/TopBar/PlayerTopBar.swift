@@ -56,7 +56,7 @@ struct PlayerTopBar: View {
                         CastButton(viewModel: viewModel)
                         
                         Button(action: onLock) {
-                            Image(systemName: "lock")
+                            Image(systemName: "lock.fill")
                                 .font(.system(size: 20))
                                 .foregroundColor(.white)
                         }

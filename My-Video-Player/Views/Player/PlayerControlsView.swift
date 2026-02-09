@@ -97,39 +97,43 @@ struct PlayerControlsView: View {
     }
     
     private func triggerLockAnimation() {
-        // Haptic feedback
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         
-        withAnimation(.easeOut(duration: 0.3)) {
+        // Reset state
+        viewModel.lockAnimationText = ""
+        viewModel.isUnlockAnimation = false
+        
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             viewModel.lockAnimationActive = true
-            viewModel.lockAnimationStage = 1 // Show pill
-            viewModel.lockAnimationText = ""
-            viewModel.isUnlockAnimation = false
+            viewModel.lockAnimationStage = 1
         }
         
-        // Typing: "Lock"
+        // Snap typing animation
         let text = "Lock"
-        for i in 0...text.count {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.075 + 0.2) {
-                viewModel.lockAnimationText = String(text.prefix(i))
+        for i in 1...text.count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.04) {
+                if viewModel.lockAnimationActive {
+                    viewModel.lockAnimationText = String(text.prefix(i))
+                }
             }
         }
         
-        // Move to corner
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-            withAnimation(.easeInOut(duration: 0.6)) {
-                viewModel.lockAnimationStage = 2 // Moving
+        // Start movement sooner
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                viewModel.lockAnimationStage = 2 // Moving to corner
                 viewModel.isLocked = true
                 viewModel.isControlsVisible = false
             }
         }
         
-        // Final State
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
-            withAnimation(.easeIn(duration: 0.3)) {
-                viewModel.lockAnimationStage = 3 // Locked (text gone)
+        // Dismiss flying overlay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            withAnimation(.easeOut(duration: 0.2)) {
                 viewModel.lockAnimationActive = false
+                viewModel.lockAnimationStage = 3
+                viewModel.lockAnimationText = ""
             }
         }
     }
@@ -138,34 +142,29 @@ struct PlayerControlsView: View {
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         
-        withAnimation(.easeOut(duration: 0.3)) {
+        viewModel.lockAnimationText = ""
+        viewModel.isUnlockAnimation = true
+        
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             viewModel.lockAnimationActive = true
-            viewModel.lockAnimationStage = 2 // Start at moving position
-            viewModel.lockAnimationText = ""
-            viewModel.isUnlockAnimation = true
+            viewModel.lockAnimationStage = 2 // Start at corner
         }
         
-        // Typing: "Unlock"
-        let text = "Unlock"
-        for i in 0...text.count {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.075 + 0.1) {
-                viewModel.lockAnimationText = String(text.prefix(i))
-            }
-        }
+        // No text for unlock as requested
         
-        // Move back to button
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            withAnimation(.easeInOut(duration: 0.6)) {
-                viewModel.lockAnimationStage = 1 // Back to button position
+        // Immediate move back
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                viewModel.lockAnimationStage = 1 // Move back to button
                 viewModel.isLocked = false
                 viewModel.isControlsVisible = true
                 resetTimer()
             }
         }
         
-        // Final State
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            withAnimation(.easeIn(duration: 0.3)) {
+        // Dismiss
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            withAnimation(.easeOut(duration: 0.2)) {
                 viewModel.lockAnimationActive = false
                 viewModel.lockAnimationStage = 0
             }
@@ -536,35 +535,24 @@ struct PlayerControlsView: View {
     private var lockAnimationOverlay: some View {
         if viewModel.lockAnimationActive {
             ZStack {
-                // Dimming background for the pill visibility
-                if viewModel.lockAnimationStage < 2 {
-                    Color.black.opacity(0.2)
-                        .edgesIgnoringSafeArea(.all)
-                }
-                
-                HStack(spacing: 8) {
+                HStack(spacing: 12) {
                     Image(systemName: viewModel.isUnlockAnimation ? "lock.open.fill" : "lock.fill")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 22, weight: .bold))
                     
-                    if !viewModel.lockAnimationText.isEmpty {
+                    if !viewModel.lockAnimationText.isEmpty && !viewModel.isUnlockAnimation {
                         Text(viewModel.lockAnimationText)
-                            .font(.system(size: 16, weight: .bold))
-                            .transition(.asymmetric(insertion: .opacity, removal: .opacity))
+                            .font(.system(size: 20, weight: .bold))
+                            .fixedSize(horizontal: true, vertical: false) // Prevent label cutting
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    Capsule()
-                        .fill(Color.white)
-                        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
-                )
-                .foregroundColor(.black)
-                .scaleEffect(viewModel.lockAnimationStage == 1 ? 1.0 : 0.85)
+                .foregroundColor(.white)
+                .shadow(color: .black.opacity(0.5), radius: 5, x: 0, y: 3)
+                .scaleEffect(viewModel.lockAnimationStage == 1 ? 1.1 : 1.0)
                 .matchedGeometryEffect(id: "lockButton", in: lockNamespace, isSource: false)
             }
             .transition(.opacity)
             .zIndex(100)
+            .ignoresSafeArea()
         }
     }
     
