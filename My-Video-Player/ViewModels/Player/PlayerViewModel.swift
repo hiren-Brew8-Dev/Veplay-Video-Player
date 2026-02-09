@@ -1617,8 +1617,8 @@ class PlayerViewModel: NSObject, ObservableObject {
              lastIntendedSeekPosition = nil // Clear on play
              vlcPlayer?.rate = playbackSpeed
              
-             // Re-apply audio delay to ensure sync on resume
-             vlcPlayer?.currentAudioPlaybackDelay = Int(audioDelay * 1_000_000)
+             // Removed redundant currentAudioPlaybackDelay setting here to prevent audio dropout on resume.
+             // The delay is already managed by the reactive observer and remembered by the VLC player instance.
              
              vlcPlayer?.play()
              isPlaying = true
@@ -1645,7 +1645,7 @@ class PlayerViewModel: NSObject, ObservableObject {
         // Update local state immediately to prevent slider jump back
         self.currentTime = time
         self.currentTimeString = self.formatTime(seconds: time)
-        self.subtitleManager.update(currentTime: time)
+        self.subtitleManager.update(currentTime: time, audioDelay: self.audioDelay)
         
         if isVLC {
             isSeeking = true
@@ -1870,8 +1870,8 @@ class PlayerViewModel: NSObject, ObservableObject {
                 self.currentTime = time.seconds
                 self.currentTimeString = self.formatTime(seconds: self.currentTime)
                 
-                // Update Subtitles
-                self.subtitleManager.update(currentTime: self.currentTime)
+                // Update Subtitles with current audio delay factor
+                self.subtitleManager.update(currentTime: self.currentTime, audioDelay: self.audioDelay)
                 
                 // Auto-save position every 5 seconds or so (throttled)
                 if Int(self.currentTime) % 5 == 0 {
@@ -2076,10 +2076,8 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         self.currentTime = vlcTime
         self.currentTimeString = formatTime(seconds: currentTime)
         
-        // Update subtitles (only for AVPlayer, VLC handles it natively)
-        if !isVLC {
-            self.subtitleManager.update(currentTime: self.currentTime)
-        }
+        // Update subtitles (For both AVPlayer and VLC external subtitles)
+        self.subtitleManager.update(currentTime: self.currentTime, audioDelay: self.audioDelay)
         
         if let media = player.media {
             let length = media.length

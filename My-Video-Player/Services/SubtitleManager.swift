@@ -208,13 +208,16 @@ class SubtitleManager: ObservableObject {
     
     // MARK: - Update Logic
     
-    func update(currentTime: TimeInterval) {
+    func update(currentTime: TimeInterval, audioDelay: TimeInterval = 0) {
         guard isEnabled, !subtitles.isEmpty else {
             if !currentSubtitle.isEmpty { currentSubtitle = "" }
             return
         }
         
-        let adjustedTime = currentTime - offsetDelay
+        // Calculate adjusted time: 
+        // 1. Subtract offsetDelay (user's manual subtitle adjustment)
+        // 2. Subtract audioDelay (to sync with delayed audio)
+        let adjustedTime = currentTime - offsetDelay - audioDelay
         
         // Optimization: Start searching from last known index
         // If adjustedTime < subtitles[last].start, we jumped back, reset search
