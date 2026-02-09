@@ -9,30 +9,57 @@ struct DashboardView: View {
     @State private var selectedPhotoItems = [PhotosPickerItem]()
     
     init() {
-        UITabBar.appearance().barTintColor = UIColor(Color.sheetSurface)
-        UITabBar.appearance().unselectedItemTintColor = UIColor(Color.homeTextSecondary)
-        UITabBar.appearance().isHidden = false
+        // Configure system tab bar appearance
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(Color.homeBackground)
+        
+        // Hide top line
+        appearance.shadowColor = .clear
+        appearance.shadowImage = UIImage()
+        
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+    
+    private var showTabBar: Bool {
+        !viewModel.isSelectionMode &&
+        !viewModel.isHeaderExpanded &&
+        !viewModel.isTabBarHidden &&
+        !viewModel.showActionSheet &&
+        viewModel.playingVideo == nil
     }
     
     var body: some View {
         ZStack {
-            NavigationStack {
-                ZStack {
-                    switch viewModel.selectedTab {
-                    case 0:
-                        HomeView(viewModel: viewModel, paddingBottom: .constant(80))
-                    case 1:
-                        PlaylistView()
-                    case 2:
-                        BrowseView()
-                    case 3:
-                        SettingsView()
-                    default:
-                        HomeView(viewModel: viewModel, paddingBottom: .constant(80))
-                    }
+            TabView(selection: $viewModel.selectedTab) {
+                NavigationStack {
+                    HomeView(viewModel: viewModel, paddingBottom: .constant(0))
                 }
-                .navigationBarHidden(true)
+                .tabItem {
+                    Label("Home", systemImage: "house")
+                }
+                .tag(0)
+                .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+                
+                // Middle Dummy Tab for space
+                Color.clear
+                    .tabItem {
+                        Label("", systemImage: "")
+                    }
+                    .tag(100)
+                
+                NavigationStack {
+                    SettingsView()
+                }
+                .tabItem {
+                    Label("Settings", systemImage: "gearshape")
+                }
+                .tag(1)
+                .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
             }
+            .accentColor(.homeAccent)
+            .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
             .fullScreenCover(item: $viewModel.playingVideo) { video in
                 PlayerView(
                     video: video,
@@ -42,7 +69,9 @@ struct DashboardView: View {
                     }
                 )
                 .environmentObject(viewModel)
+                
             }
+            .ignoresSafeArea(.all, edges: .bottom)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
             if viewModel.isImporting {
@@ -52,7 +81,7 @@ struct DashboardView: View {
             if viewModel.showActionSheet {
                 ZStack {
                     // Background Dimming
-                    Color.homeBackground.opacity(0.4)
+                    Color.black.opacity(0.4)
                         .edgesIgnoringSafeArea(.all)
                         .onTapGesture {
                             withAnimation {
@@ -72,8 +101,8 @@ struct DashboardView: View {
                 .zIndex(200)
             }
             
-            if !viewModel.isHeaderExpanded && !viewModel.isTabBarHidden && !viewModel.showActionSheet && viewModel.playingVideo == nil {
-                CustomTabBarOverlay(viewModel: viewModel)
+            if showTabBar {
+                PlusButtonOverlay(viewModel: viewModel)
             }
             
             if viewModel.showUnsupportedFormatAlert {
@@ -190,9 +219,12 @@ struct DashboardView: View {
             }
         }
         .onChange(of: viewModel.selectedTab) { oldTab, newTab in
-            // When switching to Home tab (0), ensure tab bar is visible
+            // Ensure tab bar visibility
             if newTab == 0 {
                 viewModel.isTabBarHidden = false
+            } else if newTab == 100 {
+                // If user somehow taps the blank middle tab, revert to previous
+                viewModel.selectedTab = oldTab
             }
         }
     }
@@ -242,80 +274,48 @@ struct DashboardView: View {
     }
 }
 
-struct CustomTabBarOverlay: View {
+struct PlusButtonOverlay: View {
     @ObservedObject var viewModel: DashboardViewModel
     
     var body: some View {
-        if !viewModel.isSelectionMode {
-            VStack {
-                Spacer()
-                ZStack(alignment: .top) {
-                    HStack {
-                        Spacer()
-                        tabBarItem(index: 0, icon: "house.fill", title: "Home")
-                        Spacer()
-                        tabBarItem(index: 3, icon: "gearshape.fill", title: "Settings")
-                        Spacer()
+        VStack {
+            Spacer()
+            
+            ZStack {
+                // Orange Action Circle
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 56, height: 56)
+                    .shadow(color: Color.homeAccent.opacity(0.4), radius: 10, x: 0, y: 5)
+                
+                Menu {
+                    Button(action: { viewModel.showCreateFolderAlert = true }) {
+                        Label("Create Folder", systemImage: "folder.badge.plus")
                     }
-                    .padding(.top, 10)
-                    .padding(.bottom, 34) // Explicit safe area space
-                    .background(Color.sheetSurface)
-                    .clipShape(RoundedCorner(radius: 30, corners: [.topLeft, .topRight]))
-                    .shadow(color: Color.homeBackground.opacity(0.3), radius: 10, x: 0, y: -5)
+                    Button(action: { viewModel.showPhotoPicker = true }) {
+                        Label("Import from Photos", systemImage: "photo.on.rectangle")
+                    }
+                    Button(action: { viewModel.showFileImporter = true }) {
+                        Label("Add From iOS Files", systemImage: "plus.rectangle.on.folder")
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 56, height: 56)
                     
-                    ZStack {
-                        // Separate Shadow
-                        Circle()
-                            .fill(Color.homeAccent.opacity(0.4))
-                            .frame(width: 50, height: 50)
-                            .blur(radius: 8)
-                            .offset(y: 5)
-                        
-                        Menu {
-                            // Universal Options: Always show all options
-                            Button(action: { viewModel.showCreateFolderAlert = true }) {
-                                Label("Create Folder", systemImage: "folder.badge.plus")
-                            }
-                            Button(action: { viewModel.showPhotoPicker = true }) {
-                                Label("Import from Photos", systemImage: "photo.on.rectangle")
-                            }
-                            Button(action: { viewModel.showFileImporter = true }) {
-                                Label("Add From iOS Files", systemImage: "folder.badge.plus")
-                            }
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(.homeTextPrimary) // Keep icon white for contrast on accent background
-                                .frame(width: 60, height: 60)
-                                .background(Color.homeAccent)
-                                .clipShape(Circle())
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.homeBackground, lineWidth: 4)
-                                )
-                        }
-                    }
-                    .offset(y: -30)
                 }
             }
-            .edgesIgnoringSafeArea(.bottom)
-        }
-    }
-    
-    private func tabBarItem(index: Int, icon: String, title: String) -> some View {
-        Button(action: {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                viewModel.selectedTab = index
-            }
-        }) {
-            VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                Text(title)
-                    .font(.caption2)
-            }
-            .foregroundColor(viewModel.selectedTab == index ? .homeAccent : .homeTextSecondary)
-            .frame(maxWidth: .infinity)
+            .padding(.bottom, -10) // Corrected for vertical centering with native icons
+            .ignoresSafeArea(.keyboard)
+            .ignoresSafeArea(.keyboard)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 }

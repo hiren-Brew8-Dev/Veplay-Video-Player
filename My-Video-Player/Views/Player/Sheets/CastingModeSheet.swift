@@ -33,7 +33,7 @@ struct CastingModeSheet: View {
                             }
                         }
                     )
-                    .if(!isLandscape) { view in
+                    .applyIf(!isLandscape) { view in
                         view.frame(height: geometry.size.height * 0.5)
                             .frame(maxHeight: .infinity, alignment: .bottom)
                     }
@@ -103,13 +103,13 @@ struct CastingModeSheet: View {
         }
         .padding(.horizontal, isLandscape ? 15 : 0)
         .padding(.bottom, isLandscape ? 0 : 0) // No bottom padding, safe area handles it
-        .if(isLandscape) { $0.frame(maxHeight: .infinity, alignment: .top) }
-        .if(!isLandscape) { $0.padding(.bottom, 20) } // Safe area padding for portrait
+        .applyIf(isLandscape) { $0.frame(maxHeight: .infinity, alignment: .top) }
+        .applyIf(!isLandscape) { $0.padding(.bottom, 20) } // Safe area padding for portrait
         .background(Color.sheetBackground)
-        .if(isLandscape) { view in
+        .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .if(!isLandscape) { view in
+        .applyIf(!isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
         .shadow(color: Color.black.opacity(0.5), radius: 10, x: isLandscape ? -5 : 0, y: isLandscape ? 0 : -5)
@@ -320,10 +320,10 @@ struct PlayingModeSheet: View {
         }
         .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
-        .if(isLandscape) { view in
+        .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .if(!isLandscape) { view in
+        .applyIf(!isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
     }
@@ -466,10 +466,10 @@ struct PlaybackSpeedSheet: View {
         }
         .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
-        .if(isLandscape) { view in
+        .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .if(!isLandscape) { view in
+        .applyIf(!isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
     }

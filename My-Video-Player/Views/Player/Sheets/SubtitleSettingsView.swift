@@ -84,10 +84,10 @@ struct SubtitleSettingsView: View {
         }
         .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color.sheetBackground)
-        .if(isLandscape) { view in
+        .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .if(!isLandscape) { view in
+        .applyIf(!isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
         .shadow(color: Color.black.opacity(0.5), radius: 10, x: isLandscape ? -5 : 0, y: isLandscape ? 0 : -5)

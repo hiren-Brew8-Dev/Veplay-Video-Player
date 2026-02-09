@@ -62,13 +62,13 @@ struct CastDevicePickerView: View {
         }
         
         .padding(.bottom, 0)
-        .if(isLandscape) { $0.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top) }
-        .if(!isLandscape) { $0.padding(.bottom, 20) } // Safe area padding for portrait
+        .applyIf(isLandscape) { $0.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top) }
+        .applyIf(!isLandscape) { $0.padding(.bottom, 20) } // Safe area padding for portrait
         .background(Color.sheetBackground)
-        .if(isLandscape) { view in
+        .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .if(!isLandscape) { view in
+        .applyIf(!isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
         .shadow(color: Color.black.opacity(0.5), radius: 10, x: isLandscape ? -5 : 0, y: isLandscape ? 0 : -5)

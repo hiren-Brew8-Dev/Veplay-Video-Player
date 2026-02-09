@@ -39,7 +39,7 @@ extension View {
     
     /// Conditional modifier
     @ViewBuilder
-    func `if`<Content: View>(_ condition: Bool, content: (Self) -> Content) -> some View {
+    func applyIf<Content: View>(_ condition: Bool, content: (Self) -> Content) -> some View {
         if condition {
             content(self)
         } else {

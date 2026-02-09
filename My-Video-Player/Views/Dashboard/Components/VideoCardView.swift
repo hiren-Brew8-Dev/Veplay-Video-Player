@@ -89,8 +89,8 @@ struct VideoCardView: View {
                         .lineLimit(1)
                     
                     HStack(spacing: 4) {
-                        Text(formatDuration(video.duration))
-                        Text("•")
+//                        Text(formatDuration(video.duration))
+//                        Text("•")
                         Text(formatDate(video.creationDate))
                         if video.asset == nil { // Only show file size for imported/local videos
                             Text("•")
@@ -152,7 +152,7 @@ struct VideoCardView: View {
     
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM, hh:mm a" // Added time
+        formatter.dateFormat = "d MMM" 
         return formatter.string(from: date)
     }
     

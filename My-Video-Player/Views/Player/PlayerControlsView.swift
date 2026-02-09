@@ -488,8 +488,8 @@ struct PlayerControlsView: View {
                         Spacer()
                         sheetContent(isLandscape: isLandscape)
                             .frame(maxWidth: .infinity)
-                            .if(isLandscape) { $0.padding(.horizontal, geometry.size.width * 0.15) } // Center it nicely but keep it bottom-to-top
-                            .if(showSettingsSheet && !isLandscape) { $0.frame(height: geometry.size.height * 0.5) }
+                            .applyIf(isLandscape) { $0.padding(.horizontal, geometry.size.width * 0.15) } // Center it nicely but keep it bottom-to-top
+                            .applyIf(showSettingsSheet && !isLandscape) { $0.frame(height: geometry.size.height * 0.5) }
                             .background(Color.clear)
                     }
                     .transition(.move(edge: .bottom))
@@ -607,7 +607,7 @@ struct PlayerControlsView: View {
                 selectedMode: $selectedCastingMode,
                 isLandscape: isLandscape
             )
-//            .if(!isLandscape) { $0.frame(height: 450) }
+//            .applyIf(!isLandscape) { $0.frame(height: 450) }
         } else if showSleepTimer {
             SleepTimerView(
                 viewModel: viewModel,
@@ -621,7 +621,7 @@ struct PlayerControlsView: View {
                 
                 } : nil
             )
-            .if(!isLandscape) { $0.frame(height: 450) }
+            .applyIf(!isLandscape) { $0.frame(height: 450) }
         } else if showPlayingModeSheet {
             PlayingModeSheet(
                 viewModel: viewModel,
@@ -634,7 +634,7 @@ struct PlayerControlsView: View {
                     }
                 } : nil
             )
-            .if(!isLandscape) { $0.frame(height: 400) }
+            .applyIf(!isLandscape) { $0.frame(height: 400) }
         } else if showPlaybackSpeedSheet {
             PlaybackSpeedSheet(
                 viewModel: viewModel,
@@ -647,7 +647,7 @@ struct PlayerControlsView: View {
                     }
                 } : nil
             )
-            .if(!isLandscape) { $0.frame(height: 450) }
+            .applyIf(!isLandscape) { $0.frame(height: 450) }
         } else if showAudioCaptionsSheet {
             AudioCaptionsSheet(
                 viewModel: viewModel,
@@ -660,7 +660,7 @@ struct PlayerControlsView: View {
                     }
                 } : nil
             )
-            .if(!isLandscape) { $0.frame(height: 500) }
+            .applyIf(!isLandscape) { $0.frame(height: 500) }
         }
     }
 
@@ -862,10 +862,10 @@ struct SettingsSheetView: View {
         }
         .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
-        .if(isLandscape) { view in
+        .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .if(!isLandscape) { view in
+        .applyIf(!isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
         .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: isLandscape ? 0 : -5)
@@ -1270,15 +1270,6 @@ extension View {
     func cornerRadiusLocal(_ radius: CGFloat, corners: UIRectCorner) -> some View {
         clipShape( RoundedCornerLocal(radius: radius, corners: corners) )
     }
-    
-    @ViewBuilder
-    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
-    }
 }
 
 struct RoundedCornerLocal: Shape {
@@ -1395,10 +1386,10 @@ struct SleepTimerView: View {
         }
         .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
-        .if(isLandscape) { view in
+        .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .if(!isLandscape) { view in
+        .applyIf(!isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
     }

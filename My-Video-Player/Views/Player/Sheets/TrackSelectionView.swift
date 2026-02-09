@@ -137,10 +137,10 @@ struct AudioTrackSettingsView: View {
         }
         .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color.sheetBackground)
-        .if(isLandscape) { view in
+        .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .if(!isLandscape) { view in
+        .applyIf(!isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
     }

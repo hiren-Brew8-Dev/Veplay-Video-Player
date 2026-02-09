@@ -466,6 +466,15 @@ class DashboardViewModel: ObservableObject {
                 
                 DispatchQueue.main.async {
                     self.folders = newFolders
+                    
+                    // Fetch durations for all videos in folders in background
+                    let allFolderVideos = newFolders.flatMap { folder -> [VideoItem] in
+                        func getVideos(from f: Folder) -> [VideoItem] {
+                            return f.videos + f.subfolders.flatMap { getVideos(from: $0) }
+                        }
+                        return getVideos(from: folder)
+                    }
+                    self.backgroundFetchDurations(for: allFolderVideos)
                 }
             } catch {
                 print("Error loading folders: \(error)")
@@ -520,6 +529,7 @@ class DashboardViewModel: ObservableObject {
         
         let asset = AVURLAsset(url: url)
         var duration = CMTimeGetSeconds(asset.duration)
+        if duration.isNaN { duration = 0 }
         
         // Fallback to VLC for non-native formats (MKV, AVI, etc.) where AVAsset returns 0
         if duration <= 0 {
@@ -1472,7 +1482,7 @@ class DashboardViewModel: ObservableObject {
     }
     
     private func backgroundFetchDurations(for videos: [VideoItem]) {
-        let localVideos = videos.filter { $0.url != nil && $0.duration == 0 }
+        let localVideos = videos.filter { $0.url != nil && ($0.duration <= 0 || $0.duration.isNaN) }
         guard !localVideos.isEmpty else { return }
         
         DispatchQueue.global(qos: .utility).async {
@@ -1520,11 +1530,20 @@ class DashboardViewModel: ObservableObject {
         if let index = self.videos.firstIndex(where: { $0.id == id }) {
             self.videos[index].duration = duration
         }
-        for i in 0..<self.folders.count {
-            if let vIndex = self.folders[i].videos.firstIndex(where: { $0.id == id }) {
-                self.folders[i].videos[vIndex].duration = duration
+        
+        func updateFolderRecursively(_ folder: inout Folder) {
+            if let vIndex = folder.videos.firstIndex(where: { $0.id == id }) {
+                folder.videos[vIndex].duration = duration
+            }
+            for i in 0..<folder.subfolders.count {
+                updateFolderRecursively(&folder.subfolders[i])
             }
         }
+        
+        for i in 0..<self.folders.count {
+            updateFolderRecursively(&self.folders[i])
+        }
+        
         self.objectWillChange.send()
     }
     

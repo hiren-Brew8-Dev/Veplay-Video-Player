@@ -25,35 +25,12 @@ struct VideoPlayerApp: App {
                     .blur(radius: (useFaceID && !authService.isUnlocked) ? 15 : 0) // Blur content when locked
                 
                 if useFaceID && !authService.isUnlocked {
-                    // Lock Screen Overlay
-                    Color.black.edgesIgnoringSafeArea(.all)
-                    
-                    VStack(spacing: 20) {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.white)
-                        
-                        Text("App Locked")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                        
-                        Button(action: {
-                            authenticate()
-                        }) {
-                            HStack {
-                                Image(systemName: "faceid")
-                                Text("Unlock with Face ID")
-                            }
-                            .font(.headline)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                        }
-                    }
+                    AppLockView(onUnlock: authenticate)
+                        .transition(.opacity)
+                        .zIndex(100)
                 }
             }
+            .animation(.spring(), value: authService.isUnlocked)
             .onChange(of: scenePhase) { oldPhase, newPhase in
                 if newPhase == .active {
                      // Try to auth if needed

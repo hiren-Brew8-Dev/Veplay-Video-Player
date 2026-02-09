@@ -9,37 +9,78 @@ struct AlbumSectionView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Add a sub-header for Gallery section to match Video section if possible
-            ScrollView {
-                 if viewModel.galleryAlbums.isEmpty {
-                VStack(spacing: 20) {
+            if viewModel.galleryAlbums.isEmpty {
+                VStack(spacing: 0) {
                     Spacer()
-                        .frame(height: 50)
-                    Image(systemName: "photo.on.rectangle")
-                        .appSecondaryIconStyle(size: 50, color: .homeTextSecondary)
-                    Text("No Gallery Albums Found")
-                        .font(.headline)
-                        .foregroundColor(.homeTextSecondary)
-                    Text("Grant photo access to see gallery")
-                        .font(.caption)
-                        .foregroundColor(.homeTextSecondary)
-                }
-                .padding(.top, 50)
-            } else {
-                LazyVGrid(columns: GridLayout.gridColumns, spacing: GridLayout.spacing) {
-                    ForEach(viewModel.galleryAlbums, id: \.localIdentifier) { album in
-                        NavigationLink(destination: albumDestination(for: album)) {
-                            AlbumCardView(album: album)
+                        .frame(height: 80)
+                    
+                    VStack(spacing: 24) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.homeCardBackground.opacity(0.5))
+                                .frame(width: 100, height: 100)
+                            
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .font(.system(size: 44))
+                                .foregroundColor(.homeTextSecondary)
+                        }
+                        
+                        VStack(spacing: 8) {
+                            Text("No Gallery Albums Found")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.homeTextPrimary)
+                            
+                            Text("Grant photo access in settings to view\nyour device's video albums.")
+                                .font(.system(size: 14))
+                                .foregroundColor(.homeTextSecondary)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(4)
+                        }
+                        .padding(.horizontal, 40)
+                        
+                        Button(action: {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        }) {
+                            Text("Open Settings")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 40)
+                                .padding(.vertical, 16)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .cornerRadius(30)
+                                .shadow(color: Color.homeAccent.opacity(0.4), radius: 15, x: 0, y: 8)
                         }
                         .buttonStyle(.scalable)
+                        .padding(.top, 8)
                     }
+                    
+                    Spacer()
                 }
-                .padding(.horizontal, 10)
-                .padding(.bottom, 100)
-            }
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: GridLayout.gridColumns, spacing: GridLayout.spacing) {
+                        ForEach(viewModel.galleryAlbums, id: \.localIdentifier) { album in
+                            NavigationLink(destination: albumDestination(for: album)) {
+                                AlbumCardView(album: album)
+                            }
+                            .buttonStyle(.scalable)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 100)
+                }
             }
         }
         .background(Color.homeBackground)
+        .ignoresSafeArea(edges: .bottom)
     }
     
     private func albumDestination(for album: PHAssetCollection) -> some View {

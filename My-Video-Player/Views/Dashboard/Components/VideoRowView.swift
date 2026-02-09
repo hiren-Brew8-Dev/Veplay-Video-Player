@@ -133,7 +133,7 @@ struct VideoRowView: View {
 
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM, hh:mm a"
+        formatter.dateFormat = "d MMM"
         return formatter.string(from: date)
     }
      private func loadThumbnail() {

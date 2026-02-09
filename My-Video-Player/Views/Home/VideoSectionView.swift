@@ -28,25 +28,26 @@ struct VideoSectionView: View {
                     selectionHeader
                 }
                 
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
-                                emptyStateView
-                            } else if isGridView {
-                                contentView
-                            } else {
-                                listView
+                if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
+                    emptyStateView
+                } else {
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 20) {
+                                if isGridView {
+                                    contentView
+                                } else {
+                                    listView
+                                }
                             }
+                            .padding(.bottom, 90)
                         }
-                        .padding(.bottom, 90)
-                    }
-                    .onChange(of: viewModel.highlightVideoId) { oldId, newId in
-                        if let id = newId {
-                            withAnimation(.spring()) {
-                                proxy.scrollTo(id, anchor: .center)
+                        .onChange(of: viewModel.highlightVideoId) { oldId, newId in
+                            if let id = newId {
+                                withAnimation(.spring()) {
+                                    proxy.scrollTo(id, anchor: .center)
+                                }
                             }
-                            // Scroll to highlighted item
                         }
                     }
                 }
@@ -82,6 +83,7 @@ struct VideoSectionView: View {
         
         }
         .background(Color.homeBackground)
+        .ignoresSafeArea(edges: .bottom)
     }
     
     var isAllSelected: Bool {
@@ -256,21 +258,72 @@ struct VideoSectionView: View {
     // MARK: - Subviews
     
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 0) {
             Spacer()
-                .frame(height: 50)
-            Image(systemName: "video.slash")
-                .font(.system(size: 50))
-                .foregroundColor(.homeTextSecondary)
-            Text("No Videos Imported")
-                .font(.headline)
-                .foregroundColor(.homeTextSecondary)
-            Text("Import videos to start watching")
-                .font(.caption)
-                .foregroundColor(.homeTextSecondary)
+                .frame(height: 80)
+            
+            VStack(spacing: 24) {
+                ZStack {
+                    Circle()
+                        .fill(Color.homeCardBackground.opacity(0.5))
+                        .frame(width: 100, height: 100)
+                    
+                    Image(systemName: "video.slash")
+                        .font(.system(size: 40))
+                        .foregroundColor(.homeTextSecondary)
+                }
+                
+                VStack(spacing: 8) {
+                    Text("No Videos Imported")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.homeTextPrimary)
+                    
+                    Text("Start by importing videos from your photos\nor files to build your local library.")
+                        .font(.system(size: 14))
+                        .foregroundColor(.homeTextSecondary)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(4)
+                }
+                .padding(.horizontal, 40)
+                
+                Menu {
+                    Button(action: {
+                        viewModel.showPhotoPicker = true
+                    }) {
+                        Label("Import from Photos", systemImage: "photo.on.rectangle")
+                    }
+                    
+                    Button(action: {
+                        viewModel.showFileImporter = true
+                    }) {
+                        Label("Add From iOS Files", systemImage: "plus.rectangle.on.folder")
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 16, weight: .bold))
+                        Text("Import Videos")
+                            .font(.system(size: 16, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 40)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(30)
+                    .shadow(color: Color.homeAccent.opacity(0.4), radius: 15, x: 0, y: 8)
+                }
+                .padding(.top, 8)
+            }
+            
+            Spacer()
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 50)
     }
     
     private var contentView: some View {

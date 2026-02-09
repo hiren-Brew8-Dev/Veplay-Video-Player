@@ -35,10 +35,10 @@ struct HomeView: View {
                         .tag("Folder")
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .tabViewStyle(.page(indexDisplayMode: .never))
                 // Block swipes in selection mode
                 .allowsHitTesting(true) 
                 .gesture(viewModel.isSelectionMode ? DragGesture() : nil)
+                .ignoresSafeArea(edges: .bottom)
             }
         }
         .background(Color.homeBackground.edgesIgnoringSafeArea(.all))

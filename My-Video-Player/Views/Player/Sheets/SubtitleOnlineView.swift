@@ -55,10 +55,10 @@ struct SubtitleOnlineView: View {
         }
         .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
-        .if(isLandscape) { view in
+        .applyIf(isLandscape) { view in
              view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .if(!isLandscape) { view in
+        .applyIf(!isLandscape) { view in
              view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
         .sheet(isPresented: $showLanguagePicker) {
