@@ -916,7 +916,7 @@ struct SettingsSheetView: View {
                 SettingsGridItem(icon: "timer", title: "Sleep Timer", isActive: viewModel.isSleepTimerActive, action: onSleepTimer)
                 SettingsGridItem(icon: "camera", title: "Screenshot", action: onScreenshot)
                 SettingsGridItem(icon: "square.and.arrow.up", title: "Share", action: onShare)
-                AirPlayGridItem(viewModel: viewModel, onDismiss: { showSettingsSheet = false })
+                AirPlayGridItem(viewModel: viewModel, onDismiss: { isPresented = false })
             }
             
         }
