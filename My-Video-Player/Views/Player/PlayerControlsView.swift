@@ -60,7 +60,6 @@ struct PlayerControlsView: View {
         if showSubtitleSettings { return "subtitles" }
         if showTrackSelection { return "tracks" }
         if showCastingSheet { return "casting" }
-        if showPlaylistQueue { return "queue" }
         if showSleepTimer { return "sleep" }
         if showPlayingModeSheet { return "mode" }
         if showPlaybackSpeedSheet { return "speed" }
@@ -931,18 +930,17 @@ struct SettingsSheetView: View {
                     rightIcon: viewModel.playingMode.iconName,
                     action: onPlayingMode
                 )
-                SettingsListItem(icon: "gauge.with.needle", title: "Playback Speed", value: String(format: "%.2fx", viewModel.playbackSpeed), action: onPlaybackSpeed)
-                SettingsListItem(icon: "speaker.wave.2", title: "Audio Track", value: viewModel.currentAudioTrackName, action: onAudioTrack)
-                SettingsListItem(icon: "captions.bubble", title: "Subtitles", value: viewModel.currentSubtitleName, action: onSubtitle)
             }
         }
-        .padding(16)
     }
     
     private var portraitBody: some View {
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(spacing: 0) {
                 settingsControls
+                    .padding(16)
+                
+                Divider().background(Color.gray.opacity(0.3))
                 
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
@@ -957,21 +955,24 @@ struct SettingsSheetView: View {
                             .foregroundColor(.gray)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 14)
                     
                     queueList
-                        .frame(height: 400) // Fixed height in portrait ScrollView
+                        .frame(height: 400)
                 }
             }
-            .padding(.bottom, 30)
+            .padding(.bottom, 20)
         }
     }
     
     private var landscapeBody: some View {
         VStack(spacing: 0) {
             settingsControls
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
             
             Divider().background(Color.gray.opacity(0.3))
+                .padding(.top, 12)
             
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
@@ -986,7 +987,7 @@ struct SettingsSheetView: View {
                         .foregroundColor(.gray)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.vertical, 10)
                 
                 queueList
             }
