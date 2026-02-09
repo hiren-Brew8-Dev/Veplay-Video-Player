@@ -177,12 +177,12 @@ struct CastDevicePickerView: View {
     // MARK: - Discovery Content
     private var discoveryContent: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Illustration placeholder
+            VStack(spacing: 16) {
+                // Top info card - fixed height
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color.sheetSurface)
-                        .frame(height: 150)
+                        .frame(height: 140)
                     
                     VStack(spacing: 12) {
                         Image(systemName: "tv.and.mediabox.fill")
@@ -196,32 +196,22 @@ struct CastDevicePickerView: View {
                             .padding(.horizontal, 40)
                     }
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
                 
-                if discoveryManager.isScanning {
-                    VStack(spacing: 12) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .sheetTextPrimary))
-                            .scaleEffect(1.5)
-                        
-                        Text("Loading...")
-                            .foregroundColor(.sheetTextPrimary)
-                            .font(.system(size: 16))
-                    }
-                    .frame(height: 100)
-                } else if discoveryManager.discoveredDevices.isEmpty {
+                // Device list or no devices message (no loading state)
+                if discoveryManager.discoveredDevices.isEmpty {
                     noDevicesFooter
                 } else {
                     deviceList
                 }
             }
-            .padding(.top, 15)
+            .padding(.top, 16)
             .padding(.bottom, 20)
         }
     }
     
     private var deviceList: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 12) {
             ForEach(discoveryManager.discoveredDevices) { device in
                 Button(action: {
                     // Handle device selection
@@ -229,7 +219,8 @@ struct CastDevicePickerView: View {
                     HStack(spacing: 16) {
                         Image(systemName: "airplayvideo")
                             .foregroundColor(.sheetTextPrimary)
-                            .font(.system(size: 20))
+                            .font(.system(size: 22))
+                            .frame(width: 32)
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text(device.name)
@@ -241,13 +232,18 @@ struct CastDevicePickerView: View {
                         }
                         
                         Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.themeSecondary)
                     }
-                    .padding()
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .frame(height: 70)
                     .background(Color.sheetSurface)
-                    .cornerRadius(10)
+                    .cornerRadius(12)
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 8)
+                .padding(.horizontal, 20)
             }
         }
     }
@@ -282,9 +278,9 @@ struct CastDevicePickerView: View {
                     .padding(.top, 4)
             }
         }
-        .padding()
+        .padding(20)
         .background(Color.homeAccent.opacity(0.1))
         .cornerRadius(12)
-        .padding(.horizontal)
+        .padding(.horizontal, 20)
     }
 }

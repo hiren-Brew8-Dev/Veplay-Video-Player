@@ -69,7 +69,7 @@ struct CastingModeSheet: View {
                 Spacer()
                 
                 // Invisible spacer for symmetry
-                Image(systemName: isLandscape ? "xmark" : "chevron.left")
+                Image(systemName: "chevron.left")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.clear)
                     .padding(10)
