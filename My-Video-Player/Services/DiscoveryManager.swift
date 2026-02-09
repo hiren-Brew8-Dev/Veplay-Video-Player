@@ -10,14 +10,7 @@ class DiscoveryManager: NSObject, ObservableObject {
     @Published var localNetworkAccess: LocalNetworkAccess = .unknown
     @Published var lastScanErrorDescription: String?
     
-    private var browser: NWBrowser?
-    private var cancellables = Set<AnyCancellable>()
-
-    enum LocalNetworkAccess: Equatable {
-        case unknown
-        case granted
-        case denied
-    }
+    private var browsers: [NWBrowser] = []
     
     struct DiscoveredDevice: Identifiable, Hashable {
         let id: String
@@ -34,114 +27,122 @@ class DiscoveryManager: NSObject, ObservableObject {
     
     override init() {
         super.init()
-        checkPermission()
     }
 
     func startScanning() {
-        // Ensure browser is cleaned up
         stopScanning()
         
         discoveredDevices.removeAll()
         isScanning = true
         lastScanErrorDescription = nil
         localNetworkAccess = .unknown
+        permissionDenied = false
         
-        // Browsing for Google Cast (_googlecast._tcp)
+        let services = ["_googlecast._tcp", "_airplay._tcp"]
+        
+        for service in services {
+            startBrowser(for: service)
+        }
+        
+
+    }
+    
+    private func startBrowser(for type: String) {
         let parameters = NWParameters()
         parameters.includePeerToPeer = true
         
-        let descriptor = NWBrowser.Descriptor.bonjour(type: "_googlecast._tcp", domain: nil)
-        browser = NWBrowser(for: descriptor, using: parameters)
+        let descriptor = NWBrowser.Descriptor.bonjour(type: type, domain: nil)
+        let browser = NWBrowser(for: descriptor, using: parameters)
         
-        browser?.browseResultsChangedHandler = { [weak self] results, _ in
+        browser.browseResultsChangedHandler = { [weak self] results, changes in
             DispatchQueue.main.async {
-                self?.handleChanges(results: results)
+                self?.handleResults(results, for: type)
             }
         }
         
-        browser?.stateUpdateHandler = { [weak self] state in
+        browser.stateUpdateHandler = { [weak self] state in
             DispatchQueue.main.async {
-                switch state {
-                case .failed(let error):
-                    print("Discovery error: \(error)")
-                    self?.lastScanErrorDescription = String(describing: error)
-                    if Self.isLocalNetworkDenied(error) {
-                        self?.localNetworkAccess = .denied
-                        self?.permissionDenied = true
-                        self?.needsPermission = false
-                    } else {
-                        // Don't treat general network failures as "permission denied".
-                        self?.permissionDenied = false
-                        self?.localNetworkAccess = .unknown
-                    }
-                    self?.isScanning = false
-                case .waiting(let error):
-                    print("Discovery waiting: \(error)")
-                    self?.lastScanErrorDescription = String(describing: error)
-                    if Self.isLocalNetworkDenied(error) {
-                        self?.localNetworkAccess = .denied
-                        self?.permissionDenied = true
-                        self?.needsPermission = false
-                        self?.isScanning = false
-                    }
-                    break
-                case .ready:
-                    self?.needsPermission = false
-                    self?.permissionDenied = false
-                    self?.localNetworkAccess = .granted
-                default:
-                    break
-                }
+                self?.handleStateUpdate(state)
             }
         }
         
-        browser?.start(queue: .main)
-        
-        // Auto-stop scanning after 10 seconds if no devices found
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
-            if let self = self, self.discoveredDevices.isEmpty {
-                self.stopScanning()
-            }
-        }
+        browser.start(queue: .main)
+        browsers.append(browser)
     }
     
     func stopScanning() {
-        browser?.cancel()
-        browser = nil
+        browsers.forEach { $0.cancel() }
+        browsers.removeAll()
         isScanning = false
     }
     
-    private func handleChanges(results: Set<NWBrowser.Result>) {
-        var newDevices: [DiscoveredDevice] = []
+    private func handleResults(_ results: Set<NWBrowser.Result>, for type: String) {
+        // This is a bit tricky because we have multiple browsers updating the same list.
+        // We should merge them.
+        // For simplicity, we'll just append non-duplicates from these results.
+        
+        // Efficient approach: Re-map all current browsers results would be ideal, 
+        // but NWBrowser doesn't give us "all results" easily on demand, only diffs or current set.
+        // The results passed here are the *current* set for this browser.
+        
+        var currentList = discoveredDevices.filter { device in
+            // Keep devices that match OTHER types (not the one currently updating)
+            if type == "_googlecast._tcp" && device.type == .chromecast { return false }
+            if type == "_airplay._tcp" && device.type == .airplay { return false }
+            return true
+        }
+        
         for result in results {
             if case let .service(name, _, _, _) = result.endpoint {
-                let id = name // Simple ID for now
-                
-                // Avoid duplicates
-                if !newDevices.contains(where: { $0.id == id }) {
-                    newDevices.append(DiscoveredDevice(
-                        id: id,
-                        name: name,
-                        model: "Cast Device",
-                        type: .chromecast
-                    ))
-                }
+                let deviceType: DiscoveredDevice.DeviceType = (type == "_googlecast._tcp") ? .chromecast : .airplay
+                let device = DiscoveredDevice(
+                    id: name, // Using name as ID
+                    name: name,
+                    model: deviceType == .chromecast ? "Chromecast" : "AirPlay Device",
+                    type: deviceType
+                )
+                currentList.append(device)
             }
         }
-        self.discoveredDevices = newDevices
+        
+        self.discoveredDevices = currentList.sorted(by: { $0.name < $1.name })
     }
     
-    private func checkPermission() {
-        // There is no direct API, but we can try a dummy browse
-        // or just let the first scan trigger it.
-        // For UI purposes, we'll assume we need to check.
+    private func handleStateUpdate(_ state: NWBrowser.State) {
+        switch state {
+        case .failed(let error):
+            print("Discovery error: \(error)")
+            self.lastScanErrorDescription = String(describing: error)
+            if Self.isLocalNetworkDenied(error) {
+                self.localNetworkAccess = .denied
+                self.permissionDenied = true
+                self.needsPermission = false
+                self.stopScanning()
+            }
+        case .waiting(let error):
+            print("Discovery waiting: \(error)")
+            // Don't overwrite lastScanErrorDescription immediately if it's just a transient wait
+            if Self.isLocalNetworkDenied(error) {
+                self.localNetworkAccess = .denied
+                self.permissionDenied = true
+                self.needsPermission = false
+                self.stopScanning()
+            }
+        case .ready:
+            self.needsPermission = false
+            self.permissionDenied = false
+            self.localNetworkAccess = .granted
+        default:
+            break
+        }
     }
 
     private static func isLocalNetworkDenied(_ error: NWError) -> Bool {
         switch error {
         case .posix(let code):
-            // Local Network privacy denial typically surfaces as EPERM/EACCES.
             return code == .EPERM || code == .EACCES
+        case .dns(let code):
+             return code == kDNSServiceErr_PolicyDenied
         default:
             return false
         }

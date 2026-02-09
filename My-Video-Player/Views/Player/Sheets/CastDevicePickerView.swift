@@ -234,7 +234,7 @@ struct CastDevicePickerView: View {
                     // Handle device selection
                 }) {
                     HStack(spacing: 16) {
-                        Image(systemName: "airplayvideo")
+                        Image(systemName: device.type == .chromecast ? "tv" : "airplayvideo")
                             .foregroundColor(.sheetTextPrimary)
                             .font(.system(size: 22))
                             .frame(width: 32)
