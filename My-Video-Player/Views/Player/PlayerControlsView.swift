@@ -42,6 +42,9 @@ struct PlayerControlsView: View {
     @State private var isSystemMenuActive = false
     @State private var systemMenuDeactivateWorkItem: DispatchWorkItem?
     
+    @Namespace private var lockNamespace
+    @State private var lockPillPosition: CGPoint = .zero
+    
     // Navigation State
     @State private var returnToSettings = false
     @State private var showBookmarkButton: Bool = false
@@ -93,6 +96,82 @@ struct PlayerControlsView: View {
         showDoubleTapFeedback = forward
     }
     
+    private func triggerLockAnimation() {
+        // Haptic feedback
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        
+        withAnimation(.easeOut(duration: 0.3)) {
+            viewModel.lockAnimationActive = true
+            viewModel.lockAnimationStage = 1 // Show pill
+            viewModel.lockAnimationText = ""
+            viewModel.isUnlockAnimation = false
+        }
+        
+        // Typing: "Lock"
+        let text = "Lock"
+        for i in 0...text.count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.075 + 0.2) {
+                viewModel.lockAnimationText = String(text.prefix(i))
+            }
+        }
+        
+        // Move to corner
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            withAnimation(.easeInOut(duration: 0.6)) {
+                viewModel.lockAnimationStage = 2 // Moving
+                viewModel.isLocked = true
+                viewModel.isControlsVisible = false
+            }
+        }
+        
+        // Final State
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+            withAnimation(.easeIn(duration: 0.3)) {
+                viewModel.lockAnimationStage = 3 // Locked (text gone)
+                viewModel.lockAnimationActive = false
+            }
+        }
+    }
+    
+    private func triggerUnlockAnimation() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        
+        withAnimation(.easeOut(duration: 0.3)) {
+            viewModel.lockAnimationActive = true
+            viewModel.lockAnimationStage = 2 // Start at moving position
+            viewModel.lockAnimationText = ""
+            viewModel.isUnlockAnimation = true
+        }
+        
+        // Typing: "Unlock"
+        let text = "Unlock"
+        for i in 0...text.count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.075 + 0.1) {
+                viewModel.lockAnimationText = String(text.prefix(i))
+            }
+        }
+        
+        // Move back to button
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            withAnimation(.easeInOut(duration: 0.6)) {
+                viewModel.lockAnimationStage = 1 // Back to button position
+                viewModel.isLocked = false
+                viewModel.isControlsVisible = true
+                resetTimer()
+            }
+        }
+        
+        // Final State
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            withAnimation(.easeIn(duration: 0.3)) {
+                viewModel.lockAnimationActive = false
+                viewModel.lockAnimationStage = 0
+            }
+        }
+    }
+    
     var body: some View {
         ZStack {
             gestureOverlay
@@ -104,6 +183,9 @@ struct PlayerControlsView: View {
             
             lockOverlay
                 .zIndex(100)
+            
+            lockAnimationOverlay
+                .zIndex(101)
             
             settingsOverlay
                 .zIndex(200)
@@ -206,6 +288,7 @@ struct PlayerControlsView: View {
                         title: videoTitle,
                         onBack: onBack,
                         viewModel: viewModel,
+                        lockNamespace: lockNamespace,
                         onMenu: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 showSettingsSheet = true
@@ -213,8 +296,7 @@ struct PlayerControlsView: View {
                             }
                         },
                         onLock: {
-                            viewModel.isLocked = true
-                            viewModel.isControlsVisible = false
+                            triggerLockAnimation()
                         }
                     )
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -269,8 +351,7 @@ struct PlayerControlsView: View {
                                 resetTimer()
                             },
                             onLock: {
-                                viewModel.isLocked = true
-                                viewModel.isControlsVisible = false
+                                triggerLockAnimation()
                             },
                             onAudioCaptions: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -394,10 +475,6 @@ struct PlayerControlsView: View {
                     .contentShape(Rectangle())
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .onTapGesture {
-                        // Toggle visibility instantly without animation if the user desires "direct show"
-                        // But standard toggle usually implies some feedback.
-                        // User said: "locked icon is not show with animation, direct show that not conflict the animation"
-                        // Let's use snappy animation or none for the visibility toggle
                         withAnimation(.easeInOut(duration: 0.2)) {
                             viewModel.isControlsVisible.toggle()
                         }
@@ -405,10 +482,9 @@ struct PlayerControlsView: View {
                             resetTimer()
                         }
                     }
-                    // Capture high priority gestures to prevent them passing through
                     .highPriorityGesture(DragGesture().onChanged { _ in })
                     .highPriorityGesture(MagnificationGesture().onChanged { _ in })
-                    .highPriorityGesture(TapGesture(count: 2).onEnded { }) // Block double tap
+                    .highPriorityGesture(TapGesture(count: 2).onEnded { }) 
                 
                 if viewModel.isControlsVisible {
                     VStack {
@@ -416,22 +492,79 @@ struct PlayerControlsView: View {
                             title: videoTitle,
                             onBack: onBack,
                             viewModel: viewModel,
+                            lockNamespace: lockNamespace,
                             onMenu: { },
                             onLock: { },
                             onUnlock: {
-                                withAnimation {
-                                    viewModel.isLocked = false
-                                    viewModel.isControlsVisible = true
-                                    resetTimer()
-                                }
+                                triggerUnlockAnimation()
                             }
                         )
                         Spacer()
                     }
-                    .transition(.opacity) // User requested "direct show" / "not with animation" - opacity is simplest non-conflicting
+                } else {
+                    // Final locked state: icon only at top-right
+                    VStack {
+                        HStack {
+                            Spacer()
+                            
+                            // Re-use same icon button styling for consistency
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    viewModel.isControlsVisible = true
+                                    resetTimer()
+                                }
+                            }) {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.white)
+                                    .opacity(0.8)
+                            }
+                            .frame(width: 44, height: 44)
+                            .padding(.trailing, isLandscape ? 50 : 8)
+                            .matchedGeometryEffect(id: "lockButton", in: lockNamespace)
+                        }
+                        .padding(.top, isLandscape ? 20 : 40)
+                        Spacer()
+                    }
                 }
             }
             .ignoresSafeArea()
+        }
+    }
+    
+    @ViewBuilder
+    private var lockAnimationOverlay: some View {
+        if viewModel.lockAnimationActive {
+            ZStack {
+                // Dimming background for the pill visibility
+                if viewModel.lockAnimationStage < 2 {
+                    Color.black.opacity(0.2)
+                        .edgesIgnoringSafeArea(.all)
+                }
+                
+                HStack(spacing: 8) {
+                    Image(systemName: viewModel.isUnlockAnimation ? "lock.open.fill" : "lock.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                    
+                    if !viewModel.lockAnimationText.isEmpty {
+                        Text(viewModel.lockAnimationText)
+                            .font(.system(size: 16, weight: .bold))
+                            .transition(.asymmetric(insertion: .opacity, removal: .opacity))
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule()
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                )
+                .foregroundColor(.black)
+                .scaleEffect(viewModel.lockAnimationStage == 1 ? 1.0 : 0.85)
+                .matchedGeometryEffect(id: "lockButton", in: lockNamespace, isSource: false)
+            }
+            .transition(.opacity)
+            .zIndex(100)
         }
     }
     

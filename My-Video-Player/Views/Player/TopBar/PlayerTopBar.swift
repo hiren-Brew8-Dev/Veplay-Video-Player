@@ -13,6 +13,8 @@ struct PlayerTopBar: View {
         verticalSizeClass == .compact
     }
     
+    let lockNamespace: Namespace.ID
+    
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
@@ -43,6 +45,7 @@ struct PlayerTopBar: View {
                                 .foregroundColor(.white)
                         }
                         .frame(width: 44, height: 44)
+                        .matchedGeometryEffect(id: "lockButton", in: lockNamespace)
                         
                         Button(action: onMenu) {
                             Image(systemName: "gearshape")
@@ -60,6 +63,7 @@ struct PlayerTopBar: View {
                                 .foregroundColor(.white)
                         }
                         .frame(width: 44, height: 44)
+                        .matchedGeometryEffect(id: "lockButton", in: lockNamespace)
                     }
                 }
             }

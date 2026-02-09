@@ -31,6 +31,12 @@ class PlayerViewModel: NSObject, ObservableObject {
     @MainActor @Published var isSeekUIActive: Bool = false
     @MainActor @Published var isSeekForward: Bool = true
     
+    // Lock Animation State
+    @MainActor @Published var lockAnimationActive: Bool = false
+    @MainActor @Published var lockAnimationText: String = ""
+    @MainActor @Published var lockAnimationStage: Int = 0 // 0: hidden, 1: confirming, 2: typing, 3: moving, 4: locked
+    @MainActor @Published var isUnlockAnimation: Bool = false
+    
     enum ActiveMenu {
         case none
         case aspectRatio
