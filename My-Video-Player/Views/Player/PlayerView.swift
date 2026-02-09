@@ -23,9 +23,7 @@ struct PlayerView: View {
                         .id(ObjectIdentifier(vlcPlayer))
                         .edgesIgnoringSafeArea(.all)
                     
-                    // Subtitles Layer for VLC (custom styling)
-                    SubtitleOverlay(text: viewModel.subtitleManager.currentSubtitle)
-                        .allowsHitTesting(false)
+                    // Subtitles Layer for VLC removed as requested (using native VLC rendering)
                 } else if let player = viewModel.player {
                 if viewModel.aspectRatio.isUnconstrained {
                     CustomVideoPlayer(

@@ -1348,21 +1348,21 @@ class PlayerViewModel: NSObject, ObservableObject {
                 let track = subtitleManager.availableTracks[index]
                 if let url = track.url {
                     // EXTERNAL track: Use Native VLC Engine
-                    // Fix: Copy to temp file to ensure VLC (C-Lib) can access it due to Sandbox
-                    if let tempURL = createTempSubtitleFile(from: url) {
-                         videoPlayer.addPlaybackSlave(tempURL, type: .subtitle, enforce: true)
-                    } else {
-                        // Fallback to original URL if copy fails
-                         videoPlayer.addPlaybackSlave(url, type: .subtitle, enforce: true)
-                    }
                     
-                    // Disable custom overlay since VLC is now rendering it
-                    subtitleManager.isEnabled = false 
-                    subtitleManager.currentSubtitle = ""
+                    // AVOID DUPLICATES: If VLC already has a track with this name, just select it
+                    if let vlcID = vlcSubtitleMapping[track.name] {
+                        videoPlayer.currentVideoSubTitleIndex = vlcID
+                    } else {
+                        // Fix: Copy to temp file to ensure VLC (C-Lib) can access it due to Sandbox
+                        if let tempURL = createTempSubtitleFile(from: url) {
+                             videoPlayer.addPlaybackSlave(tempURL, type: .subtitle, enforce: true)
+                        } else {
+                            // Fallback to original URL if copy fails
+                             videoPlayer.addPlaybackSlave(url, type: .subtitle, enforce: true)
+                        }
+                    }
                 } else {
                     // EMBEDDED track: Enable VLC native
-                    // We DO NOT set isEnabled = false here, because that would hide the checkmark in the UI.
-                    // SubtitleManager won't render anything because 'subtitles' array is empty for embedded tracks.
                     if let vlcID = vlcSubtitleMapping[track.name] {
                         videoPlayer.currentVideoSubTitleIndex = vlcID
                     }
@@ -2050,8 +2050,10 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         self.currentTime = vlcTime
         self.currentTimeString = formatTime(seconds: currentTime)
         
-        // Update subtitles
-        self.subtitleManager.update(currentTime: self.currentTime)
+        // Update subtitles (only for AVPlayer, VLC handles it natively)
+        if !isVLC {
+            self.subtitleManager.update(currentTime: self.currentTime)
+        }
         
         if let media = player.media {
             let length = media.length
@@ -2187,32 +2189,54 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         
         // 1. Subtitles
         self.vlcSubtitleMapping.removeAll()
-        var newTracks = externalTracks
-        var subTitlesNames: [String] = []
+        var newTracks: [SubtitleTrack] = []
         
         // VLC bridges these as NSArray of NSNumber
         let vlcSubNames = player.videoSubTitlesNames as? [String] ?? []
         let vlcSubIndexes = (player.videoSubTitlesIndexes as? [NSNumber])?.map { $0.int32Value } ?? []
         
-        for (index, name) in zip(vlcSubIndexes, vlcSubNames) {
+        // Use a set to track which external tracks we've matched to VLC
+        var matchedExternalIndices = Set<Int>()
+        
+        for (index, vlcName) in zip(vlcSubIndexes, vlcSubNames) {
             if index == -1 { continue }
             
-            // Check if this is an external track we already discovered
-            if externalTracks.contains(where: { $0.name == name }) {
-                self.vlcSubtitleMapping[name] = index
-                continue
+            let cleanName = vlcName.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Try to match this VLC track to an already known external track
+            var foundMatch = false
+            for (extIdx, extTrack) in externalTracks.enumerated() {
+                if matchedExternalIndices.contains(extIdx) { continue }
+                
+                // Match by exact name or if VLC gives it a generic name and it's our only external track
+                if extTrack.name == cleanName || (cleanName.hasPrefix("Track") && externalTracks.count == 1) {
+                    let combinedTrack = SubtitleTrack(name: extTrack.name, url: extTrack.url)
+                    newTracks.append(combinedTrack)
+                    self.vlcSubtitleMapping[extTrack.name] = index
+                    self.vlcSubtitleMapping[cleanName] = index
+                    matchedExternalIndices.insert(extIdx)
+                    foundMatch = true
+                    break
+                }
             }
             
-            // Embedded or newly found VLC track
-            let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            let track = SubtitleTrack(name: cleanName, url: nil)
-            newTracks.append(track)
-            subTitlesNames.append(cleanName)
-            self.vlcSubtitleMapping[cleanName] = index
+            if !foundMatch {
+                // Embedded or newly found VLC track
+                let track = SubtitleTrack(name: cleanName, url: nil)
+                newTracks.append(track)
+                self.vlcSubtitleMapping[cleanName] = index
+            }
+        }
+        
+        // Add any external tracks that VLC haven't reported yet (still relevant for selection)
+        for (extIdx, extTrack) in externalTracks.enumerated() {
+            if !matchedExternalIndices.contains(extIdx) {
+                newTracks.append(extTrack)
+            }
         }
         
         self.subtitleManager.availableTracks = newTracks
-        self.availableSubtitles = externalTracks.map { $0.name } + subTitlesNames
+        self.availableSubtitles = newTracks.map { $0.name }
         
         // Map current VLC selection for subtitles
         let currentSubID = player.currentVideoSubTitleIndex
@@ -2235,10 +2259,10 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
             // Find which track name corresponds to this currentSubID
             if let matchedName = vlcSubtitleMapping.first(where: { $0.value == currentSubID })?.key {
                  // Now find where this name is in our newTracks list
-                 if let unifiedIndex = newTracks.firstIndex(where: { $0.name == matchedName }) {
-                     subtitleManager.selectedTrackIndex = unifiedIndex
-                     subtitleManager.isEnabled = true
-                 }
+                if let unifiedIndex = newTracks.firstIndex(where: { $0.name == matchedName }) {
+                    subtitleManager.selectedTrackIndex = unifiedIndex
+                    subtitleManager.isEnabled = true
+                }
             }
         }
         
