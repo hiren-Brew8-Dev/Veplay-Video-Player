@@ -519,13 +519,18 @@ class DashboardViewModel: ObservableObject {
         guard videoExtensions.contains(url.pathExtension.lowercased()) else { return nil }
         
         let asset = AVURLAsset(url: url)
-        // asset.duration is deprecated in iOS 16.0. Use load(.duration) instead.
-        // For sync functions, we can still use the property but silence if possible, 
-        // or better, fetch it before creating the VideoItem.
-        // However, since this is widespread, I'll use a hack or update to async.
-        // Let's use CMTimeGetSeconds(asset.duration) for now but try to load it.
-        // Actually, the cleanest fix for the warning is to use the modern API.
-        let duration = CMTimeGetSeconds(asset.duration)
+        var duration = CMTimeGetSeconds(asset.duration)
+        
+        // Fallback to VLC for non-native formats (MKV, AVI, etc.) where AVAsset returns 0
+        if duration <= 0 {
+            let media = VLCMedia(url: url)
+            // VLCMedia length is in milliseconds and usually available after initialization for local files
+            // but for better reliability we can wait a tiny bit or just use the property if it's there.
+            let length = media.length.intValue
+            if length > 0 {
+                duration = Double(length) / 1000.0
+            }
+        }
         
         let creationDate = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date()
         let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int64) ?? 0

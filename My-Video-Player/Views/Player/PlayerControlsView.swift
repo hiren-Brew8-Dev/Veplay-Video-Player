@@ -484,29 +484,15 @@ struct PlayerControlsView: View {
                 
                 // Sheet Content
                 if anySheetVisible {
-                    Group {
-                        if isLandscape {
-                            // Landscape: right-to-left transition, full height
-                            HStack(spacing: 0) {
-                                Spacer()
-                                sheetContent(isLandscape: true)
-                                    .frame(width: 400)
-                                    .frame(maxHeight: .infinity)
-                                    .background(Color.clear)
-                            }
-                            .transition(.move(edge: .trailing))
-                        } else {
-                            // Portrait: bottom-to-top transition
-                            VStack(spacing: 0) {
-                                Spacer()
-                                sheetContent(isLandscape: false)
-                                    .frame(maxWidth: .infinity)
-                                    .if(showSettingsSheet) { $0.frame(height: geometry.size.height * 0.5) }
-                                    .background(Color.clear)
-                            }
-                            .transition(.move(edge: .bottom))
-                        }
+                    VStack(spacing: 0) {
+                        Spacer()
+                        sheetContent(isLandscape: isLandscape)
+                            .frame(maxWidth: .infinity)
+                            .if(isLandscape) { $0.padding(.horizontal, geometry.size.width * 0.15) } // Center it nicely but keep it bottom-to-top
+                            .if(showSettingsSheet && !isLandscape) { $0.frame(height: geometry.size.height * 0.5) }
+                            .background(Color.clear)
                     }
+                    .transition(.move(edge: .bottom))
                     .id(activeSheetType)
                     .zIndex(1)
                 }

@@ -8,118 +8,216 @@ struct MoveDestinationPickerView: View {
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
-        NavigationStack {
-            List {
-                if viewModel.sourceURL != viewModel.importedVideosDirectory {
-                    Section("Sections") {
-                        Button(action: {
-                            viewModel.pasteVideos(to: viewModel.importedVideosDirectory)
-                            dismiss()
-                        }) {
-                            Label {
-                                Text("Imported Videos")
-                            } icon: {
-                                Image(systemName: "video.fill")
-                                    .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeAccent)
-                            }
-                        }
-                    }
-                }
+        VStack(spacing: 0) {
+            // Drag Handle
+            Capsule()
+                .fill(Color.homeTextSecondary.opacity(0.4))
+                .frame(width: 36, height: 5)
+                .padding(.top, 10)
+                .padding(.bottom, 14)
+            
+            // Header
+            HStack {
+                StandardIconButton(icon: "xmark", action: {
+                    dismiss()
+                })
                 
-                Section("Folders") {
+                Spacer()
+                
+                Text(isCutOperation ? "Move to..." : "Copy to...")
+                    .font(.headline)
+                    .foregroundColor(.homeTextPrimary)
+                
+                Spacer()
+                
+                // Invisible spacer to balance
+                Image(systemName: "xmark")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.clear)
+                    .padding(10)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+            
+            Divider()
+                .background(Color.gray.opacity(0.3))
+            
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Imported Videos Section
+                    if viewModel.sourceURL != viewModel.importedVideosDirectory {
+                        sectionHeader("Locations")
+                        
+                        destinationRow(
+                            title: "Imported Videos",
+                            subtitle: nil,
+                            icon: "video.fill",
+                            iconColor: .homeAccent,
+                            action: {
+                                viewModel.pasteVideos(to: viewModel.importedVideosDirectory)
+                                dismiss()
+                            }
+                        )
+                        
+                        Divider().background(Color.sheetDivider).padding(.leading, 56)
+                    }
+                    
+                    // Folders Section
                     let otherFolders = viewModel.folders.filter { $0.url != viewModel.sourceURL }
-                    if otherFolders.isEmpty {
-                        Text("No other folders found").foregroundColor(.homeTextSecondary)
-                    } else {
+                    if !otherFolders.isEmpty {
+                        sectionHeader("Folders")
+                        
                         ForEach(otherFolders) { folder in
                             if let url = folder.url {
-                                Button(action: {
-                                    viewModel.pasteVideos(to: url)
-                                    dismiss()
-                                }) {
-                                    HStack {
-                                        Image(systemName: "folder.fill")
-                                            .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeTint)
-                                        VStack(alignment: .leading) {
-                                            Text(folder.name)
-                                            Text("\(folder.videos.count) Videos").font(.caption).foregroundColor(.homeTextSecondary)
-                                        }
+                                destinationRow(
+                                    title: folder.name,
+                                    subtitle: "\(folder.videos.count) Videos",
+                                    icon: "folder.fill",
+                                    iconColor: .homeTint,
+                                    action: {
+                                        viewModel.pasteVideos(to: url)
+                                        dismiss()
                                     }
+                                )
+                                
+                                if folder.id != otherFolders.last?.id {
+                                    Divider().background(Color.sheetDivider).padding(.leading, 56)
                                 }
                             }
                         }
+                    } else if viewModel.sourceURL == viewModel.importedVideosDirectory {
+                         // If no other folders and we are in imported videos, maybe show an empty state or just skip
                     }
-                }
-                
-                Section("Gallery Albums") {
-                    // Option to just save to Camera Roll (Recents)
-                    // Only show if source is NOT the main Photos Library (no albumId and no sourceURL)
+                    
+                    // Gallery Albums Section
                     let otherAlbums = viewModel.allGalleryAlbums.filter { $0.localIdentifier != viewModel.sourceAlbumIdentifier }
                     let selectionHasIncompatible = viewModel.validateVideosForAlbum(videosToMove) != nil
                     
+                    sectionHeader("Gallery Albums")
+                    
+                    // Photos Library Row
                     if viewModel.sourceAlbumIdentifier != nil || viewModel.sourceURL != nil {
-                        Button(action: {
-                            viewModel.pasteVideosToGallery(album: nil)
-                            dismiss()
-                        }) {
-                            HStack {
-                                Label {
-                                    Text("Photos Library")
-                                        .foregroundColor(.primary)
-                                } icon: {
-                                    Image(systemName: "photo.on.rectangle.angled")
-                                        .appIconStyle(size: AppDesign.Icons.rowIconSize, color: .homeAccent)
-                                }
-                                Spacer()
-                                if selectionHasIncompatible {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundColor(.red)
-                                        .font(.caption)
-                                }
+                        /*
+                        destinationRow(
+                            title: "Photos Library",
+                            subtitle: selectionHasIncompatible ? "Incompatible videos found" : nil,
+                            icon: "photo.on.rectangle.angled",
+                            iconColor: .homeAccent,
+                            isWarning: selectionHasIncompatible,
+                            action: {
+                                viewModel.pasteVideosToGallery(album: nil)
+                                dismiss()
                             }
+                        )
+                         */
+                        
+                        if !otherAlbums.isEmpty {
+                            Divider().background(Color.sheetDivider).padding(.leading, 56)
                         }
                     }
                     
-                    ForEach(otherAlbums, id: \.localIdentifier) { album in
+                    // Specific Albums
+                    ForEach(Array(otherAlbums.enumerated()), id: \.element.localIdentifier) { index, album in
                         Button(action: {
                             viewModel.pasteVideosToGallery(album: album)
                             dismiss()
                         }) {
                             HStack(spacing: 12) {
                                 AlbumThumbnailView(album: album)
-                                    .frame(width: 50, height: 50)
+                                    .frame(width: 44, height: 44)
                                     .cornerRadius(8)
                                 
-                                VStack(alignment: .leading) {
+                                VStack(alignment: .leading, spacing: 2) {
                                     Text(album.localizedTitle ?? "Album")
-                                        .foregroundColor(.primary)
-                                        .font(.system(size: 16, weight: .medium))
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundColor(.white)
+                                    
                                     Text("\(videoCount(for: album)) Videos")
-                                        .font(.caption)
+                                        .font(.system(size: 12))
                                         .foregroundColor(.homeTextSecondary)
                                 }
+                                
                                 Spacer()
+                                
                                 if selectionHasIncompatible {
                                     Image(systemName: "exclamationmark.triangle.fill")
                                         .foregroundColor(.red)
                                         .font(.caption)
                                 }
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.homeTextSecondary.opacity(0.5))
                             }
+                            .padding(.horizontal, 16)
+                            .frame(height: 64)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        
+                        if index < otherAlbums.count - 1 {
+                            Divider().background(Color.sheetDivider).padding(.leading, 72)
                         }
                     }
                 }
-            }
-            .navigationTitle(isCutOperation ? "Move to..." : "Copy to...")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-            .onAppear {
-                viewModel.fetchAlbums()
+                .padding(.bottom, 30)
             }
         }
+        .background(Color.sheetBackground)
+        .onAppear {
+            viewModel.fetchAlbums()
+        }
+    }
+    
+    // UI Helpers
+    private func sectionHeader(_ title: String) -> some View {
+        HStack {
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.homeTextSecondary)
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 8)
+            Spacer()
+        }
+    }
+    
+    private func destinationRow(title: String, subtitle: String?, icon: String, iconColor: Color, isWarning: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(iconColor.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 18))
+                        .foregroundColor(iconColor)
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.homeTextPrimary)
+                    
+                    if let subtitle = subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 12))
+                            .foregroundColor(isWarning ? .red : .homeTextSecondary)
+                    }
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.homeTextSecondary.opacity(0.5))
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 64)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
     
     private var isGallerySource: Bool {

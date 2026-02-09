@@ -36,6 +36,16 @@ extension View {
         self.font(.system(size: size, weight: weight))
             .foregroundColor(color)
     }
+    
+    /// Conditional modifier
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, content: (Self) -> Content) -> some View {
+        if condition {
+            content(self)
+        } else {
+            self
+        }
+    }
 }
 
 /// A standard circular icon button used for navigation (Back, Close)

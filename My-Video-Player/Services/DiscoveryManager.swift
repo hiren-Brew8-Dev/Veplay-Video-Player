@@ -12,6 +12,12 @@ class DiscoveryManager: NSObject, ObservableObject {
     
     private var browsers: [NWBrowser] = []
     
+    enum LocalNetworkAccess: Equatable {
+        case unknown
+        case granted
+        case denied
+    }
+    
     struct DiscoveredDevice: Identifiable, Hashable {
         let id: String
         let name: String

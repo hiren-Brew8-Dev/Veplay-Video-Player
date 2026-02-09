@@ -103,10 +103,6 @@ struct FolderSectionView: View {
                 }
             }
         }
-        .onAppear {
-            if !viewModel.isSelectionMode {
-                viewModel.isTabBarHidden = false
-            }
-        }
+        
     }
 }

@@ -14,7 +14,7 @@ class BiometricAuthService: ObservableObject {
         
         // Check if device supports FaceID/TouchID
         if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
-            let reason = "Unlock your Private Folder"
+            let reason = "Unlock your App"
             
             context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authenticationError in
                 DispatchQueue.main.async {

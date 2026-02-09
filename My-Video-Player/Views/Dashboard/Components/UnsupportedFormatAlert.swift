@@ -1,8 +1,12 @@
 import SwiftUI
+import AVFoundation
+import Photos
 
 struct UnsupportedFormatAlert: View {
     let video: VideoItem?
     @Binding var isPresented: Bool
+    
+    @State private var thumbImage: UIImage? = nil
     
     var body: some View {
         if let video = video {
@@ -31,33 +35,46 @@ struct UnsupportedFormatAlert: View {
                     
                     // Thumbnail & Info Card
                     VStack(spacing: 12) {
-                        if let thumbPath = video.thumbnailPath {
-                            Image(uiImage: UIImage(contentsOfFile: thumbPath.path) ?? UIImage())
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 120, height: 80)
-                                .cornerRadius(12)
-                                .clipped()
-                                .shadow(radius: 5)
-                        } else {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.homeCardBackground)
-                                    .frame(width: 120, height: 80)
-                                
-                                Image(systemName: "video.fill")
-                                    .foregroundColor(.homeTextSecondary)
+                        ZStack(alignment: .bottomTrailing) {
+                            if let thumb = thumbImage {
+                                Image(uiImage: thumb)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 140, height: 90)
+                                    .cornerRadius(12)
+                                    .clipped()
+                            } else {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.homeCardBackground)
+                                        .frame(width: 140, height: 90)
+                                    
+                                    Image(systemName: "video.fill")
+                                        .foregroundColor(.homeTextSecondary)
+                                }
                             }
+                            
+                            // Duration Overlay
+                            Text(video.formattedDuration)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.black.opacity(0.6))
+                                .cornerRadius(4)
+                                .padding(6)
                         }
+                        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
                         
                         Text(video.title)
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.homeTextPrimary)
-                            .lineLimit(1)
+                            .lineLimit(2)
                             .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
                         
                         HStack(spacing: 6) {
-                            Text(video.url?.pathExtension.uppercased() ?? "VAR")
+                            Text(video.url?.pathExtension.uppercased() ?? "MKV")
                                 .font(.system(size: 10, weight: .black))
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
@@ -109,6 +126,16 @@ struct UnsupportedFormatAlert: View {
             }
             .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .center)))
             .zIndex(500)
+            .onAppear {
+                loadThumbnail()
+            }
+        }
+    }
+    
+    private func loadThumbnail() {
+        guard let video = video else { return }
+        ThumbnailCacheManager.shared.getThumbnail(for: video) { image in
+            self.thumbImage = image
         }
     }
 }

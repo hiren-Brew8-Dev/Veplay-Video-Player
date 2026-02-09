@@ -588,7 +588,6 @@ struct FolderDetailView: View {
         if folder.albumIdentifier == nil {
             items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
                 viewModel.copyVideos(ids: Set([video.id]), isCut: true, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
-                videoToMove = video
                 viewModel.showMovePicker = true
             }))
         }

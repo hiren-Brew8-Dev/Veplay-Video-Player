@@ -63,9 +63,6 @@ struct VideoSectionView: View {
         .sheet(isPresented: $showSortSheet) {
             CustomSortingView(sortOptionRaw: $viewModel.videoSortOptionRaw, title: "Videos")
         }
-        .sheet(item: $videoToMove) { video in
-            MoveToFolderSheet(viewModel: viewModel, video: video)
-        }
         .alert("Rename Video", isPresented: $showRenameVideoAlert) {
             TextField("New Name", text: $newVideoName)
             Button("Cancel", role: .cancel) {}
@@ -84,16 +81,7 @@ struct VideoSectionView: View {
             }
         
         }
-        .onAppear {
-            if !viewModel.isSelectionMode {
-                viewModel.isTabBarHidden = false
-            }
-        }
-        .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
-            if newVideo == nil && !viewModel.isSelectionMode {
-                viewModel.isTabBarHidden = false
-            }
-        }
+        .background(Color.homeBackground)
     }
     
     var isAllSelected: Bool {
@@ -440,7 +428,6 @@ struct VideoSectionView: View {
         
         items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
             viewModel.copyVideos(ids: Set([video.id]), isCut: true, sourceURL: viewModel.importedVideosDirectory)
-            videoToMove = video
             viewModel.showMovePicker = true
         }))
         
