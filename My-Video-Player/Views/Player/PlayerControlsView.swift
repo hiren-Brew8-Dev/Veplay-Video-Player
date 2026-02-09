@@ -446,7 +446,7 @@ struct PlayerControlsView: View {
                 Spacer()
                 // Mirror the TopBar placeholder position when locked
                 Color.clear
-                    .frame(width: 44, height: 44)
+                    .frame(width: 40, height: 44)
                     .padding(.trailing, isLandscape ? 50 : 8)
                     .padding(.top, isLandscape ? 20 : 40)
                     .matchedGeometryEffect(id: "lockIcon", in: lockNamespace, isSource: viewModel.isLocked)

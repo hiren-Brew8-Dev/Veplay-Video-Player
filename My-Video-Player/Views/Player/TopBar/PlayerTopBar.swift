@@ -31,7 +31,7 @@ struct PlayerTopBar: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(spacing: 5) {
                 // Left Group
                 if !viewModel.isLocked {
                     StandardIconButton(icon: "chevron.left", color: .white, bg: Color.black.opacity(0.5), action: onBack)
