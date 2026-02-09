@@ -484,39 +484,18 @@ struct PlayerControlsView: View {
                 
                 // Sheet Content
                 if anySheetVisible {
-                    Group {
-                        if showAudioCaptionsSheet || showCastingSheet {
-                            // Point 6: Audio & Captions sheet is full height bottom-to-top ALWAYS
-                            // Also Casting sheet as requested
-                            VStack(spacing: 0) {
-                                Spacer()
-                                sheetContent(isLandscape: isLandscape)
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.clear)
-                                    .edgesIgnoringSafeArea(.all)
+                    VStack(spacing: 0) {
+                        Spacer()
+                        sheetContent(isLandscape: isLandscape)
+                            .frame(maxWidth: .infinity)
+                            .if(showSettingsSheet && !isLandscape) { $0.frame(height: UIScreen.main.bounds.height * 0.5) }
+                            .if(isLandscape) { 
+                                $0.if(showSettingsSheet) { $0.frame(height: 250) }
                             }
-                            .transition(.move(edge: .bottom))
-                        } else if isLandscape {
-                            HStack(spacing: 0) {
-                                Spacer()
-                                sheetContent(isLandscape: true)
-                                    .frame(width: 400)
-                                    .background(Color.clear)
-                                    .edgesIgnoringSafeArea(.all)
-                            }
-                            .transition(.move(edge: .trailing))
-                        } else {
-                            VStack(spacing: 0) {
-                                Spacer()
-                                sheetContent(isLandscape: false)
-                                    .frame(maxWidth: .infinity)
-                                    .if(showSettingsSheet) { $0.frame(height: UIScreen.main.bounds.height * 0.5) } // Half phone height
-                                    .background(Color.clear)
-                                    .edgesIgnoringSafeArea(.all) 
-                            }
-                            .transition(.move(edge: .bottom))
-                        }
+                            .background(Color.clear)
+                            .edgesIgnoringSafeArea(.all)
                     }
+                    .transition(.move(edge: .bottom))
                     .id(activeSheetType)
                     .zIndex(1)
                 }
