@@ -2217,10 +2217,19 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
         // Map current VLC selection for subtitles
         let currentSubID = player.currentVideoSubTitleIndex
         if currentSubID == -1 {
-            if subtitleManager.selectedTrackIndex >= 0 && subtitleManager.selectedTrackIndex < externalTracks.count {
-                // Keep external selection
+            // VLC often reports -1 for external tracks it's currently rendering
+            if subtitleManager.selectedTrackIndex >= 0 && subtitleManager.selectedTrackIndex < newTracks.count {
+                let track = newTracks[subtitleManager.selectedTrackIndex]
+                if track.url != nil {
+                    // It's an external track, keep the current selection and ensure it's marked as enabled
+                    subtitleManager.isEnabled = true
+                } else {
+                    subtitleManager.selectedTrackIndex = -1
+                    subtitleManager.isEnabled = false
+                }
             } else {
                 subtitleManager.selectedTrackIndex = -1
+                subtitleManager.isEnabled = false
             }
         } else {
             // Find which track name corresponds to this currentSubID
@@ -2228,15 +2237,9 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
                  // Now find where this name is in our newTracks list
                  if let unifiedIndex = newTracks.firstIndex(where: { $0.name == matchedName }) {
                      subtitleManager.selectedTrackIndex = unifiedIndex
+                     subtitleManager.isEnabled = true
                  }
             }
-        }
-        
-        // Sync enabled state
-        if currentSubID != -1 {
-            subtitleManager.isEnabled = true
-        } else if subtitleManager.selectedTrackIndex == -1 {
-            subtitleManager.isEnabled = false
         }
         
         // 2. Audio
