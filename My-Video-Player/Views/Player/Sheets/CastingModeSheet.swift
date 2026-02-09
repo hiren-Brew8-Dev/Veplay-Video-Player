@@ -14,7 +14,6 @@ struct CastingModeSheet: View {
     
     @State private var showDiscovery = false
     @State private var airPlayTrigger: Int = 0
-    @StateObject private var discoveryManager = DiscoveryManager()
     
     var body: some View {
         ZStack {
@@ -126,14 +125,8 @@ struct CastingModeSheet: View {
             
             // Cast row
             Button(action: {
-                // Check permission before opening Device List
-                discoveryManager.checkPermission()
-                
-                // Small delay to let permission check complete
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showDiscovery = true
-                    }
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showDiscovery = true
                 }
             }) {
                 HStack(spacing: 16) {
@@ -171,14 +164,8 @@ struct CastingModeSheet: View {
             
             // Cast row - same as portrait
             Button(action: {
-                // Check permission before opening Device List
-                discoveryManager.checkPermission()
-                
-                // Small delay to let permission check complete
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showDiscovery = true
-                    }
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showDiscovery = true
                 }
             }) {
                 HStack(spacing: 16) {
