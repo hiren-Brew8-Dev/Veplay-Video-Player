@@ -492,7 +492,6 @@ struct PlayerControlsView: View {
                                 Spacer()
                                 sheetContent(isLandscape: isLandscape)
                                     .frame(maxWidth: .infinity)
-                                    .if(showCastingSheet && isLandscape) { $0.frame(height: 250) }
                                     .background(Color.clear)
                                     .edgesIgnoringSafeArea(.all)
                             }
@@ -512,7 +511,6 @@ struct PlayerControlsView: View {
                                 sheetContent(isLandscape: false)
                                     .frame(maxWidth: .infinity)
                                     .if(showSettingsSheet) { $0.frame(height: UIScreen.main.bounds.height * 0.5) } // Half phone height
-                                    .if(showCastingSheet) { $0.frame(height: 300) } // Shorter as requested
                                     .background(Color.clear)
                                     .edgesIgnoringSafeArea(.all) 
                             }

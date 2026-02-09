@@ -76,10 +76,9 @@ struct CastingModeSheet: View {
             } else {
                 portraitContent
             }
-            
-            Spacer()
         }
         .padding(.horizontal, isLandscape ? 50 : 0)
+        .padding(.bottom, 30) // Add bottom padding for better spacing at the sheet edge
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
         .cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: -5)

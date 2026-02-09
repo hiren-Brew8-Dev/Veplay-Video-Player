@@ -36,21 +36,22 @@ struct CastDevicePickerView: View {
             }
             .padding(.horizontal)
             
-            Spacer()
-            
             Image(systemName: "network.badge.shield.half.filled")
                 .font(.system(size: 60))
                 .foregroundColor(.red)
+                .padding(.top, 40)
             
             Text("Local Network Access Denied")
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.white)
+                .padding(.top, 10)
             
             Text("Please enable Local Network access in settings to discover casting devices.")
                 .font(.system(size: 16))
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
+                .padding(.bottom, 20)
             
             Button(action: {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -66,8 +67,7 @@ struct CastDevicePickerView: View {
                     .cornerRadius(10)
             }
             .padding(.horizontal, 20)
-            
-            Spacer()
+            .padding(.bottom, 40)
         }
     }
     
@@ -82,8 +82,6 @@ struct CastDevicePickerView: View {
                         .padding()
                 }
             }
-            
-            Spacer()
             
             Text("This app needs Local Network Access to Cast")
                 .font(.system(size: 22, weight: .bold))
@@ -102,8 +100,7 @@ struct CastDevicePickerView: View {
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-            
-            Spacer()
+                .padding(.bottom, 30)
             
             Button(action: {
                 withAnimation {
@@ -120,6 +117,7 @@ struct CastDevicePickerView: View {
                     .cornerRadius(10)
             }
             .padding(.horizontal, 20)
+            .padding(.bottom, 20)
             
             Button(action: {
                 if let url = URL(string: "https://support.google.com/chromecast/answer/10063094") {
@@ -130,7 +128,7 @@ struct CastDevicePickerView: View {
                     .font(.system(size: 16))
                     .foregroundColor(.blue)
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, 30)
         }
     }
     
@@ -205,8 +203,6 @@ struct CastDevicePickerView: View {
                 }
                 .padding(.top, 10)
             }
-            
-            Spacer()
         }
     }
     
