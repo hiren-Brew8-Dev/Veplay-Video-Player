@@ -233,6 +233,7 @@ struct PlayerControlsView: View {
                         },
                         onTimer: {
                             withAnimation(.easeInOut(duration: 0.3)) {
+                                returnToSettings = false
                                 showSleepTimer = true
                                 viewModel.isControlsVisible = false
                             }
