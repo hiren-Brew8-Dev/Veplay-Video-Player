@@ -23,7 +23,6 @@ struct PlayerControlsView: View {
     // Auto-hide
     @State private var hideTimer: Timer?
     @State private var showSubtitleSettings = false
-    @State private var showPlaylistQueue = false
     @State private var showSleepTimer = false
     
     // Casting State
@@ -456,7 +455,7 @@ struct PlayerControlsView: View {
     private var settingsOverlay: some View {
         GeometryReader { geometry in
             let isLandscape = geometry.size.width > geometry.size.height
-            let anySheetVisible = showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet || showPlaylistQueue || showSleepTimer || showPlayingModeSheet || showPlaybackSpeedSheet || showAudioCaptionsSheet
+            let anySheetVisible = showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet || showSleepTimer || showPlayingModeSheet || showPlaybackSpeedSheet || showAudioCaptionsSheet
             
             ZStack {
                 // Background Scrim
@@ -511,7 +510,7 @@ struct PlayerControlsView: View {
         }
         .overlay(snapshotToastOverlay)
         .overlay(sleepTimerToastOverlay) // Add Sleep Timer Toast
-        .allowsHitTesting(showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet || showPlaylistQueue || showSleepTimer || showPlayingModeSheet || showPlaybackSpeedSheet || showAudioCaptionsSheet)
+        .allowsHitTesting(showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet || showSleepTimer || showPlayingModeSheet || showPlaybackSpeedSheet || showAudioCaptionsSheet)
     }
 
     private func closeAllSheets() {
@@ -519,7 +518,6 @@ struct PlayerControlsView: View {
         showSubtitleSettings = false
         showTrackSelection = false
         showCastingSheet = false
-        showPlaylistQueue = false
         showSleepTimer = false
         showPlayingModeSheet = false
         showPlaybackSpeedSheet = false
@@ -571,13 +569,6 @@ struct PlayerControlsView: View {
                         }
                     }
                 },
-                onQueue: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showSettingsSheet = false
-                        showPlaylistQueue = true
-                        viewModel.isControlsVisible = false
-                    }
-                },
                 onPlayingMode: {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         returnToSettings = true
@@ -626,13 +617,7 @@ struct PlayerControlsView: View {
                 isLandscape: isLandscape
             )
             .if(!isLandscape) { $0.frame(height: 250) }
-        } else if showPlaylistQueue {
-            PlayingQueueView(viewModel: viewModel, onClose: {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    showPlaylistQueue = false
-                    viewModel.isControlsVisible = true
-                }
-            }, isLandscape: isLandscape)
+            .if(!isLandscape) { $0.frame(height: 250) }
         } else if showSleepTimer {
             SleepTimerView(
                 viewModel: viewModel,
@@ -861,13 +846,11 @@ struct SettingsSheetView: View {
     var onSleepTimer: () -> Void
     var onScreenshot: () -> Void
     var onShare: () -> Void
-    var onQueue: () -> Void
     let onPlayingMode: () -> Void
     let onPlaybackSpeed: () -> Void
     
     var body: some View {
         VStack(spacing: 0) {
-            // Drag Handle (Only visible in portrait)
             if !isLandscape {
                 Capsule()
                     .fill(Color.gray.opacity(0.4))
@@ -876,73 +859,16 @@ struct SettingsSheetView: View {
                     .padding(.bottom, 20)
             }
             
-            // Header
-            HStack {
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        isPresented = false
-                    }
-                }) {
-                    Image(systemName: "chevron.left") // Request: Dismiss button at left
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(10)
-                }
-                
-                Spacer()
-                
-                Text("Settings")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                // Invisible spacer to balance
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.clear)
-                    .padding(10)
-            }
-            .padding(.horizontal)
+            settingsHeader
             
             Divider()
                 .background(Color.gray.opacity(0.3))
-                .padding(.bottom, 16)
             
-            VStack(spacing: 24) {
-                // Grid Menu
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 20) {
-                    SettingsGridItem(icon: "timer", title: "Sleep Timer", isActive: viewModel.isSleepTimerActive, action: onSleepTimer)
-                    SettingsGridItem(icon: "camera", title: "Screenshot", action: onScreenshot)
-                    SettingsGridItem(icon: "square.and.arrow.up", title: "Share", action: onShare)
-                    SettingsGridItem(icon: "list.bullet", title: "Queue", action: {
-                        isPresented = false
-                        onQueue()
-                    })
-                }
-                .padding(.horizontal)
-                
-                Divider()
-                    .background(Color.gray.opacity(0.3))
-                    .padding(.horizontal)
-                
-                // List Menu
-                VStack(spacing: 0) {
-                    SettingsListItem(icon: "infinity", title: "Playing Mode", value: viewModel.playingMode.rawValue, action: {
-                        isPresented = false
-                        onPlayingMode()
-                    })
-                }
-                .padding(.horizontal)
+            if isLandscape {
+                landscapeBody
+            } else {
+                portraitBody
             }
-            .padding(.bottom, 30) // Add padding since Spacer is removed
-            
-
         }
         .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
@@ -953,6 +879,156 @@ struct SettingsSheetView: View {
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
         .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: isLandscape ? 0 : -5)
+    }
+    
+    private var settingsHeader: some View {
+        HStack {
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isPresented = false
+                }
+            }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(10)
+            }
+            
+            Spacer()
+            
+            Text("Settings")
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            Spacer()
+            
+            Image(systemName: "chevron.left")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.clear)
+                .padding(10)
+        }
+        .padding(.horizontal)
+    }
+    
+    private var settingsControls: some View {
+        VStack(spacing: 20) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
+                SettingsGridItem(icon: "timer", title: "Sleep Timer", isActive: viewModel.isSleepTimerActive, action: onSleepTimer)
+                SettingsGridItem(icon: "camera", title: "Screenshot", action: onScreenshot)
+                SettingsGridItem(icon: "square.and.arrow.up", title: "Share", action: onShare)
+                SettingsGridItem(icon: "list.bullet", title: "Queue", action: {
+                    // Portrait: Scroll to queue, Landscape: already visible
+                })
+            }
+            
+            Divider().background(Color.gray.opacity(0.3))
+            
+            VStack(spacing: 0) {
+                SettingsListItem(
+                    icon: "infinity", 
+                    title: "Playing Mode", 
+                    value: viewModel.playingMode.rawValue,
+                    rightIcon: viewModel.playingMode.iconName,
+                    action: onPlayingMode
+                )
+                SettingsListItem(icon: "gauge.with.needle", title: "Playback Speed", value: String(format: "%.2fx", viewModel.playbackSpeed), action: onPlaybackSpeed)
+                SettingsListItem(icon: "speaker.wave.2", title: "Audio Track", value: viewModel.currentAudioTrackName, action: onAudioTrack)
+                SettingsListItem(icon: "captions.bubble", title: "Subtitles", value: viewModel.currentSubtitleName, action: onSubtitle)
+            }
+        }
+        .padding(16)
+    }
+    
+    private var portraitBody: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                settingsControls
+                
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Text("Queue")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                        
+                        Image(systemName: viewModel.playingMode.iconName)
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    
+                    queueList
+                        .frame(height: 400) // Fixed height in portrait ScrollView
+                }
+            }
+            .padding(.bottom, 30)
+        }
+    }
+    
+    private var landscapeBody: some View {
+        VStack(spacing: 0) {
+            settingsControls
+            
+            Divider().background(Color.gray.opacity(0.3))
+            
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Queue")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    Image(systemName: viewModel.playingMode.iconName)
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                
+                queueList
+            }
+        }
+    }
+    
+    private var queueList: some View {
+        ScrollViewReader { proxy in
+            List {
+                ForEach(Array(viewModel.playlist.enumerated()), id: \.element.id) { index, video in
+                    VideoQueueRow(
+                        video: video,
+                        isCurrent: index == viewModel.currentIndex,
+                        onTap: {
+                            viewModel.selectFromQueue(at: index, forceAutoPlay: true)
+                        }
+                    )
+                    .id(video.id)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets())
+                }
+                .onMove(perform: move)
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .environment(\.editMode, .constant(.active))
+            .onAppear {
+                if let currentVideoId = viewModel.currentVideoItem?.id {
+                    proxy.scrollTo(currentVideoId, anchor: .center)
+                }
+            }
+        }
+    }
+    
+    private func move(from source: IndexSet, to destination: Int) {
+        viewModel.playlist.move(fromOffsets: source, toOffset: destination)
+        if let currentVideoId = viewModel.currentVideoItem?.id {
+            if let newIndex = viewModel.playlist.firstIndex(where: { $0.id == currentVideoId }) {
+                viewModel.currentIndex = newIndex
+            }
+        }
     }
 }
 
@@ -984,6 +1060,7 @@ struct SettingsListItem: View {
     let icon: String
     let title: String
     let value: String
+    var rightIcon: String? = nil
     let action: () -> Void
     
     var body: some View {
@@ -1000,11 +1077,14 @@ struct SettingsListItem: View {
                 
                 Spacer()
                 
-                HStack(spacing: 4) {
-                    if icon == "infinity" {
-                        Image(systemName: "text.append") // Icon for loop mode
-                            .foregroundColor(.gray)
-                    } else {
+                HStack(spacing: 8) {
+                    if let rIcon = rightIcon {
+                        Image(systemName: rIcon)
+                            .font(.system(size: 16))
+                            .foregroundColor(.white)
+                    }
+                    
+                    if icon != "infinity" {
                         Text(value)
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
@@ -1067,172 +1147,9 @@ struct SettingsAirPlayPicker: UIViewRepresentable {
 
 // MARK: - PlayingQueueView
 
-struct PlayingQueueView: View {
-    @ObservedObject var viewModel: PlayerViewModel
-    let onClose: () -> Void
-    let isLandscape: Bool // Added property
-    @State private var selectedTab: String = "Queue"
-    let tabs = ["Queue", "Bookmark"]
-    @Namespace private var namespace
-    
-    // Rename state
-    @State private var bookmarkToRename: BookmarkItem?
-    @State private var renameText: String = ""
-    
-    private var safeAreaTop: CGFloat {
-        let scenes = UIApplication.shared.connectedScenes
-        let windowScene = scenes.first as? UIWindowScene
-        let window = windowScene?.windows.first
-        return window?.safeAreaInsets.top ?? 0
-    }
+// MARK: - VideoQueueRow
 
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Button(action: onClose) {
-                    Image(systemName: "arrow.left")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
-                }
-                
-                Spacer()
-                
-                Text("Playlist Queue")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                // Placeholder to balance the back button
-                Image(systemName: "arrow.left")
-                    .opacity(0)
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 12)
-            .padding(.top, safeAreaTop)
-            .background(Color.black)
-
-            queueList
-        }
-        .padding(.trailing, isLandscape ? 30 : 0)
-        .background(Color.black)
-    }
-
-    private var queueList: some View {
-        ScrollViewReader { proxy in
-            List {
-                ForEach(Array(viewModel.playlist.enumerated()), id: \.element.id) { index, video in
-                    VideoQueueRow(
-                        video: video,
-                        isCurrent: index == viewModel.currentIndex,
-                        onTap: {
-                            if index == viewModel.currentIndex {
-                                // If same video, resume playback if paused, close queue and show controls
-                                if !viewModel.isPlaying {
-                                    viewModel.play()
-                                }
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    onClose()
-                                    viewModel.isControlsVisible = true
-                                }
-                            } else {
-                                // If different video, switch and play
-                                viewModel.selectFromQueue(at: index, forceAutoPlay: true)
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    onClose()
-                                    viewModel.isControlsVisible = true
-                                }
-                            }
-                        }
-                    )
-                    .id(video.id)
-                    .listRowBackground(Color.black)
-                    .listRowSeparator(.hidden)
-                }
-                .onMove(perform: move)
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color.black)
-            .environment(\.editMode, .constant(.active))
-            .onAppear {
-                // Scroll to current item on open
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    if let currentVideoId = viewModel.currentVideoItem?.id {
-                        proxy.scrollTo(currentVideoId, anchor: .top)
-                    }
-                }
-            }
-            .onChange(of: viewModel.currentIndex) { oldVal, newVal in
-                // Scroll to current item when it changes
-                if let currentVideoId = viewModel.currentVideoItem?.id {
-                    proxy.scrollTo(currentVideoId, anchor: .top)
-                }
-            }
-        }
-    }
-
-    private var bookmarkList: some View {
-        List {
-            if viewModel.bookmarks.isEmpty {
-                 Text("No Bookmarks Yet")
-                    .foregroundColor(.gray)
-                    .listRowBackground(Color.black)
-                    .listRowSeparator(.hidden)
-            } else {
-                ForEach(viewModel.bookmarks) { bookmark in
-                    BookmarkRow(
-                        bookmark: bookmark,
-                        viewModel: viewModel,
-                        onTap: {
-                            viewModel.seekToBookmark(bookmark)
-                            onClose() // Close sheet to view
-                        },
-                        onRename: {
-                            renameText = bookmark.name ?? ""
-                            bookmarkToRename = bookmark
-                        },
-                        onDelete: {
-                            viewModel.deleteBookmark(bookmark)
-                        }
-                    )
-                    .listRowBackground(Color.black)
-                    .listRowSeparator(.hidden)
-                }
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(Color.black)
-        .alert("Change Name", isPresented: Binding(
-            get: { bookmarkToRename != nil },
-            set: { if !$0 { bookmarkToRename = nil } }
-        )) {
-            TextField("Name", text: $renameText)
-            Button("Cancel", role: .cancel) { bookmarkToRename = nil }
-            Button("Save") {
-                if let item = bookmarkToRename {
-                    viewModel.renameBookmark(item, newName: renameText)
-                }
-                bookmarkToRename = nil
-            }
-        } message: {
-             Text(bookmarkToRename?.name ?? "")
-        }
-    }
-
-    private func move(from source: IndexSet, to destination: Int) {
-        viewModel.playlist.move(fromOffsets: source, toOffset: destination)
-        
-        // Update currentIndex to keep track of the playing video
-        if let currentVideoId = viewModel.currentVideoItem?.id {
-            if let newIndex = viewModel.playlist.firstIndex(where: { $0.id == currentVideoId }) {
-                viewModel.currentIndex = newIndex
-            }
-        }
-    }
-}
+// MARK: - VideoQueueRow struct below
 
 // Helper Extension for Array move
 extension Array {

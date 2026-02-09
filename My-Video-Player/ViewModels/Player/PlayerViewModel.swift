@@ -140,6 +140,22 @@ class PlayerViewModel: NSObject, ObservableObject {
     private var audioDelayBuffer: [AVAudioPCMBuffer] = []
     private var currentAudioDelayMs: Double = 0
     
+    @MainActor
+    var currentAudioTrackName: String {
+        guard selectedAudioTrackIndex >= 0 && selectedAudioTrackIndex < availableAudioTracks.count else {
+            return "Default"
+        }
+        return availableAudioTracks[selectedAudioTrackIndex]
+    }
+    
+    @MainActor
+    var currentSubtitleName: String {
+        if selectedSubtitleIndex >= 0 && selectedSubtitleIndex < availableSubtitles.count {
+            return availableSubtitles[selectedSubtitleIndex]
+        }
+        return "None"
+    }
+    
     private var cancellables = Set<AnyCancellable>()
     
     // Seek tracking
@@ -216,6 +232,15 @@ class PlayerViewModel: NSObject, ObservableObject {
         case shufflePlay = "Shuffle Play"
         case repeatOne = "Repeat Ones"
         case oneTrack = "One Track"
+        
+        var iconName: String {
+            switch self {
+            case .playInOrder: return "text.append"
+            case .shufflePlay: return "shuffle"
+            case .repeatOne: return "repeat.1"
+            case .oneTrack: return "play.square"
+            }
+        }
     }
     
     @MainActor @Published var playingMode: PlayingMode = .playInOrder
