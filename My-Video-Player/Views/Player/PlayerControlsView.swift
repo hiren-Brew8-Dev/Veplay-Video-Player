@@ -486,13 +486,13 @@ struct PlayerControlsView: View {
                 if anySheetVisible {
                     Group {
                         if isLandscape {
-                            // Landscape: right-to-left transition
+                            // Landscape: right-to-left transition, full height
                             HStack(spacing: 0) {
                                 Spacer()
                                 sheetContent(isLandscape: true)
                                     .frame(width: 400)
+                                    .frame(maxHeight: .infinity)
                                     .background(Color.clear)
-                                    .edgesIgnoringSafeArea(.all)
                             }
                             .transition(.move(edge: .trailing))
                         } else {
@@ -503,7 +503,6 @@ struct PlayerControlsView: View {
                                     .frame(maxWidth: .infinity)
                                     .if(showSettingsSheet) { $0.frame(height: UIScreen.main.bounds.height * 0.5) }
                                     .background(Color.clear)
-                                    .edgesIgnoringSafeArea(.all)
                             }
                             .transition(.move(edge: .bottom))
                         }
@@ -622,7 +621,7 @@ struct PlayerControlsView: View {
                 selectedMode: $selectedCastingMode,
                 isLandscape: isLandscape
             )
-            .if(!isLandscape) { $0.frame(height: 450) }
+//            .if(!isLandscape) { $0.frame(height: 450) }
         } else if showSleepTimer {
             SleepTimerView(
                 viewModel: viewModel,

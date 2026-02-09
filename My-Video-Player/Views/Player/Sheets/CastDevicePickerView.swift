@@ -13,17 +13,69 @@ struct CastDevicePickerView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // Drag Handle (only show in portrait)
+            if !isLandscape {
+                Capsule()
+                    .fill(Color.sheetDivider)
+                    .frame(width: 36, height: 5)
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+            }
+            
+            // Header
+            HStack {
+                Button(action: onBack) {
+                    Image(systemName: isLandscape ? "xmark" : "chevron.left")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.sheetTextPrimary)
+                        .padding(10)
+                }
+                
+                Spacer()
+                
+                Text("Device List")
+                    .font(.headline)
+                    .foregroundColor(.sheetTextPrimary)
+                
+                Spacer()
+                
+                // Invisible spacer for symmetry
+                Image(systemName: isLandscape ? "xmark" : "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.clear)
+                    .padding(10)
+            }
+            .padding(.horizontal)
+            .padding(.top, isLandscape ? 10 : 0)
+            
+            Divider()
+                .background(Color.sheetDivider)
+            
+            // Content
             if showPermissionView && !hasShownPermissionPrompt {
-                permissionView
+                permissionContent
             } else if discoveryManager.permissionDenied {
-                permissionDeniedView
+                permissionDeniedContent
             } else {
-                discoveryView
+                discoveryContent
+            }
+            
+            if isLandscape {
+                Spacer()
             }
         }
+        .padding(.horizontal, isLandscape ? 15 : 0)
+        .padding(.bottom, isLandscape ? 0 : 10)
+        .if(isLandscape) { $0.frame(maxHeight: .infinity) }
         .background(Color.sheetBackground)
+        .if(isLandscape) { view in
+            view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
+        }
+        .if(!isLandscape) { view in
+            view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
+        }
+        .shadow(color: Color.black.opacity(0.5), radius: 10, x: isLandscape ? -5 : 0, y: isLandscape ? 0 : -5)
         .onAppear {
-            // If we've already shown the permission prompt before, skip to discovery
             if hasShownPermissionPrompt {
                 showPermissionView = false
                 discoveryManager.startScanning()
@@ -33,20 +85,9 @@ struct CastDevicePickerView: View {
         }
     }
     
-    // MARK: - Permission Denied View
-    private var permissionDeniedView: some View {
+    // MARK: - Permission Denied Content
+    private var permissionDeniedContent: some View {
         VStack(spacing: 20) {
-            HStack {
-                Button(action: { onBack() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.sheetTextPrimary)
-                        .padding(10)
-                }
-                Spacer()
-            }
-            .padding(.horizontal)
-            
             Image(systemName: "network.badge.shield.half.filled")
                 .font(.system(size: 60))
                 .foregroundColor(.sheetTextDestructive)
@@ -82,23 +123,15 @@ struct CastDevicePickerView: View {
         }
     }
     
-    // MARK: - Permission View
-    private var permissionView: some View {
+    // MARK: - Permission Content
+    private var permissionContent: some View {
         VStack(spacing: 20) {
-            HStack {
-                Spacer()
-                Button(action: { onBack() }) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.sheetTextPrimary)
-                        .padding()
-                }
-            }
-            
             Text("This app needs Local Network Access to Cast")
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.sheetTextPrimary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
+                .padding(.top, 20)
             
             Text("To connect to your devices, this app needs access to your Wi-Fi network.")
                 .font(.system(size: 16))
@@ -111,7 +144,7 @@ struct CastDevicePickerView: View {
                 .foregroundColor(.themeSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-                .padding(.bottom, 30)
+                .padding(.bottom, 20)
             
             Button(action: {
                 hasShownPermissionPrompt = true
@@ -129,7 +162,7 @@ struct CastDevicePickerView: View {
                     .cornerRadius(10)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.bottom, 15)
             
             Button(action: {
                 if let url = URL(string: "https://support.google.com/chromecast/answer/10063094") {
@@ -140,82 +173,53 @@ struct CastDevicePickerView: View {
                     .font(.system(size: 16))
                     .foregroundColor(.themeAccent)
             }
-            .padding(.bottom, 30)
+            .padding(.bottom, 20)
         }
     }
     
-    // MARK: - Discovery View
-    private var discoveryView: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.sheetTextPrimary)
-                        .padding(10)
-                }
-                
-                Spacer()
-                
-                Text("Device List")
-                    .font(.headline)
-                    .foregroundColor(.sheetTextPrimary)
-                
-                Spacer()
-                
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.clear)
-                    .padding(10)
-            }
-            .padding(.horizontal)
-            
-            Divider()
-                .background(Color.sheetDivider)
-            
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Illustration placeholder
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.sheetSurface)
-                            .frame(height: 150)
-                        
-                        VStack(spacing: 12) {
-                            Image(systemName: "tv.and.mediabox.fill")
-                                .font(.system(size: 50))
-                                .foregroundColor(.themeSecondary)
-                            
-                            Text("Make sure your phone and TV are connected to the same WiFi network.")
-                                .font(.system(size: 14))
-                                .foregroundColor(.themeSecondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 40)
-                        }
-                    }
-                    .padding(.horizontal)
+    // MARK: - Discovery Content
+    private var discoveryContent: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Illustration placeholder
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.sheetSurface)
+                        .frame(height: 150)
                     
-                    if discoveryManager.isScanning {
-                        VStack(spacing: 12) {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .sheetTextPrimary))
-                                .scaleEffect(1.5)
-                            
-                            Text("Loading...")
-                                .foregroundColor(.sheetTextPrimary)
-                                .font(.system(size: 16))
-                        }
-                        .frame(height: 100)
-                    } else if discoveryManager.discoveredDevices.isEmpty {
-                        noDevicesFooter
-                    } else {
-                        deviceList
+                    VStack(spacing: 12) {
+                        Image(systemName: "tv.and.mediabox.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.themeSecondary)
+                        
+                        Text("Make sure your phone and TV are connected to the same WiFi network.")
+                            .font(.system(size: 14))
+                            .foregroundColor(.themeSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
                     }
                 }
-                .padding(.top, 10)
-                .padding(.bottom, 20)
+                .padding(.horizontal)
+                
+                if discoveryManager.isScanning {
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .sheetTextPrimary))
+                            .scaleEffect(1.5)
+                        
+                        Text("Loading...")
+                            .foregroundColor(.sheetTextPrimary)
+                            .font(.system(size: 16))
+                    }
+                    .frame(height: 100)
+                } else if discoveryManager.discoveredDevices.isEmpty {
+                    noDevicesFooter
+                } else {
+                    deviceList
+                }
             }
+            .padding(.top, 15)
+            .padding(.bottom, 20)
         }
     }
     

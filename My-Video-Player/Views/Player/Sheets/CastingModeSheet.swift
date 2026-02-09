@@ -32,12 +32,14 @@ struct CastingModeSheet: View {
     
     private var mainLayout: some View {
         VStack(spacing: 0) {
-            // Drag Handle
-            Capsule()
-                .fill(Color.sheetDivider)
-                .frame(width: 36, height: 5)
-                .padding(.top, 8)
-                .padding(.bottom, 8)
+            // Drag Handle (only show in portrait)
+            if !isLandscape {
+                Capsule()
+                    .fill(Color.sheetDivider)
+                    .frame(width: 36, height: 5)
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+            }
             
             // Header
             HStack {
@@ -46,7 +48,7 @@ struct CastingModeSheet: View {
                         isPresented = false
                     }
                 }) {
-                    Image(systemName: "chevron.left")
+                    Image(systemName: isLandscape ? "xmark" : "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.sheetTextPrimary)
                         .padding(10)
@@ -61,24 +63,27 @@ struct CastingModeSheet: View {
                 Spacer()
                 
                 // Invisible spacer for symmetry
-                Image(systemName: "chevron.left")
+                Image(systemName: isLandscape ? "xmark" : "chevron.left")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.clear)
                     .padding(10)
             }
             .padding(.horizontal)
+            .padding(.top, isLandscape ? 10 : 0)
             
             Divider()
                 .background(Color.sheetDivider)
             
             if isLandscape {
                 landscapeContent
+                Spacer() // Push content to top in landscape
             } else {
                 portraitContent
             }
         }
         .padding(.horizontal, isLandscape ? 15 : 0)
-        .padding(.bottom, isLandscape ? 15 : 10)
+        .padding(.bottom, isLandscape ? 0 : 10)
+        .if(isLandscape) { $0.frame(maxHeight: .infinity) }
         .background(Color.sheetBackground)
         .if(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
@@ -87,7 +92,6 @@ struct CastingModeSheet: View {
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
         .shadow(color: Color.black.opacity(0.5), radius: 10, x: isLandscape ? -5 : 0, y: isLandscape ? 0 : -5)
-        .fixedSize(horizontal: false, vertical: true) // Content-based height
     }
     
     private var portraitContent: some View {
