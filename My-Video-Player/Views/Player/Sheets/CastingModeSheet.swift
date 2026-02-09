@@ -92,7 +92,7 @@ struct CastingModeSheet: View {
     
     private var portraitContent: some View {
         VStack(spacing: 0) {
-            // AirPlay row
+            // AirPlay row - Wrapped with RoutePickerViewWrapper for tap handling
             ZStack {
                 HStack(spacing: 16) {
                     Image(systemName: "airplayaudio")
@@ -112,10 +112,12 @@ struct CastingModeSheet: View {
                 }
                 .padding(.horizontal, 20)
                 .frame(height: 50)
+                .contentShape(Rectangle())
                 
+                // Invisible route picker overlay to capture taps
                 RoutePickerViewWrapper()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .opacity(0.02)
+                    .opacity(0.011) // Nearly invisible but still tappable
             }
             
             Divider()
@@ -171,7 +173,7 @@ struct CastingModeSheet: View {
                 
                 RoutePickerViewWrapper()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .opacity(0.02)
+                    .opacity(0.011) // Nearly invisible but still tappable
             }
             
             // Cast Device
