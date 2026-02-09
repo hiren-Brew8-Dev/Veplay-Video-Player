@@ -59,14 +59,11 @@ struct CastDevicePickerView: View {
             } else {
                 discoveryContent
             }
-            
-            if isLandscape {
-                Spacer()
-            }
         }
         .padding(.horizontal, isLandscape ? 15 : 0)
-        .padding(.bottom, isLandscape ? 0 : 10)
-        .if(isLandscape) { $0.frame(maxHeight: .infinity) }
+        .padding(.bottom, isLandscape ? 0 : 0) // No bottom padding, safe area handles it
+        .if(isLandscape) { $0.frame(maxHeight: .infinity, alignment: .top) }
+        .if(!isLandscape) { $0.padding(.bottom, 20) } // Safe area padding for portrait
         .background(Color.sheetBackground)
         .if(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
