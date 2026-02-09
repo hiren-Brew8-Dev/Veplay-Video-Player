@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CastingModeSheet: View {
+    @ObservedObject var viewModel: PlayerViewModel
     @Binding var isPresented: Bool
     @Binding var selectedMode: CastingMode?
     let isLandscape: Bool
@@ -42,58 +43,82 @@ struct CastingModeSheet: View {
             
             // Header
             HStack {
-                StandardIconButton(icon: "chevron.left", action: {
+                Button(action: {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         isPresented = false
                     }
-                })
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(10)
+                }
                 
                 Spacer()
                 
-                Text("Select a casting mode")
+                Text("Select Device")
                     .font(.headline)
                     .foregroundColor(.white)
                 
                 Spacer()
                 
-                // Invisible spacer
-                StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
+                // Invisible spacer for symmetry
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.clear)
+                    .padding(10)
             }
             .padding(.horizontal)
             
             Divider()
                 .background(Color.gray.opacity(0.3))
-                .padding(.vertical, 8)
             
-            // Options
-            VStack(spacing: 0) {
-                castingOptionButton(
-                    icon: "airplayaudio",
-                    title: "Airplay or Bluetooth",
-                    action: {
-                        selectedMode = .airplayBluetooth
-                        isPresented = false
+            // Options Grid (Matching Settings style)
+            VStack(spacing: 30) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
+                    // AirPlay & Bluetooth Option (One-click system picker)
+                    ZStack {
+                        VStack(spacing: 12) {
+                            Image(systemName: "airplayaudio")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                            
+                            Text("AirPlay & BT")
+                                .font(.system(size: 11))
+                                .foregroundColor(.gray)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .multilineTextAlignment(.center)
+                        }
+                        
+                        // Overlaid hidden picker
+                        RoutePickerViewWrapper()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .opacity(0.02)
                     }
-                )
-                
-                Divider()
-                    .background(Color.gray.opacity(0.3))
-                    .padding(.leading, 60)
-                
-                castingOptionButton(
-                    icon: "airplayvideo",
-                    title: "Casting device",
-                    action: {
+                    
+                    // Cast Device Option (Leads to discovery)
+                    Button(action: {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             showDiscovery = true
                         }
+                    }) {
+                        VStack(spacing: 12) {
+                            Image(systemName: "airplayvideo")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                            
+                            Text("Cast Device")
+                                .font(.system(size: 11))
+                                .foregroundColor(.gray)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .multilineTextAlignment(.center)
+                        }
                     }
-                )
+                }
+                .padding(20)
+                
+                Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 30)
-            
-            Spacer() 
         }
         .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
@@ -103,26 +128,22 @@ struct CastingModeSheet: View {
         .if(!isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
+        .shadow(color: Color.black.opacity(0.5), radius: 10, x: 0, y: isLandscape ? 0 : -5)
     }
+}
 
-    func castingOptionButton(icon: String, title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(.white)
-                    .frame(width: 32)
-                
-                Text(title)
-                    .font(.system(size: 17))
-                    .foregroundColor(.white)
-                
-                Spacer()
-            }
-            .padding(.vertical, 16)
-            .contentShape(Rectangle())
-        }
+// Helper for system route picker
+import AVKit
+struct RoutePickerViewWrapper: UIViewRepresentable {
+    func makeUIView(context: Context) -> AVRoutePickerView {
+        let picker = AVRoutePickerView()
+        picker.activeTintColor = .white
+        picker.tintColor = .clear
+        picker.prioritizesVideoDevices = true
+        return picker
     }
+    
+    func updateUIView(_ uiView: AVRoutePickerView, context: Context) {}
 }
 
 // MARK: - PlayingModeSheet

@@ -625,12 +625,12 @@ struct PlayerControlsView: View {
             )
         } else if showCastingSheet {
             CastingModeSheet(
+                viewModel: viewModel,
                 isPresented: $showCastingSheet,
                 selectedMode: $selectedCastingMode,
                 isLandscape: isLandscape
             )
-            .if(!isLandscape) { $0.frame(height: 250) }
-            .if(!isLandscape) { $0.frame(height: 250) }
+            .if(!isLandscape) { $0.frame(height: 450) }
         } else if showSleepTimer {
             SleepTimerView(
                 viewModel: viewModel,

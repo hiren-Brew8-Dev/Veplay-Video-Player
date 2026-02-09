@@ -7,28 +7,12 @@ struct CastButton: View {
     var action: () -> Void
     
     var body: some View {
-        Menu {
-            Button(action: {
-                // We need to tell the parent to show AirPlay
-                // Since we can't easily trigger native picker from here, 
-                // we'll trigger the sheet flow but skip the choice.
-                action()
-            }) {
-                Label("AirPlay or Bluetooth", systemImage: "airplayaudio")
-            }
-            
-            Button(action: {
-                // Tell parent to show discovery sheet
-                action()
-            }) {
-                Label("Casting device", systemImage: "airplayvideo")
-            }
-        } label: {
+        Button(action: action) {
             Image(systemName: "airplayvideo")
                 .font(.system(size: 20))
                 .foregroundColor(viewModel.isExternalPlaybackActive ? .blue : .white)
-                .frame(width: 40, height: 44)
         }
+        .frame(width: 40, height: 44)
     }
 }
 

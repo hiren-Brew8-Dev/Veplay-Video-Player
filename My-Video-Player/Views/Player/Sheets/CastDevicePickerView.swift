@@ -19,21 +19,22 @@ struct CastDevicePickerView: View {
                 discoveryView
             }
         }
-        .background(Color(UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)))
+        .background(Color.clear)
     }
     
     // MARK: - Permission Denied View
     private var permissionDeniedView: some View {
         VStack(spacing: 20) {
             HStack {
-                Button(action: onBack) {
+                Button(action: { onBack() }) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
+                        .padding(10)
                 }
                 Spacer()
             }
-            .padding()
+            .padding(.horizontal)
             
             Spacer()
             
@@ -140,24 +141,28 @@ struct CastDevicePickerView: View {
             HStack {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
+                        .padding(10)
                 }
                 
                 Spacer()
                 
                 Text("Device List")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.headline)
                     .foregroundColor(.white)
                 
                 Spacer()
                 
-                // Placeholder for symmetry
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.clear)
+                    .padding(10)
             }
-            .padding()
+            .padding(.horizontal)
+            
+            Divider()
+                .background(Color.gray.opacity(0.3))
             
             ScrollView {
                 VStack(spacing: 20) {
