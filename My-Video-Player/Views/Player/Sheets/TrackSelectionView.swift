@@ -135,7 +135,6 @@ struct AudioTrackSettingsView: View {
             .opacity(viewModel.selectedAudioTrackIndex == -1 ? 0.5 : 1.0)
             .allowsHitTesting(viewModel.selectedAudioTrackIndex != -1)
         }
-        .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color.sheetBackground)
         .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])

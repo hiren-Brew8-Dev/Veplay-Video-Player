@@ -82,7 +82,6 @@ struct SubtitleSettingsView: View {
                 .frame(maxHeight: isLandscape ? .infinity : 250) // Consistent max height
             }
         }
-        .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color.sheetBackground)
         .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])

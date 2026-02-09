@@ -484,17 +484,32 @@ struct PlayerControlsView: View {
                 
                 // Sheet Content
                 if anySheetVisible {
-                    VStack(spacing: 0) {
-                        Spacer()
-                        sheetContent(isLandscape: isLandscape)
-                            .frame(maxWidth: .infinity)
-                            .applyIf(isLandscape) { $0.padding(.horizontal, geometry.size.width * 0.15) } // Center it nicely but keep it bottom-to-top
-                            .applyIf(showSettingsSheet && !isLandscape) { $0.frame(height: geometry.size.height * 0.5) }
-                            .background(Color.clear)
+                    if isLandscape && !showAudioCaptionsSheet {
+                        // Trailing side sheet for landscape (except AudioCaptions)
+                        HStack(spacing: 0) {
+                            Spacer()
+                            sheetContent(isLandscape: isLandscape)
+                                .frame(width: 380)
+                                .background(Color.sheetBackground)
+                        }
+                        .transition(.move(edge: .trailing))
+                        .id(activeSheetType)
+                        .zIndex(1)
+                    } else {
+                        // Bottom sheet for portrait OR AudioCaptions in landscape
+                        VStack(spacing: 0) {
+                            Spacer()
+                            sheetContent(isLandscape: isLandscape)
+                                .frame(maxWidth: .infinity)
+                                // Only apply horizontal padding if NOT showAudioCaptionsSheet and isLandscape
+                                .applyIf(isLandscape && !showAudioCaptionsSheet) { $0.padding(.horizontal, geometry.size.width * 0.15) }
+                                .applyIf(showSettingsSheet && !isLandscape) { $0.frame(height: geometry.size.height * 0.5) }
+                                .background(Color.clear)
+                        }
+                        .transition(.move(edge: .bottom))
+                        .id(activeSheetType)
+                        .zIndex(1)
                     }
-                    .transition(.move(edge: .bottom))
-                    .id(activeSheetType)
-                    .zIndex(1)
                 }
             }
         }
@@ -860,7 +875,6 @@ struct SettingsSheetView: View {
                 portraitBody
             }
         }
-        .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
         .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
@@ -1384,7 +1398,6 @@ struct SleepTimerView: View {
                 .padding(.bottom, 20)
             }
         }
-        .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
         .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])

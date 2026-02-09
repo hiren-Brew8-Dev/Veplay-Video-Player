@@ -103,7 +103,6 @@ struct CastingModeSheet: View {
         }
         .padding(.horizontal, isLandscape ? 15 : 0)
         .padding(.bottom, isLandscape ? 0 : 0) // No bottom padding, safe area handles it
-        .applyIf(isLandscape) { $0.frame(maxHeight: .infinity, alignment: .top) }
         .applyIf(!isLandscape) { $0.padding(.bottom, 20) } // Safe area padding for portrait
         .background(Color.sheetBackground)
         .applyIf(isLandscape) { view in
@@ -318,7 +317,6 @@ struct PlayingModeSheet: View {
             
 
         }
-        .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
         .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
@@ -464,7 +462,6 @@ struct PlaybackSpeedSheet: View {
             
 
         }
-        .padding(.trailing, isLandscape ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
         .applyIf(isLandscape) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
