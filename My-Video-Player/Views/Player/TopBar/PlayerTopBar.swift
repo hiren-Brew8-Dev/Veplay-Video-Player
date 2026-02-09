@@ -13,11 +13,11 @@ struct PlayerTopBar: View {
         verticalSizeClass == .compact
     }
     
-    init(title: String, 
-         onBack: @escaping @MainActor () -> Void, 
-         viewModel: PlayerViewModel, 
-         lockNamespace: Namespace.ID,
-         onMenu: @escaping @MainActor () -> Void) {
+    init(title: String,
+        onBack: @escaping @MainActor () -> Void,
+        viewModel: PlayerViewModel,
+        lockNamespace: Namespace.ID,
+        onMenu: @escaping @MainActor () -> Void) {
         self.title = title
         self.onBack = onBack
         self.viewModel = viewModel
@@ -45,20 +45,20 @@ struct PlayerTopBar: View {
                 }
                 
                 // Right Group
-                HStack(spacing: 8) {
+                HStack(spacing: 3) {
                     // Active Sleep Timer Indicator
                     if viewModel.isSleepTimerActive {
                         Image(systemName: "timer")
                             .font(.system(size: 20))
                             .foregroundColor(.orange)
-                            .padding(.trailing, 4)
+                            
                     }
-
+                    
                     CastButton(viewModel: viewModel)
                     
                     // The Lock Icon Placeholder (always present for layout and alignment)
                     Color.clear
-                        .frame(width: 44, height: 44)
+                        .frame(width: 35, height: 44)
                         .matchedGeometryEffect(id: "lockIcon", in: lockNamespace, isSource: !viewModel.isLocked)
                     
                     Button(action: onMenu) {
@@ -66,7 +66,7 @@ struct PlayerTopBar: View {
                             .font(.system(size: 20))
                             .foregroundColor(.white)
                     }
-                    .frame(width: 44, height: 44)
+                    .frame(width: 35, height: 44)
                 }
             }
             .padding(.horizontal, isLandscape ? 50 : 8)
