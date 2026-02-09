@@ -10,7 +10,26 @@ struct CastingModeSheet: View {
         case castingDevice
     }
     
+    @State private var showDiscovery = false
+    
     var body: some View {
+        ZStack {
+            if showDiscovery {
+                CastDevicePickerView(
+                    isLandscape: isLandscape,
+                    onBack: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showDiscovery = false
+                        }
+                    }
+                )
+            } else {
+                mainLayout
+            }
+        }
+    }
+    
+    private var mainLayout: some View {
         VStack(spacing: 0) {
             // Drag Handle (Only visible in portrait)
             if !isLandscape {
@@ -51,7 +70,10 @@ struct CastingModeSheet: View {
                 castingOptionButton(
                     icon: "airplayaudio",
                     title: "Airplay or Bluetooth",
-                    mode: .airplayBluetooth
+                    action: {
+                        selectedMode = .airplayBluetooth
+                        isPresented = false
+                    }
                 )
                 
                 Divider()
@@ -61,10 +83,13 @@ struct CastingModeSheet: View {
                 castingOptionButton(
                     icon: "airplayvideo",
                     title: "Casting device",
-                    mode: .castingDevice
+                    action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showDiscovery = true
+                        }
+                    }
                 )
             }
-            .padding(.horizontal, 20)
             .padding(.horizontal, 20)
             .padding(.bottom, 30)
             
@@ -79,12 +104,9 @@ struct CastingModeSheet: View {
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
     }
-    
-    func castingOptionButton(icon: String, title: String, mode: CastingMode) -> some View {
-        Button(action: {
-            selectedMode = mode
-            isPresented = false
-        }) {
+
+    func castingOptionButton(icon: String, title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 16) {
                 Image(systemName: icon)
                     .font(.system(size: 24))

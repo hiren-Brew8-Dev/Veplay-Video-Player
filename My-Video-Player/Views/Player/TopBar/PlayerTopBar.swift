@@ -7,6 +7,7 @@ struct PlayerTopBar: View {
     let lockNamespace: Namespace.ID
     var onMenu: @MainActor () -> Void
     var onTimer: @MainActor () -> Void
+    var onCast: @MainActor () -> Void
     
     @Environment(\.verticalSizeClass) var verticalSizeClass
     
@@ -19,13 +20,15 @@ struct PlayerTopBar: View {
         viewModel: PlayerViewModel,
         lockNamespace: Namespace.ID,
         onMenu: @escaping @MainActor () -> Void,
-        onTimer: @escaping @MainActor () -> Void) {
+        onTimer: @escaping @MainActor () -> Void,
+        onCast: @escaping @MainActor () -> Void) {
         self.title = title
         self.onBack = onBack
         self.viewModel = viewModel
         self.lockNamespace = lockNamespace
         self.onMenu = onMenu
         self.onTimer = onTimer
+        self.onCast = onCast
     }
     
     
@@ -60,7 +63,7 @@ struct PlayerTopBar: View {
                         .frame(width: 40, height: 44)
                     }
                     
-                    CastButton(viewModel: viewModel)
+                    CastButton(viewModel: viewModel, action: onCast)
                     
                     Color.clear
                         .frame(width: 40, height: 44)

@@ -237,6 +237,12 @@ struct PlayerControlsView: View {
                                 showSleepTimer = true
                                 viewModel.isControlsVisible = false
                             }
+                        },
+                        onCast: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showCastingSheet = true
+                                viewModel.isControlsVisible = false
+                            }
                         }
                     )
                     .transition(.move(edge: .top).combined(with: .opacity))

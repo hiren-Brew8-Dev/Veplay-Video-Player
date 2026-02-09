@@ -4,18 +4,31 @@ import AVKit
 
 struct CastButton: View {
     @ObservedObject var viewModel: PlayerViewModel
+    var action: () -> Void
     
     var body: some View {
-        ZStack {
+        Menu {
+            Button(action: {
+                // We need to tell the parent to show AirPlay
+                // Since we can't easily trigger native picker from here, 
+                // we'll trigger the sheet flow but skip the choice.
+                action()
+            }) {
+                Label("AirPlay or Bluetooth", systemImage: "airplayaudio")
+            }
+            
+            Button(action: {
+                // Tell parent to show discovery sheet
+                action()
+            }) {
+                Label("Casting device", systemImage: "airplayvideo")
+            }
+        } label: {
             Image(systemName: "airplayvideo")
                 .font(.system(size: 20))
                 .foregroundColor(viewModel.isExternalPlaybackActive ? .blue : .white)
-            
-            // Hidden but functional picker
-            AVRoutePickerViewWrapper(isActive: viewModel.isExternalPlaybackActive)
-                .opacity(0.01)
+                .frame(width: 40, height: 44)
         }
-        .frame(width: 40, height: 44)
     }
 }
 
