@@ -60,7 +60,7 @@ struct CastDevicePickerView: View {
                 discoveryContent
             }
         }
-        .padding(.horizontal, isLandscape ? 15 : 0)
+        
         .padding(.bottom, 0)
         .if(isLandscape) { $0.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top) }
         .if(!isLandscape) { $0.padding(.bottom, 20) } // Safe area padding for portrait
@@ -198,11 +198,28 @@ struct CastDevicePickerView: View {
                 }
                 .padding(.horizontal, 20)
                 
-                // Device list or no devices message (no loading state)
-                if discoveryManager.discoveredDevices.isEmpty {
-                    noDevicesFooter
-                } else {
-                    deviceList
+                // Show loader while scanning
+                if discoveryManager.isScanning {
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .sheetTextPrimary))
+                            .scaleEffect(1.5)
+                        
+                        Text("Searching...")
+                            .foregroundColor(.sheetTextPrimary)
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .frame(height: 120)
+                    .frame(maxWidth: .infinity)
+                }
+                
+                // Device list or no devices message
+                if !discoveryManager.isScanning {
+                    if discoveryManager.discoveredDevices.isEmpty {
+                        noDevicesFooter
+                    } else {
+                        deviceList
+                    }
                 }
             }
             .padding(.top, 16)
