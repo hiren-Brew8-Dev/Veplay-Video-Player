@@ -7,7 +7,7 @@ import MediaPlayer
 import SwiftUI
 import UIKit
 
-class PlayerViewModel: NSObject, ObservableObject {
+@MainActor class PlayerViewModel: NSObject, ObservableObject {
     @MainActor @Published var player: AVPlayer?
     @MainActor @Published var vlcPlayer: VLCMediaPlayer?
     @MainActor @Published var isVLC: Bool = false
@@ -98,6 +98,23 @@ class PlayerViewModel: NSObject, ObservableObject {
     @MainActor @Published var playlist: [VideoItem] = []
     @MainActor @Published var currentIndex: Int = 0
     @MainActor @Published var autoPlayNext: Bool = true
+    
+    // Sheet States
+    @MainActor @Published var showSettingsSheet: Bool = false
+    @MainActor @Published var showAudioCaptionsSheet: Bool = false
+    @MainActor @Published var showSleepTimerSheet: Bool = false
+    @MainActor @Published var showCastingSheet: Bool = false
+    @MainActor @Published var showPlaybackSpeedSheet: Bool = false
+    @MainActor @Published var showPlayingModeSheet: Bool = false
+    @MainActor @Published var showSubtitleSettingsSheet: Bool = false
+    @MainActor @Published var showTrackSelectionSheet: Bool = false
+    @MainActor @Published var showSleepTimerToast: Bool = false
+    
+    @MainActor var isAnySheetVisible: Bool {
+        showSettingsSheet || showAudioCaptionsSheet || showSleepTimerSheet ||
+        showCastingSheet || showPlaybackSpeedSheet || showPlayingModeSheet ||
+        showSubtitleSettingsSheet || showTrackSelectionSheet
+    }
     
     // Computed property to get the consistent ID string used for persistence
     private var currentPersistenceId: String? {

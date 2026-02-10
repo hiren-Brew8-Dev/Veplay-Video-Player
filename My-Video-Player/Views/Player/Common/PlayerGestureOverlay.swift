@@ -68,7 +68,10 @@ struct PlayerGestureOverlay: View {
                                     try? await Task.sleep(nanoseconds: 250_000_000) // 250ms as per OTT standards
                                     guard !Task.isCancelled else { return }
                                     await MainActor.run {
-                                        toggleControls()
+                                        // ONLY toggle if we are NOT currently seeking (prevents fighting with UI)
+                                        if !viewModel.isSeekUIActive {
+                                            toggleControls()
+                                        }
                                     }
                                 }
                             }

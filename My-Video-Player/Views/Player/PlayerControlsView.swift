@@ -22,22 +22,11 @@ struct PlayerControlsView: View {
     
     // Auto-hide
     @State private var hideTimer: Timer?
-    @State private var showSubtitleSettings = false
-    @State private var showSleepTimer = false
     
     // Casting State
-    @State private var showCastingSheet = false
     @State private var selectedCastingMode: CastingModeSheet.CastingMode?
     @State private var showAirPlayPicker = false
     
-    // Settings Sheet State
-    @State private var showSettingsSheet = false
-    
-    // Track Selection State
-    @State private var showTrackSelection = false
-    @State private var showPlayingModeSheet = false
-    @State private var showPlaybackSpeedSheet = false
-    @State private var showAudioCaptionsSheet = false
     @State private var isSystemMenuActive = false
     @State private var systemMenuDeactivateWorkItem: DispatchWorkItem?
     
@@ -56,14 +45,14 @@ struct PlayerControlsView: View {
     @State private var showDoubleTapFeedback: Bool? = nil // true = forward, false = backward, nil = hidden
     
     private var activeSheetType: String {
-        if showSettingsSheet { return "settings" }
-        if showSubtitleSettings { return "subtitles" }
-        if showTrackSelection { return "tracks" }
-        if showCastingSheet { return "casting" }
-        if showSleepTimer { return "sleep" }
-        if showPlayingModeSheet { return "mode" }
-        if showPlaybackSpeedSheet { return "speed" }
-        if showAudioCaptionsSheet { return "audiocaptions" }
+        if viewModel.showSettingsSheet { return "settings" }
+        if viewModel.showSubtitleSettingsSheet { return "subtitles" }
+        if viewModel.showTrackSelectionSheet { return "tracks" }
+        if viewModel.showCastingSheet { return "casting" }
+        if viewModel.showSleepTimerSheet { return "sleep" }
+        if viewModel.showPlayingModeSheet { return "mode" }
+        if viewModel.showPlaybackSpeedSheet { return "speed" }
+        if viewModel.showAudioCaptionsSheet { return "audiocaptions" }
         return "none"
     }
     
@@ -172,9 +161,9 @@ struct PlayerControlsView: View {
         }
         .onChange(of: viewModel.isSleepTimerActive) { oldVal, active in
             if active {
-                withAnimation { showSleepTimerToast = true }
+                withAnimation { viewModel.showSleepTimerToast = true }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                    withAnimation { showSleepTimerToast = false }
+                    withAnimation { viewModel.showSleepTimerToast = false }
                 }
             }
         }
@@ -205,7 +194,9 @@ struct PlayerControlsView: View {
             toggleControls: toggleControls,
             onShowTapFeedback: { isForward in
                 showDoubleTapFeedback = isForward
-                resetTimer()
+                if viewModel.isControlsVisible {
+                    resetTimer()
+                }
             }
         )
     }
@@ -227,20 +218,20 @@ struct PlayerControlsView: View {
                         lockNamespace: lockNamespace,
                         onMenu: {
                             withAnimation(.easeInOut(duration: 0.3)) {
-                                showSettingsSheet = true
+                                viewModel.showSettingsSheet = true
                                 viewModel.isControlsVisible = false
                             }
                         },
                         onTimer: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 returnToSettings = false
-                                showSleepTimer = true
+                                viewModel.showSleepTimerSheet = true
                                 viewModel.isControlsVisible = false
                             }
                         },
                         onCast: {
                             withAnimation(.easeInOut(duration: 0.3)) {
-                                showCastingSheet = true
+                                viewModel.showCastingSheet = true
                                 viewModel.isControlsVisible = false
                             }
                         }
@@ -302,13 +293,13 @@ struct PlayerControlsView: View {
                             onAudioCaptions: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     returnToSettings = false
-                                    showAudioCaptionsSheet = true
+                                    viewModel.showAudioCaptionsSheet = true
                                     viewModel.isControlsVisible = false
                                 }
                             },
                             onMenu: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
-                                    showSettingsSheet = true
+                                    viewModel.showSettingsSheet = true
                                     viewModel.isControlsVisible = false
                                 }
                             },
@@ -467,7 +458,7 @@ struct PlayerControlsView: View {
     private var settingsOverlay: some View {
         GeometryReader { geometry in
             let isLandscape = geometry.size.width > geometry.size.height
-            let anySheetVisible = showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet || showSleepTimer || showPlayingModeSheet || showPlaybackSpeedSheet || showAudioCaptionsSheet
+            let anySheetVisible = viewModel.showSettingsSheet || viewModel.showSubtitleSettingsSheet || viewModel.showTrackSelectionSheet || viewModel.showCastingSheet || viewModel.showSleepTimerSheet || viewModel.showPlayingModeSheet || viewModel.showPlaybackSpeedSheet || viewModel.showAudioCaptionsSheet
             
             ZStack {
                 // Background Scrim
@@ -484,7 +475,7 @@ struct PlayerControlsView: View {
                 
                 // Sheet Content
                 if anySheetVisible {
-                    if isLandscape && !showAudioCaptionsSheet {
+                    if isLandscape && !viewModel.showAudioCaptionsSheet {
                         // Trailing side sheet for landscape (except AudioCaptions)
                         HStack(spacing: 0) {
                             Spacer()
@@ -502,8 +493,8 @@ struct PlayerControlsView: View {
                             sheetContent(isLandscape: isLandscape)
                                 .frame(maxWidth: .infinity)
                                 // Only apply horizontal padding if NOT showAudioCaptionsSheet and isLandscape
-                                .applyIf(isLandscape && !showAudioCaptionsSheet) { $0.padding(.horizontal, geometry.size.width * 0.15) }
-                                .applyIf(showSettingsSheet && !isLandscape) { $0.frame(height: geometry.size.height * 0.5) }
+                                .applyIf(isLandscape && !viewModel.showAudioCaptionsSheet) { $0.padding(.horizontal, geometry.size.width * 0.15) }
+                                .applyIf(viewModel.showSettingsSheet && !isLandscape) { $0.frame(height: geometry.size.height * 0.5) }
                                 .background(Color.clear)
                         }
                         .transition(.move(edge: .bottom))
@@ -514,169 +505,199 @@ struct PlayerControlsView: View {
             }
         }
         .overlay(snapshotToastOverlay)
-        .overlay(sleepTimerToastOverlay) // Add Sleep Timer Toast
-        .allowsHitTesting(showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet || showSleepTimer || showPlayingModeSheet || showPlaybackSpeedSheet || showAudioCaptionsSheet)
+        .overlay(sleepTimerToastOverlay)
+        .allowsHitTesting(viewModel.isAnySheetVisible)
     }
 
     private func closeAllSheets() {
-        showSettingsSheet = false
-        showSubtitleSettings = false
-        showTrackSelection = false
-        showCastingSheet = false
-        showSleepTimer = false
-        showPlayingModeSheet = false
-        showPlaybackSpeedSheet = false
-        showAudioCaptionsSheet = false
+        viewModel.showSettingsSheet = false
+        viewModel.showSubtitleSettingsSheet = false
+        viewModel.showTrackSelectionSheet = false
+        viewModel.showCastingSheet = false
+        viewModel.showSleepTimerSheet = false
+        viewModel.showPlayingModeSheet = false
+        viewModel.showPlaybackSpeedSheet = false
+        viewModel.showAudioCaptionsSheet = false
     }
 
     @ViewBuilder
     private func sheetContent(isLandscape: Bool) -> some View {
-        if showSettingsSheet {
-            SettingsSheetView(
-                viewModel: viewModel,
-                isPresented: $showSettingsSheet,
-                isLandscape: isLandscape,
-                onAudioTrack: { 
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        returnToSettings = true
-                        showSettingsSheet = false
-                        showTrackSelection = true 
-                    }
-                },
-                onAirPlay: { showCastingSheet = true },
-                onSubtitle: { 
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        returnToSettings = true
-                        showSettingsSheet = false
-                        showSubtitleSettings = true 
-                    }
-                },
-                onSleepTimer: { 
-                     withAnimation(.easeInOut(duration: 0.3)) {
-                         returnToSettings = true
-                         showSettingsSheet = false
-                         showSleepTimer = true
-                     }
-                },
-                onScreenshot: { 
-                    viewModel.captureSnapshot { image in
-                        if let image = image {
-                            viewModel.saveImageToPhotos(image)
-                            showSettingsSheet = false
-                        }
-                    }
-                },
-                onShare: { 
-                    viewModel.prepareVideoForSharing { url in
-                        guard let url = url else { return }
-                        DispatchQueue.main.async {
-                            shareInfo = ShareInfo(items: [url])
-                        }
-                    }
-                },
-                onPlayingMode: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        returnToSettings = true
-                        showSettingsSheet = false
-                        showPlayingModeSheet = true
-                    }
-                },
-                onPlaybackSpeed: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        returnToSettings = true
-                        showSettingsSheet = false
-                        showPlaybackSpeedSheet = true
-                    }
-                }
-            )
-        } else if showSubtitleSettings {
-            SubtitleSettingsView(
-                subtitleManager: viewModel.subtitleManager,
-                isPresented: $showSubtitleSettings,
-                isLandscape: isLandscape,
-                onBack: returnToSettings ? {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showSubtitleSettings = false
-                        showSettingsSheet = true
-                    }
-                } : nil
-            )
-        } else if showTrackSelection {
-            AudioTrackSettingsView(
-                viewModel: viewModel,
-                isPresented: $showTrackSelection,
-                isLandscape: isLandscape,
-                onBack: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showTrackSelection = false
-                        if returnToSettings {
-                            showSettingsSheet = true
-                        }
-                    }
-                }
-            )
-        } else if showCastingSheet {
-            CastingModeSheet(
-                viewModel: viewModel,
-                isPresented: $showCastingSheet,
-                selectedMode: $selectedCastingMode,
-                isLandscape: isLandscape
-            )
-//            .applyIf(!isLandscape) { $0.frame(height: 450) }
-        } else if showSleepTimer {
-            SleepTimerView(
-                viewModel: viewModel,
-                isPresented: $showSleepTimer,
-                isLandscape: isLandscape,
-                onBack: returnToSettings ? {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showSleepTimer = false
-                        showSettingsSheet = true
-                    }
-                
-                } : nil
-            )
-            .applyIf(!isLandscape) { $0.frame(height: 450) }
-        } else if showPlayingModeSheet {
-            PlayingModeSheet(
-                viewModel: viewModel,
-                isPresented: $showPlayingModeSheet,
-                isLandscape: isLandscape,
-                onBack: returnToSettings ? {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showPlayingModeSheet = false
-                        showSettingsSheet = true
-                    }
-                } : nil
-            )
-            .applyIf(!isLandscape) { $0.frame(height: 400) }
-        } else if showPlaybackSpeedSheet {
-            PlaybackSpeedSheet(
-                viewModel: viewModel,
-                isPresented: $showPlaybackSpeedSheet,
-                isLandscape: isLandscape,
-                onBack: returnToSettings ? {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showPlaybackSpeedSheet = false
-                        showSettingsSheet = true
-                    }
-                } : nil
-            )
-            .applyIf(!isLandscape) { $0.frame(height: 450) }
-        } else if showAudioCaptionsSheet {
-            AudioCaptionsSheet(
-                viewModel: viewModel,
-                isPresented: $showAudioCaptionsSheet,
-                isLandscape: isLandscape,
-                onBack: returnToSettings ? {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showAudioCaptionsSheet = false
-                        showSettingsSheet = true
-                    }
-                } : nil
-            )
-            .applyIf(!isLandscape) { $0.frame(height: 500) }
+        if viewModel.showSettingsSheet {
+            settingsSheet(isLandscape: isLandscape)
+        } else if viewModel.showSubtitleSettingsSheet {
+            subtitleSettingsSheet(isLandscape: isLandscape)
+        } else if viewModel.showTrackSelectionSheet {
+            trackSelectionSheet(isLandscape: isLandscape)
+        } else if viewModel.showCastingSheet {
+            castingSheet(isLandscape: isLandscape)
+        } else if viewModel.showSleepTimerSheet {
+            sleepTimerSheet(isLandscape: isLandscape)
+        } else if viewModel.showPlayingModeSheet {
+            playingModeSheet(isLandscape: isLandscape)
+        } else if viewModel.showPlaybackSpeedSheet {
+            playbackSpeedSheet(isLandscape: isLandscape)
+        } else if viewModel.showAudioCaptionsSheet {
+            audioCaptionsSheet(isLandscape: isLandscape)
         }
+    }
+
+    private func settingsSheet(isLandscape: Bool) -> some View {
+        SettingsSheetView(
+            viewModel: viewModel,
+            isPresented: $viewModel.showSettingsSheet,
+            isLandscape: isLandscape,
+            onAudioTrack: { 
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    returnToSettings = true
+                    viewModel.showSettingsSheet = false
+                    viewModel.showTrackSelectionSheet = true 
+                }
+            },
+            onAirPlay: { viewModel.showCastingSheet = true },
+            onSubtitle: { 
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    returnToSettings = true
+                    viewModel.showSettingsSheet = false
+                    viewModel.showSubtitleSettingsSheet = true 
+                }
+            },
+            onSleepTimer: { 
+                 withAnimation(.easeInOut(duration: 0.3)) {
+                     returnToSettings = true
+                     viewModel.showSettingsSheet = false
+                     viewModel.showSleepTimerSheet = true
+                 }
+            },
+            onScreenshot: { 
+                viewModel.captureSnapshot { image in
+                    if let image = image {
+                        viewModel.saveImageToPhotos(image)
+                        viewModel.showSettingsSheet = false
+                    }
+                }
+            },
+            onShare: { 
+                viewModel.prepareVideoForSharing { url in
+                    guard let url = url else { return }
+                    DispatchQueue.main.async {
+                        shareInfo = ShareInfo(items: [url])
+                    }
+                }
+            },
+            onPlayingMode: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    returnToSettings = true
+                    viewModel.showSettingsSheet = false
+                    viewModel.showPlayingModeSheet = true
+                }
+            },
+            onPlaybackSpeed: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    returnToSettings = true
+                    viewModel.showSettingsSheet = false
+                    viewModel.showPlaybackSpeedSheet = true
+                }
+            }
+        )
+    }
+
+    private func subtitleSettingsSheet(isLandscape: Bool) -> some View {
+        SubtitleSettingsView(
+            subtitleManager: viewModel.subtitleManager,
+            isPresented: $viewModel.showSubtitleSettingsSheet,
+            isLandscape: isLandscape,
+            onBack: returnToSettings ? {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    viewModel.showSubtitleSettingsSheet = false
+                    viewModel.showSettingsSheet = true
+                }
+            } : nil
+        )
+    }
+
+    private func trackSelectionSheet(isLandscape: Bool) -> some View {
+        AudioTrackSettingsView(
+            viewModel: viewModel,
+            isPresented: $viewModel.showTrackSelectionSheet,
+            isLandscape: isLandscape,
+            onBack: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    viewModel.showTrackSelectionSheet = false
+                    if returnToSettings {
+                        viewModel.showSettingsSheet = true
+                    }
+                }
+            }
+        )
+    }
+
+    private func castingSheet(isLandscape: Bool) -> some View {
+        CastingModeSheet(
+            viewModel: viewModel,
+            isPresented: $viewModel.showCastingSheet,
+            selectedMode: $selectedCastingMode,
+            isLandscape: isLandscape
+        )
+    }
+
+    private func sleepTimerSheet(isLandscape: Bool) -> some View {
+        SleepTimerView(
+            viewModel: viewModel,
+            isPresented: $viewModel.showSleepTimerSheet,
+            isLandscape: isLandscape,
+            onBack: returnToSettings ? {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    viewModel.showSleepTimerSheet = false
+                    viewModel.showSettingsSheet = true
+                }
+            } : nil
+        )
+        .applyIf(!isLandscape) { $0.frame(height: 450) }
+    }
+
+    private func playingModeSheet(isLandscape: Bool) -> some View {
+        PlayingModeSheet(
+            viewModel: viewModel,
+            isPresented: $viewModel.showPlayingModeSheet,
+            isLandscape: isLandscape,
+            onBack: returnToSettings ? {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    viewModel.showPlayingModeSheet = false
+                    viewModel.showSettingsSheet = true
+                }
+            } : nil
+        )
+        .applyIf(!isLandscape) { $0.frame(height: 400) }
+    }
+
+    private func playbackSpeedSheet(isLandscape: Bool) -> some View {
+        PlaybackSpeedSheet(
+            viewModel: viewModel,
+            isPresented: $viewModel.showPlaybackSpeedSheet,
+            isLandscape: isLandscape,
+            onBack: returnToSettings ? {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    viewModel.showPlaybackSpeedSheet = false
+                    viewModel.showSettingsSheet = true
+                }
+            } : nil
+        )
+        .applyIf(!isLandscape) { $0.frame(height: 450) }
+    }
+
+    private func audioCaptionsSheet(isLandscape: Bool) -> some View {
+        AudioCaptionsSheet(
+            viewModel: viewModel,
+            isPresented: $viewModel.showAudioCaptionsSheet,
+            isLandscape: isLandscape,
+            onBack: returnToSettings ? {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    viewModel.showAudioCaptionsSheet = false
+                    viewModel.showSettingsSheet = true
+                }
+            } : nil
+        )
+        .applyIf(!isLandscape) { $0.frame(height: 500) }
     }
 
     private var sleepTimerIconOverlay: some View {
@@ -702,7 +723,7 @@ struct PlayerControlsView: View {
     
     private var sleepTimerToastOverlay: some View {
         Group {
-            if let message = viewModel.sleepTimerRemainingString, viewModel.isSleepTimerActive, showSleepTimerToast {
+            if let message = viewModel.sleepTimerRemainingString, viewModel.isSleepTimerActive, viewModel.showSleepTimerToast {
                  VStack {
                      HStack {
                          Spacer()
@@ -724,7 +745,6 @@ struct PlayerControlsView: View {
         }
     }
     
-    @State private var showSleepTimerToast = false
 
     private var snapshotToastOverlay: some View {
         Group {
@@ -791,8 +811,7 @@ struct PlayerControlsView: View {
     
     private func resetTimer() {
         hideTimer?.invalidate()
-        let anySheetVisible = showSettingsSheet || showSubtitleSettings || showTrackSelection || showCastingSheet
-        if !anySheetVisible && !isSystemMenuActive && viewModel.activeMenu == .none {
+        if !viewModel.isAnySheetVisible && !isSystemMenuActive && viewModel.activeMenu == .none {
              viewModel.isControlsVisible = true
              
              hideTimer = Timer.scheduledTimer(withTimeInterval: 4.0, repeats: false) { _ in

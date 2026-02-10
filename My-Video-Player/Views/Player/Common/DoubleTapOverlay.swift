@@ -36,12 +36,12 @@ struct DoubleTapOverlay: View {
                     }
                 }
             } else {
-                // PORTRAIT: Show centered below play/pause
+                // PORTRAIT: 
                 VStack {
                     Spacer()
                     indicatorText
-                        // Offset to push it further below the center play button
-                        .padding(.top, 120) 
+                        // ONLY push it below the center if the large Play button is visible
+                        .padding(.top, viewModel.isControlsVisible ? 120 : 0) 
                     Spacer()
                 }
             }

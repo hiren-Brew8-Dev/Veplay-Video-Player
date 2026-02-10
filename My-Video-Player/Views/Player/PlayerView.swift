@@ -11,110 +11,14 @@ struct PlayerView: View {
     @EnvironmentObject var dashboardViewModel: DashboardViewModel
     @State private var resolvedTitle: String? = nil
     @State private var dismissOffset: CGFloat = 0
+    @State private var isDismissGestureActive = false
 
-    
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                Color.black.edgesIgnoringSafeArea(.all)
-                
-                if viewModel.isVLC, let vlcPlayer = viewModel.vlcPlayer {
-                    VLCPlayerView(mediaPlayer: vlcPlayer, isPiPActive: $viewModel.isPiPActive)
-                        .id(ObjectIdentifier(vlcPlayer))
-                        .edgesIgnoringSafeArea(.all)
-                    
-                    // Subtitles Layer for VLC removed as requested (using native VLC rendering)
-                } else if let player = viewModel.player {
-                if viewModel.aspectRatio.isUnconstrained {
-                    CustomVideoPlayer(
-                        player: player,
-                        videoGravity: viewModel.aspectRatio.gravity,
-                        isPiPActive: $viewModel.isPiPActive,
-                        onRestore: {
-                            viewModel.handleRestoreFromPiP()
-                        }
-                    )
-                    .edgesIgnoringSafeArea(.all)
-                } else {
-                    CustomVideoPlayer(
-                        player: player,
-                        videoGravity: viewModel.aspectRatio.gravity,
-                        isPiPActive: $viewModel.isPiPActive,
-                        onRestore: {
-                            viewModel.handleRestoreFromPiP()
-                        }
-                    )
-                    .aspectRatio(viewModel.aspectRatio.ratioValue, contentMode: .fit)
-                    .edgesIgnoringSafeArea(.all)
-                }
-                
-                // Subtitles Layer
-                SubtitleOverlay(text: viewModel.subtitleManager.currentSubtitle)
-                    .allowsHitTesting(false) // Let touches pass through to controls
-            } else {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-            }
-            
-            // Seek Indicator Overlay (Display above player, below controls)
-            if viewModel.isSeekUIActive {
-                DoubleTapOverlay(
-                    isForward: viewModel.isSeekForward,
-                    onClose: {
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            viewModel.isSeekUIActive = false
-                        }
-                    },
-                    viewModel: viewModel
-                )
-                .transition(.opacity.animation(.easeInOut(duration: 0.3)))
-                .zIndex(2)
-            }
-            
-            // New Full Screen Controls Overlay
-            PlayerControlsView(
-                viewModel: viewModel,
-                videoTitle: viewModel.videoTitle,
-                toggleControls: {
-                    if viewModel.activeMenu == .none {
-                        viewModel.isControlsVisible.toggle()
-                    }
-                },
-                onBack: {
-                    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
-                        presentationMode.wrappedValue.dismiss()
-                        return
-                    }
-                    
-                    if windowScene.interfaceOrientation.isLandscape {
-                        // Request portrait orientation
-                        if #available(iOS 16.0, *) {
-                            windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait)) { error in
-                                // Even if it fails, we should try to dismiss
-                                print("Rotation failed: \(error.localizedDescription)")
-                            }
-                        } else {
-                            UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
-                            UIViewController.attemptRotationToDeviceOrientation()
-                        }
-                        
-                        // Small delay to allow the orientation change to start/complete visually
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                            viewModel.cleanup() // Complete cleanup on back button
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    } else {
-                        viewModel.cleanup() // Complete cleanup on back button
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                },
-                onSeek: { val in
-                    viewModel.seek(to: val)
-                },
-                onSmoothSeek: { val in
-                    viewModel.smoothSeek(to: val)
-                }
-                )
+                videoLayer
+                overlayLayer(geo: geo)
+                controlsLayer(geo: geo)
             }
             .onChange(of: geo.size) { oldSize, newSize in
                 viewModel.updateAspectRatio(with: newSize)
@@ -122,41 +26,11 @@ struct PlayerView: View {
             .onAppear {
                 viewModel.updateAspectRatio(with: geo.size)
             }
-            .gesture(
-                DragGesture(coordinateSpace: .global)
-                    .onChanged { value in
-                        // 1. Avoid top edge (Notification Center conflict)
-                        // Ignore swipes starting in the top 50pt
-                        guard value.startLocation.y > 50 else { return }
-                        
-                        // Only allow swipe down (positive translation)
-                        if value.translation.height > 0 {
-                            var transaction = Transaction(animation: nil) // Disable implicit animations
-                            transaction.disablesAnimations = true
-                            withTransaction(transaction) {
-                                dismissOffset = value.translation.height
-                            }
-                        }
-                    }
-                    .onEnded { value in
-                        if value.translation.height > 100 {
-                            // Dismiss threshold reached
-                            withAnimation(.easeOut(duration: 0.2)) {
-                               viewModel.shouldDismissPlayer = true
-                            }
-                        } else {
-                            // Snap back
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                dismissOffset = 0
-                            }
-                        }
-                    }
-            )
+            .simultaneousGesture(dismissGesture(geo: geo))
             .offset(y: dismissOffset)
         }
         .edgesIgnoringSafeArea(.all)
         .ignoresSafeArea(.all)
-        // Optimization: Removed opacity change during drag as it can be heavy with video
         .toolbar(.hidden, for: .navigationBar)
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
@@ -165,20 +39,12 @@ struct PlayerView: View {
         .onAppear {
             let initialTitle = dashboardViewModel.allGalleryVideos.first(where: { $0.id == video.id })?.title ?? video.title
             viewModel.setupPlayer(with: video, title: initialTitle, playlist: (playlist.isEmpty ? [video] : playlist))
-            
-            // Allow rotation in player
             AppDelegate.orientationLock = .all
-            
-            // Resolve title if it's still generic
             resolveCurrentTitle(for: video)
-
-            // Ensure navigation bar stays hidden
             UINavigationBar.appearance().isHidden = true
         }
         .onDisappear {
-            // Lock back to portrait
             AppDelegate.orientationLock = .portrait
-            
             if #available(iOS 16.0, *) {
                 if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
                     windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
@@ -187,15 +53,9 @@ struct PlayerView: View {
                 UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
                 UIViewController.attemptRotationToDeviceOrientation()
             }
-            
-            
-            // Only cleanup if we are truly dismissing the view AND PiP is not active.
-            // If the app is just backgrounding, we want audio to continue.
             if !presentationMode.wrappedValue.isPresented && !viewModel.isPiPActive {
                 viewModel.cleanup()
             }
-            
-            // Restore navigation bar
             UINavigationBar.appearance().isHidden = false
         }
         .onChange(of: viewModel.currentVideoItem) { oldVal, newVal in
@@ -210,7 +70,6 @@ struct PlayerView: View {
         }
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .inactive || newPhase == .background {
-                // Force reset if interrupted by Notification Center or Home Swipe
                 if dismissOffset > 0 {
                     withAnimation(.spring()) {
                         dismissOffset = 0
@@ -224,9 +83,7 @@ struct PlayerView: View {
                     presentationMode.wrappedValue.dismiss()
                     return
                 }
-                
                 if windowScene.interfaceOrientation.isLandscape {
-                    // Request portrait orientation
                     if #available(iOS 16.0, *) {
                         windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait)) { error in
                             print("Rotation failed: \(error.localizedDescription)")
@@ -235,8 +92,6 @@ struct PlayerView: View {
                         UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
                         UIViewController.attemptRotationToDeviceOrientation()
                     }
-                    
-                    // Small delay to allow the orientation change to start/complete visually
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                         viewModel.cleanup()
                         presentationMode.wrappedValue.dismiss()
@@ -249,14 +104,220 @@ struct PlayerView: View {
         }
     }
     
+    // MARK: - Subviews
+    
+    private var videoLayer: some View {
+        ZStack {
+            Color.black.edgesIgnoringSafeArea(.all)
+            
+            if viewModel.isVLC, let vlcPlayer = viewModel.vlcPlayer {
+                VLCPlayerView(mediaPlayer: vlcPlayer, isPiPActive: $viewModel.isPiPActive)
+                    .id(ObjectIdentifier(vlcPlayer))
+                    .edgesIgnoringSafeArea(.all)
+            } else if let player = viewModel.player {
+                if viewModel.aspectRatio.isUnconstrained {
+                    CustomVideoPlayer(
+                        player: player,
+                        videoGravity: viewModel.aspectRatio.gravity,
+                        isPiPActive: $viewModel.isPiPActive,
+                        onRestore: { viewModel.handleRestoreFromPiP() }
+                    )
+                    .edgesIgnoringSafeArea(.all)
+                } else {
+                    CustomVideoPlayer(
+                        player: player,
+                        videoGravity: viewModel.aspectRatio.gravity,
+                        isPiPActive: $viewModel.isPiPActive,
+                        onRestore: { viewModel.handleRestoreFromPiP() }
+                    )
+                    .aspectRatio(viewModel.aspectRatio.ratioValue, contentMode: .fit)
+                    .edgesIgnoringSafeArea(.all)
+                }
+            } else {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+            }
+        }
+    }
+    
+    private func overlayLayer(geo: GeometryProxy) -> some View {
+        ZStack {
+            SubtitleOverlay(text: viewModel.subtitleManager.currentSubtitle)
+                .allowsHitTesting(false)
+            
+            dismissGuideLayer(geo: geo)
+            
+            if viewModel.isSeekUIActive {
+                DoubleTapOverlay(
+                    isForward: viewModel.isSeekForward,
+                    onClose: {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            viewModel.isSeekUIActive = false
+                        }
+                    },
+                    viewModel: viewModel
+                )
+                .transition(.opacity.animation(.easeInOut(duration: 0.3)))
+                .zIndex(2)
+            }
+        }
+    }
+
+    private func dismissGuideLayer(geo: GeometryProxy) -> some View {
+        let screenWidth = geo.size.width
+        let screenHeight = geo.size.height
+        let isPortrait = screenHeight > screenWidth
+        let horizontalBound = screenWidth * (isPortrait ? 0.15 : 0.20) // 30% P / 40% L
+        let verticalBound = screenHeight * (isPortrait ? 0.30 : 0.20) // 60% P / 40% L
+        
+        return ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+                .foregroundColor(.white.opacity(0.3))
+                .frame(width: horizontalBound * 2, height: verticalBound * 2)
+            
+            VStack(spacing: 4) {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 14, weight: .bold))
+                Text("Swipe down to close")
+                    .font(.system(size: 10, weight: .medium))
+            }
+            .foregroundColor(.white.opacity(0.4))
+        }
+        .opacity(0) // Logic confirmed: Area is 30% width, 60% height. Hiding visual guide for production.
+        .animation(.easeInOut(duration: 0.3), value: viewModel.isControlsVisible)
+        .allowsHitTesting(false)
+    }
+    
+    private func controlsLayer(geo: GeometryProxy) -> some View {
+        PlayerControlsView(
+            viewModel: viewModel,
+            videoTitle: viewModel.videoTitle,
+            toggleControls: {
+                if viewModel.activeMenu == .none && !viewModel.isSeekUIActive {
+                    viewModel.isControlsVisible.toggle()
+                }
+            },
+            onBack: {
+                handleBackAction()
+            },
+            onSeek: { val in
+                viewModel.seek(to: val)
+            },
+            onSmoothSeek: { val in
+                viewModel.smoothSeek(to: val)
+            }
+        )
+    }
+    
+    // MARK: - Gestures
+    
+    private func dismissGesture(geo: GeometryProxy) -> some Gesture {
+        DragGesture(minimumDistance: 10, coordinateSpace: .local)
+            .onChanged { value in
+                // 1. Initial validation only on the first frame of the gesture
+                if !isDismissGestureActive {
+                    // STRICT CONSTRAINTS TO AVOID CONFLICTS:
+                    // We now allow dismissal even when controls are visible, as requested.
+                    guard !viewModel.isAnySheetVisible else { return }
+                    
+                    let startY = value.startLocation.y
+                    let startX = value.startLocation.x
+                    let screenHeight = geo.size.height
+                    let screenWidth = geo.size.width
+                    let isPortrait = screenHeight > screenWidth
+                    
+                    // MIDDLE AREA FROM CENTER:
+                    let horizontalBound = screenWidth * (isPortrait ? 0.15 : 0.25) // 30% P / 40% L
+                    let verticalBound = screenHeight * (isPortrait ? 0.30 : 0.20) // 60% P / 40% L
+                    let centerX = screenWidth / 2
+                    let centerY = screenHeight / 2
+                    
+                    let isInX = startX > (centerX - horizontalBound) && startX < (centerX + horizontalBound)
+                    let isInY = startY > (centerY - verticalBound) && startY < (centerY + verticalBound)
+                    
+                    if isInX && isInY {
+                        isDismissGestureActive = true
+                    } else {
+                        return 
+                    }
+                }
+                
+                // 2. If valid, handle the drag
+                guard isDismissGestureActive else { return }
+                guard value.translation.height > -20 else { return } // Allow slight upward movement but lock it
+                
+                let resistance: CGFloat = 0.6
+                let dampedTranslation = max(0, value.translation.height) * resistance
+                
+                var transaction = Transaction(animation: nil)
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    dismissOffset = dampedTranslation
+                }
+            }
+            .onEnded { value in
+                guard isDismissGestureActive else { return }
+                
+                let translation = value.translation.height
+                let velocity = value.velocity.height
+                
+                let isFastSwipe = velocity > 800
+                let isLongSwipe = translation > 150
+                let isMediumSwipe = translation > 80 && velocity > 400
+                
+                if (isFastSwipe || isLongSwipe || isMediumSwipe) && translation > 0 {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        dismissOffset = geo.size.height
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        viewModel.shouldDismissPlayer = true
+                    }
+                } else {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                        dismissOffset = 0
+                    }
+                }
+                
+                // RESET STATE
+                isDismissGestureActive = false
+            }
+    }
+    
+    // MARK: - Actions
+    
+    private func handleBackAction() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+            presentationMode.wrappedValue.dismiss()
+            return
+        }
+        
+        if windowScene.interfaceOrientation.isLandscape {
+            if #available(iOS 16.0, *) {
+                windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait)) { error in
+                    print("Rotation failed: \(error.localizedDescription)")
+                }
+            } else {
+                UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+                UIViewController.attemptRotationToDeviceOrientation()
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                viewModel.cleanup()
+                presentationMode.wrappedValue.dismiss()
+            }
+        } else {
+            viewModel.cleanup()
+            presentationMode.wrappedValue.dismiss()
+        }
+    }
+    
     private func resolveCurrentTitle(for video: VideoItem) {
         if video.isGenericTitle {
             dashboardViewModel.loadTitle(for: video) { title in
                 self.resolvedTitle = title
                 self.viewModel.videoTitle = title
                 self.viewModel.updateNowPlayingInfo()
-                
-                // Also update in playlist to sync queue UI
                 if let index = viewModel.playlist.firstIndex(where: { $0.id == video.id }) {
                     viewModel.playlist[index].title = title
                 }
