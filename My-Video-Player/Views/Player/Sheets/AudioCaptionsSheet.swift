@@ -31,7 +31,7 @@ struct AudioCaptionsSheet: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.1))
+                        .background(Color.premiumCircleBackground)
                         .clipShape(Circle())
                 }
                 
@@ -88,10 +88,7 @@ struct AudioCaptionsSheet: View {
         }
         .background(
             LinearGradient(
-                colors: [
-                    Color(red: 0.15, green: 0.15, blue: 0.17),
-                    Color(red: 0.12, green: 0.12, blue: 0.14)
-                ],
+                colors: [.premiumGradientTop, .premiumGradientBottom],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -151,11 +148,11 @@ struct AudioCaptionsSheet: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.05))
+                .fill(Color.premiumCardBackground)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(Color.premiumCardBorder, lineWidth: 1)
         )
     }
     
@@ -181,7 +178,7 @@ struct AudioCaptionsSheet: View {
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.homeAccent.opacity(0.15) : Color.white.opacity(0.03))
+                    .fill(isSelected ? Color.homeAccent.opacity(0.15) : Color.premiumCardBackground)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
@@ -239,13 +236,11 @@ struct AudioCaptionsSheet: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 40, height: 40)
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.1))
-                        )
+                        .background(Color.premiumCircleBackground)
+                        .clipShape(Circle())
                         .overlay(
                             Circle()
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                .stroke(Color.premiumCardBorder, lineWidth: 1)
                         )
                 }
                 .buttonStyle(.plain)
@@ -262,13 +257,11 @@ struct AudioCaptionsSheet: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 40, height: 40)
-                        .background(
-                            Circle()
-                                .fill(Color.white.opacity(0.1))
-                        )
+                        .background(Color.premiumCircleBackground)
+                        .clipShape(Circle())
                         .overlay(
                             Circle()
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                .stroke(Color.premiumCardBorder, lineWidth: 1)
                         )
                 }
                 .buttonStyle(.plain)
@@ -278,11 +271,11 @@ struct AudioCaptionsSheet: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.05))
+                .fill(Color.premiumCardBackground)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(Color.premiumCardBorder, lineWidth: 1)
         )
     }
     
@@ -361,11 +354,11 @@ struct AudioCaptionsSheet: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.05))
+                .fill(Color.premiumCardBackground)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(Color.premiumCardBorder, lineWidth: 1)
         )
         .fileImporter(
             isPresented: $showingFileImporter,
@@ -401,7 +394,7 @@ struct AudioCaptionsSheet: View {
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.homeAccent.opacity(0.15) : Color.white.opacity(0.03))
+                    .fill(isSelected ? Color.homeAccent.opacity(0.15) : Color.premiumCardBackground)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)

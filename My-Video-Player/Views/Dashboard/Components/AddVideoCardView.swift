@@ -11,25 +11,31 @@ struct AddVideoCardView: View {
             VStack(alignment: .leading, spacing: 12) {
                 // 1. Placeholder Thumbnail Section
                 ZStack {
-                    Color.homeCardBackground
+                    Color.white.opacity(0.05)
                     
                     VStack(spacing: 8) {
                         Image(systemName: "plus")
-                            .appIconStyle(size: 30, weight: .bold, color: .homeAccent)
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundColor(.homeAccent)
                         
                         Text("Add Video")
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.homeTextPrimary.opacity(0.3))
+                            .foregroundColor(.homeTextSecondary)
                     }
                 }
                 .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
                 .clipped()
-                .cornerRadius(10)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+                .frame(maxWidth: .infinity)
                 .padding(.top, 8)
                 .padding(.horizontal, 8)
                 
                 // 2. Info Section
-                HStack(alignment: .top, spacing: 0) {
+                HStack(alignment: .center, spacing: 0) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Import New")
                             .font(.system(size: 14, weight: .bold))
@@ -40,13 +46,20 @@ struct AddVideoCardView: View {
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.homeTextSecondary)
                     }
+                    
                     Spacer()
                 }
-                .padding(.horizontal, 12)
+                .padding(.leading, 12)
+                .padding(.trailing, 0)
                 .padding(.bottom, 8)
             }
-            .background(Color.homeCardBackground.opacity(0.4))
+            .background(Color.premiumCardBackground)
             .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.premiumCardBorder, lineWidth: 1)
+            )
         }
+        .buttonStyle(.plain)
     }
 }

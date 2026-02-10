@@ -20,7 +20,7 @@ struct VideoSectionView: View {
 
     var body: some View {
         ZStack {
-            Color.homeBackground.edgesIgnoringSafeArea(.all)
+            Color.clear.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
                 // Header
@@ -60,7 +60,7 @@ struct VideoSectionView: View {
             // Syncing Overlay
 
         }
-        .background(Color.homeBackground)
+//        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
         .sheet(isPresented: $showSortSheet) {
             CustomSortingView(sortOptionRaw: $viewModel.videoSortOptionRaw, title: "Videos")
         }
@@ -82,7 +82,7 @@ struct VideoSectionView: View {
             }
         
         }
-        .background(Color.homeBackground)
+        .background(Color.clear)
         .ignoresSafeArea(edges: .bottom)
     }
     
@@ -123,20 +123,14 @@ struct VideoSectionView: View {
                     Divider()
                     
                     Button(action: { isGridView = true }) {
-                        if isGridView {
-                            Label("Grid", systemImage: "checkmark")
-                        } else {
-                            Text("Grid")
-                        }
+                        Label("Grid", systemImage: "square.grid.2x2")
                     }
+                    .accentColor(isGridView ? .orange : .white)
                     
                     Button(action: { isGridView = false }) {
-                        if !isGridView {
-                            Label("List", systemImage: "checkmark")
-                        } else {
-                            Text("List")
-                        }
+                        Label("List", systemImage: "list.bullet")
                     }
+                    .accentColor(!isGridView ? .orange : .white)
                     
                     Divider()
                     
@@ -159,7 +153,7 @@ struct VideoSectionView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
-        .background(Color.homeBackground)
+        .background(Color.clear)
     }
     
     private var selectionHeader: some View {
@@ -174,16 +168,16 @@ struct VideoSectionView: View {
             }) {
                 ZStack {
                     Circle()
-                        .stroke(Color.homeTextPrimary, lineWidth: 1.5)
+                        .stroke(isAllSelected ? Color.orange : Color.white.opacity(0.3), lineWidth: 1.5)
                         .frame(width: 24, height: 24)
                     
                     if isAllSelected {
                         Circle()
-                            .fill(Color.homeAccent)
-                            .frame(width: AppDesign.Icons.selectionIconSize, height: AppDesign.Icons.selectionIconSize)
+                            .fill(Color.orange)
+                            .frame(width: 14, height: 14)
                         Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.homeTextPrimary)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.white)
                     }
                 }
                 .padding(10)
@@ -193,8 +187,8 @@ struct VideoSectionView: View {
             
             let allVideos = viewModel.importedVideos
             Text("Selected (\(viewModel.selectedVideoIds.count)/\(allVideos.count))")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.homeTextPrimary)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(.white)
             
             Spacer()
             
@@ -202,13 +196,14 @@ struct VideoSectionView: View {
                 viewModel.isSelectionMode = false
                 viewModel.selectedVideoIds.removeAll()
             }
-            .font(.system(size: 16, weight: .bold))
-            .foregroundColor(.homeAccent)
-            .padding(10) // Larger hit area
+            .font(.system(size: 15, weight: .bold))
+            .foregroundColor(.orange)
+            .padding(.trailing, 10)
         }
-        .padding(.horizontal, 5)
-        .padding(.bottom, 10)
-        .background(Color.homeBackground)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .background(Color.clear)
+    
     }
     
     private var selectionActionBar: some View {
@@ -231,9 +226,23 @@ struct VideoSectionView: View {
             }
             .padding(.top, 16)
             .padding(.bottom, 34) // Explicit safe area space
-            .background(Color.sheetSurface)
+            .background(
+                LinearGradient(
+                    colors: [.premiumGradientTop, .premiumGradientBottom],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay(
+                VStack {
+                    Rectangle()
+                        .fill(Color.premiumCardBorder)
+                        .frame(height: 1)
+                    Spacer()
+                }
+            )
             .clipShape(RoundedCorner(radius: 32, corners: [.topLeft, .topRight]))
-            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: -5)
+            .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: -5)
         }
         .ignoresSafeArea(.all, edges: .bottom)
         .transition(.move(edge: .bottom))
@@ -241,12 +250,20 @@ struct VideoSectionView: View {
     
     private func selectionBarItem(icon: String, title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: icon)
-                    .appIconStyle(size: AppDesign.Icons.actionSheetIconSize, weight: .semibold, color: .homeAccent)
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(viewModel.selectedVideoIds.isEmpty ? Color.white.opacity(0.05) : Color.orange.opacity(0.1))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(viewModel.selectedVideoIds.isEmpty ? .white.opacity(0.3) : .orange)
+                }
+                
                 Text(title)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.homeTextPrimary)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(viewModel.selectedVideoIds.isEmpty ? .white.opacity(0.3) : .white)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10) // Larger hit area
@@ -265,22 +282,22 @@ struct VideoSectionView: View {
             VStack(spacing: 24) {
                 ZStack {
                     Circle()
-                        .fill(Color.homeCardBackground.opacity(0.5))
+                        .fill(Color.white.opacity(0.05))
                         .frame(width: 100, height: 100)
                     
                     Image(systemName: "video.slash")
                         .font(.system(size: 40))
-                        .foregroundColor(.homeTextSecondary)
+                        .foregroundColor(.white.opacity(0.2))
                 }
                 
                 VStack(spacing: 8) {
                     Text("No Videos Imported")
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.homeTextPrimary)
+                        .foregroundColor(.white)
                     
                     Text("Start by importing videos from your photos\nor files to build your local library.")
                         .font(.system(size: 14))
-                        .foregroundColor(.homeTextSecondary)
+                        .foregroundColor(.white.opacity(0.5))
                         .multilineTextAlignment(.center)
                         .lineSpacing(4)
                 }
@@ -387,10 +404,27 @@ struct VideoSectionView: View {
     private var listView: some View {
         LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
             ForEach(viewModel.groupedImportedVideos) { section in
-                Section(header: sectionHeader(for: section.date)) {
-                    ForEach(section.videos) { video in
-                        videoRow(video)
+                Section {
+                    VStack(spacing: 0) {
+                        ForEach(section.videos.indices, id: \.self) { index in
+                            videoRow(section.videos[index])
+                            
+                            if index < section.videos.count - 1 {
+                                Divider()
+                                    .background(Color.white.opacity(0.1))
+                                    .padding(.leading, 128)
+                            }
+                        }
                     }
+                    .background(Color.premiumCardBackground)
+                    .cornerRadius(20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.premiumCardBorder, lineWidth: 1)
+                    )
+                    .padding(.horizontal, 20)
+                } header: {
+                    sectionHeader(for: section.date)
                 }
             }
         }
@@ -403,14 +437,16 @@ struct VideoSectionView: View {
             EmptyView()
         } else {
             HStack {
-                Text(formattedSectionDate(date))
-                    .font(.system(size: 14, weight: .semibold))
+                Text(formattedSectionDate(date).uppercased())
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundColor(.homeTextSecondary)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal)
+                    .padding(.horizontal, 4)
                 Spacer()
             }
-            .background(Color.homeBackground)
+            .padding(.top, 24)
+            .padding(.bottom, 12)
+            .padding(.horizontal, 20)
+            .background(Color.clear)
         }
     }
     

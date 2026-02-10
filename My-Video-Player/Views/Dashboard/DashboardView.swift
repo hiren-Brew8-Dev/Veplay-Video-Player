@@ -237,19 +237,32 @@ struct DashboardView: View {
             Color.homeBackground.opacity(0.6)
                 .edgesIgnoringSafeArea(.all)
             
-            VStack(spacing: 16) {
+            VStack(spacing: 24) {
+                // Animated Loader (Custom)
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .homeAccent))
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(1.5)
                 
-                Text("Sharing...")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.homeTextPrimary)
+                VStack(spacing: 8) {
+                    Text("Sharing...")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("Preparing your files")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.5))
+                }
             }
-            .padding(40)
-            .background(Color.sheetSurface)
-            .cornerRadius(20)
-            .shadow(radius: 20)
+            .padding(.vertical, 32)
+            .padding(.horizontal, 40)
+            .background(
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(Color.premiumGradientBottom.opacity(0.8))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(Color.premiumCardBorder, lineWidth: 1.5)
+            )
+            .shadow(color: Color.black.opacity(0.4), radius: 30, x: 0, y: 15)
         }
     }
     
@@ -258,19 +271,26 @@ struct DashboardView: View {
             Color.homeBackground.opacity(0.4)
                 .edgesIgnoringSafeArea(.all)
             
-            VStack(spacing: 16) {
+            VStack(spacing: 24) {
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .homeTextPrimary))
-                    .scaleEffect(1.2)
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.3)
                 
                 Text("Syncing...")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.homeTextPrimary)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
             }
             .padding(.horizontal, 40)
             .padding(.vertical, 30)
-            .background(Material.ultraThinMaterial)
-            .cornerRadius(16)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.premiumCardBackground)
+                    .background(.ultraThinMaterial)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.premiumCardBorder, lineWidth: 1.5)
+            )
             .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
         }
         .zIndex(100)

@@ -17,10 +17,17 @@ extension Color {
     static let homeTint = Color.white 
     static let homeAccent = Color.orange
     
-    // Sheet specific
+    // Standard Sheet Design
     static let sheetBackground = Color(red: 0.08, green: 0.08, blue: 0.1)
     static let sheetSurface = Color(red: 0.15, green: 0.15, blue: 0.18)
     static let sheetDivider = Color.white.opacity(0.1)
     static let sheetTextPrimary = Color.white
     static let sheetTextDestructive = Color.red
+
+    // Premium Sheet Design
+    static let premiumGradientTop = Color(red: 0.07, green: 0.07, blue: 0.09) // Darker for premium feel
+    static let premiumGradientBottom = Color(red: 0.04, green: 0.04, blue: 0.05)
+    static let premiumCardBackground = Color.white.opacity(0.05)
+    static let premiumCardBorder = Color.white.opacity(0.1)
+    static let premiumCircleBackground = Color.white.opacity(0.1)
 }

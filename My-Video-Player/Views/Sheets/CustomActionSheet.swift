@@ -21,23 +21,23 @@ struct CustomActionSheet: View {
             Spacer()
             
             VStack(spacing: 0) {
-                // Handle
+                // Drag Handle
                 Capsule()
-                    .fill(Color.sheetDivider)
-                    .frame(width: 40, height: 4)
+                    .fill(Color.white.opacity(0.3))
+                    .frame(width: 40, height: 5)
                     .padding(.top, 12)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 24)
                 
                 // Header Section
                 if let target = target {
                     headerView(for: target)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 24)
+                        .padding(.horizontal, 22)
+                        .padding(.bottom, 28)
                 }
                 
-                // Actions List
+                // Actions Card
                 VStack(spacing: 0) {
-                    ForEach(items) { item in
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                         Button(action: {
                             withAnimation {
                                 isPresented = false
@@ -47,36 +47,55 @@ struct CustomActionSheet: View {
                                 item.action()
                             }
                         }) {
-                            HStack {
-                                Image(systemName: item.icon)
-                                    .appIconStyle(size: AppDesign.Icons.actionSheetIconSize, color: item.role == .destructive ? .sheetTextDestructive : .homeTint)
-                                    .frame(width: 24)
+                            HStack(spacing: 16) {
+                                ZStack {
+                                    Circle()
+                                        .fill(item.role == .destructive ? Color.red.opacity(0.1) : Color.premiumCircleBackground)
+                                        .frame(width: 36, height: 36)
+                                    
+                                    Image(systemName: item.icon)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(item.role == .destructive ? .red : .white)
+                                }
                                 
                                 Text(item.title)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(item.role == .destructive ? .sheetTextDestructive : .sheetTextPrimary)
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(item.role == .destructive ? .red : .white)
                                 
                                 Spacer()
                             }
-                            .padding(.vertical, 16)
-                            .padding(.horizontal, 20)
-                            .background(Color.sheetSurface)
+                            .padding(.horizontal, 16)
+                            .frame(height: 56)
+                            .contentShape(Rectangle())
                         }
                         
-                        if item.id != items.last?.id {
-                            Divider()
-                                .background(Color.sheetDivider)
+                        if index < items.count - 1 {
+                            Rectangle()
+                                .fill(Color.premiumCardBorder)
+                                .frame(height: 1)
+                                .padding(.leading, 68)
+                                .padding(.trailing, 16)
                         }
                     }
                 }
-                .background(Color.sheetSurface)
-                .cornerRadius(16)
+                .background(Color.premiumCardBackground)
+                .cornerRadius(20)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.premiumCardBorder, lineWidth: 1)
+                )
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40) // Extra padding for safe area
             }
-            .background(Color.sheetBackground)
-            .cornerRadius(24, corners: [.topLeft, .topRight])
-            .shadow(color: Color.homeBackground.opacity(0.4), radius: 10, x: 0, y: -5)
+            .background(
+                LinearGradient(
+                    colors: [.premiumGradientTop, .premiumGradientBottom],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .cornerRadiusLocal(28, corners: [.topLeft, .topRight])
+            .shadow(color: Color.black.opacity(0.5), radius: 20, x: 0, y: -10)
         }
         .edgesIgnoringSafeArea(.bottom)
     }
@@ -88,48 +107,61 @@ struct CustomActionSheet: View {
             case .video(let video):
                 ZStack(alignment: .bottomTrailing) {
                     ActionSheetThumbnailView(video: video)
-                        .frame(width: 80, height: 50)
-                        .cornerRadius(8)
+                        .frame(width: 90, height: 56)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
                     
                     Text(formatDuration(video.duration))
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(.homeTextPrimary)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 2)
-                        .background(Color.homeBackground.opacity(0.6))
-                        .cornerRadius(3)
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(4)
                         .padding(4)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     ActionSheetHeaderTitleView(video: video)
+                        .font(.system(size: 17, weight: .bold))
                     
                     if video.asset != nil {
                          Text("\(formatDate(video.creationDate))")
-                            .font(.system(size: 12))
-                            .foregroundColor(.homeTextSecondary)
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.5))
                     } else {
                         Text("\(formatDate(video.creationDate)) • \(formatBytes(video.fileSizeBytes))")
-                            .font(.system(size: 12))
-                            .foregroundColor(.homeTextSecondary)
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.5))
                     }
                 }
                 
             case .folder(let folder):
-                Image(systemName: "folder.fill")
-                    .appIconStyle(size: AppDesign.Icons.toolbarSize + 10, color: .homeAccent)
-                    .frame(width: 80, height: 50)
-                    .background(Color.homeCardBackground)
-                    .cornerRadius(8)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.orange.opacity(0.1))
+                        .frame(width: 90, height: 56)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                        )
+                    
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.orange)
+                }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(folder.name)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.homeTextPrimary)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.white)
                     
                     Text("\(folder.videos.count) Videos")
-                        .font(.system(size: 12))
-                        .foregroundColor(.homeTextSecondary)
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.5))
                 }
             }
             Spacer()
@@ -164,7 +196,7 @@ struct ActionSheetHeaderTitleView: View {
     var body: some View {
         Text(resolvedTitle.isEmpty ? video.title : resolvedTitle)
             .font(.system(size: 16, weight: .bold))
-            .foregroundColor(.homeTextPrimary)
+            .foregroundColor(.white)
             .lineLimit(2)
             .onAppear {
                 if video.title == "Loading..." || video.title == VideoItem.titlePlaceholder {
@@ -201,10 +233,10 @@ struct ActionSheetThumbnailView: View {
                     .clipped()
             } else {
                 Rectangle()
-                    .fill(Color.homeCardBackground)
+                    .fill(Color.white.opacity(0.05))
                     .overlay(
                         Image(systemName: "video.fill")
-                            .foregroundColor(.homeTextPrimary.opacity(0.15))
+                            .foregroundColor(.white.opacity(0.15))
                             .font(.system(size: 20))
                     )
             }

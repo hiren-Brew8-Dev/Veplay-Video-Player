@@ -10,10 +10,10 @@ struct FolderCardView: View {
         let padding: CGFloat = 8 // Internal padding to match VideoCardView logic
         let thumbnailSize = size // Fill the calculated grid item size
         
-        VStack(alignment: .leading, spacing: 12) { // Match VideoCardView spacing
+        VStack(alignment: .leading, spacing: 12) {
             // 1. Icon / Preview Section (Mimicking Thumbnail)
             ZStack {
-                Color.homeCardBackground
+                Color.white.opacity(0.05)
                 
                 VStack(spacing: AppDesign.Icons.internalSpacing) {
                     Image(systemName: "folder.fill")
@@ -24,11 +24,15 @@ struct FolderCardView: View {
                         .foregroundColor(.homeTextSecondary)
                 }
             }
-            .frame(width: thumbnailSize - 16, height: thumbnailSize - 16) // Subtracted padding from size (8+8)
+            .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
             .clipped()
-            .cornerRadius(10) // Match VideoCardView thumbnail radius
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+            )
             .padding(.top, 8)
-            .padding(.horizontal, 8) // Equal spacing
+            .padding(.horizontal, 8)
             
             // 2. Bottom Info Bar
             HStack(alignment: .center, spacing: 0) {
@@ -52,19 +56,23 @@ struct FolderCardView: View {
                 .buttonStyle(.scalable)
             }
             .padding(.leading, 12)
-            .padding(.trailing, 0) // Match VideoCardView alignment
+            .padding(.trailing, 0)
             .padding(.bottom, 8)
         }
         .background(
             ZStack {
-                Color.homeCardBackground.opacity(0.4)
+                Color.premiumCardBackground
                 if viewModel?.highlightFolderId == folder.id {
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.homeAccent, lineWidth: 3)
+                        .stroke(Color.orange, lineWidth: 2)
                 }
             }
         )
         .cornerRadius(20)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.premiumCardBorder, lineWidth: 1)
+        )
         .scaleEffect(viewModel?.highlightFolderId == folder.id ? 1.05 : 1.0)
         .animation(.spring(), value: viewModel?.highlightFolderId)
         .contentShape(RoundedRectangle(cornerRadius: 20))

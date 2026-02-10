@@ -37,14 +37,21 @@ struct VideoRowView: View {
                     Image(uiImage: thumb)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 100, height: 60)
+                        .frame(width: 100, height: 62)
                         .clipped()
-                        .cornerRadius(8)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
                 } else {
-                    Rectangle()
-                        .fill(Color.homeCardBackground)
-                        .frame(width: 100, height: 60)
-                        .cornerRadius(8)
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.white.opacity(0.05))
+                        .frame(width: 100, height: 62)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
                 }
 
                 Text(video.formattedDuration)
@@ -63,8 +70,7 @@ struct VideoRowView: View {
                     .lineLimit(1)
 
                 HStack(spacing: 8) {
-                    Text(video.formattedDuration) // The "time"
-                    Text("•")
+                 
                     Text(formattedDate(video.creationDate))
                 }
                 .font(.system(size: 12))
@@ -91,19 +97,8 @@ struct VideoRowView: View {
                 .buttonStyle(.scalable)
             }
         }
-        .padding(.leading, 16)
-        .padding(.trailing, 16) // Exactly 16 to match header
-        .padding(.vertical, 8)
-        .background(
-            ZStack {
-                Color.homeBackground
-                if viewModel?.highlightVideoId == video.id {
-                    Color.homeAccent.opacity(0.1)
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.homeAccent, lineWidth: 2)
-                }
-            }
-        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .contentShape(Rectangle())
         .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.02 : 1.0)
         .animation(.spring(), value: viewModel?.highlightVideoId)

@@ -25,19 +25,28 @@ struct VideoCardView: View {
                     Image(uiImage: thumb)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: thumbnailSize - 16, height: thumbnailSize - 16) // Subtracted padding from size
+                        .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
                         .clipped()
-                        .cornerRadius(10)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
                     
                 } else {
                     ZStack {
-                        Color.homeCardBackground
+                        Color.white.opacity(0.05)
                         Image(systemName: "video.fill")
-                            .appSecondaryIconStyle(size: AppDesign.Icons.largeIconSize - 10, color: .homeTextPrimary.opacity(0.15))
+                            .font(.system(size: 30))
+                            .foregroundColor(.white.opacity(0.2))
                     }
                     .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
                     .clipped()
-                    .cornerRadius(10)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
                 }
                 
                 // Duration Overlay
@@ -46,9 +55,9 @@ struct VideoCardView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(Color.homeBackground.opacity(0.7))
+                    .background(Color.black.opacity(0.7))
                     .cornerRadius(4)
-                    .padding(14) // Adjusted for thumbnail internal padding
+                    .padding(14)
                 
                 // Selection Overlay
                 if isSelectionMode {
@@ -123,21 +132,25 @@ struct VideoCardView: View {
         }
         .background(
             ZStack {
-                Color.homeCardBackground.opacity(0.4)
+                Color.premiumCardBackground
                 if viewModel?.highlightVideoId == video.id {
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.homeAccent, lineWidth: 3)
+                        .stroke(Color.orange, lineWidth: 2)
                 }
             }
         )
         .cornerRadius(20)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.premiumCardBorder, lineWidth: 1)
+        )
         .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.05 : 1.0)
         .animation(.spring(), value: viewModel?.highlightVideoId)
         .onAppear {
             loadThumbnail()
             loadTitle()
         }
-        .contentShape(RoundedRectangle(cornerRadius: 20)) // Fix: Constrain button tap area strictly to card shape
+        .contentShape(RoundedRectangle(cornerRadius: 20))
     }
     
     // MARK: - Helpers

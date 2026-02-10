@@ -78,7 +78,12 @@ struct FolderDetailView: View {
     
     var body: some View {
         ZStack {
-            Color.homeBackground.edgesIgnoringSafeArea(.all)
+            LinearGradient(
+                colors: [.premiumGradientTop, .premiumGradientBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
                 // Header
@@ -200,20 +205,37 @@ struct FolderDetailView: View {
     
     var standardHeader: some View {
         HStack {
-            StandardIconButton(icon: "chevron.left", action: {
+            Button(action: {
                 presentationMode.wrappedValue.dismiss()
-            })
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.premiumCircleBackground)
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                }
+            }
             
             Text(folder.name)
-                .font(.headline)
-                .foregroundColor(.homeTextPrimary)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.white)
             
             Spacer()
             
             HStack(spacing: 12) {
                 Button(action: { showSearch = true }) {
-                    Image(systemName: "magnifyingglass")
-                        .appIconStyle()
+                    ZStack {
+                        Circle()
+                            .fill(Color.premiumCircleBackground)
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                    }
                 }
                 .navigationDestination(isPresented: $showSearch) {
                     SearchView(viewModel: viewModel, contextTitle: folder.name, initialVideos: displayVideos)
@@ -225,11 +247,15 @@ struct FolderDetailView: View {
                     }
                     Divider()
                     Button(action: { isGridView = true }) {
-                        Label("Grid", systemImage: isGridView ? "checkmark" : "square.grid.2x2")
+                        Label("Grid", systemImage: "square.grid.2x2")
                     }
+                    .accentColor(isGridView ? .orange : .white)
+                    
                     Button(action: { isGridView = false }) {
-                        Label("List", systemImage: !isGridView ? "checkmark" : "list.bullet")
+                        Label("List", systemImage: "list.bullet")
                     }
+                    .accentColor(!isGridView ? .orange : .white)
+                    
                     Divider()
                     Button(action: { showSortSheet = true }) {
                         Label("Sort", systemImage: "arrow.up.arrow.down")
@@ -237,19 +263,21 @@ struct FolderDetailView: View {
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(Color.clear)
-                            .frame(width: 32, height: 32)
+                            .fill(Color.premiumCircleBackground)
+                            .frame(width: 40, height: 40)
                         
                         Image(systemName: "ellipsis")
                             .rotationEffect(.degrees(90))
-                            .appIconStyle()
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
                     }
                 }
             }
         }
         .padding(.horizontal)
         .padding(.bottom, 10)
-        .background(Color.homeBackground)
+        .background(Color.clear)
+    
     }
     
     var selectionHeader: some View {
@@ -263,16 +291,16 @@ struct FolderDetailView: View {
             }) {
                 ZStack {
                     Circle()
-                        .stroke(Color.homeTextPrimary, lineWidth: 1.5)
+                        .stroke(isAllSelected ? Color.orange : Color.white.opacity(0.3), lineWidth: 1.5)
                         .frame(width: 24, height: 24)
                     
                     if isAllSelected {
                         Circle()
-                            .fill(Color.homeAccent)
-                            .frame(width: AppDesign.Icons.selectionIconSize, height: AppDesign.Icons.selectionIconSize)
+                            .fill(Color.orange)
+                            .frame(width: 14, height: 14)
                         Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.homeTextPrimary)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.white)
                     }
                 }
                 .padding(10)
@@ -281,8 +309,8 @@ struct FolderDetailView: View {
             Spacer()
             
             Text("Selected (\(selectedVideoIds.count)/\(displayVideos.count))")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.homeTextPrimary)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(.white)
             
             Spacer()
             
@@ -290,13 +318,14 @@ struct FolderDetailView: View {
                 viewModel.isSelectionMode = false
                 selectedVideoIds.removeAll()
             }
-            .font(.system(size: 16, weight: .bold))
-            .foregroundColor(.homeAccent)
+            .font(.system(size: 15, weight: .bold))
+            .foregroundColor(.orange)
             .padding(.trailing, 10)
         }
-        .padding(.horizontal, 5)
+        .padding(.horizontal, 8)
         .padding(.bottom, 10)
-        .background(Color.homeBackground)
+        .background(Color.clear)
+    
     }
     
     private var gridView: some View {
@@ -373,25 +402,69 @@ struct FolderDetailView: View {
                 if folder.url == nil && (sortOption == .dateAsc || sortOption == .dateDesc) {
                     // ALBUM MODE: Show Date Sections
                     ForEach(groupedVideos, id: \.id) { section in
-                        Section(header: sectionHeader(for: section.date)) {
-                            ForEach(section.videos, id: \.id) { video in
-                                videoRow(liveVideo(video))
+                        Section {
+                            VStack(spacing: 0) {
+                                ForEach(section.videos.indices, id: \.self) { index in
+                                    videoRow(liveVideo(section.videos[index]))
+                                    
+                                    if index < section.videos.count - 1 {
+                                        Divider()
+                                            .background(Color.white.opacity(0.1))
+                                            .padding(.leading, 128)
+                                    }
+                                }
                             }
+                            .background(Color.premiumCardBackground)
+                            .cornerRadius(20)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color.premiumCardBorder, lineWidth: 1)
+                            )
+                            .padding(.horizontal, 20)
+                        } header: {
+                            sectionHeader(for: section.date)
                         }
                     }
                 } else {
-                    // FOLDER MODE: Flat List
-                    Group {
-                        if !viewModel.isSelectionMode && folder.url != nil {
-                            AddVideoRowView(action: {
-                                showImportOptions = true
-                            })
-                            .padding(.vertical, 8)
+                    // FOLDER MODE: Import New section
+                    if !viewModel.isSelectionMode && folder.url != nil {
+                        Section {
+                            VStack(spacing: 0) {
+                                AddVideoRowView(action: {
+                                    showImportOptions = true
+                                })
+                            }
+                            .background(Color.premiumCardBackground)
+                            .cornerRadius(20)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color.premiumCardBorder, lineWidth: 1)
+                            )
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
                         }
-                        
-                        ForEach(sortedVideos, id: \.id) { video in
-                            videoRow(liveVideo(video))
+                    }
+                    
+                    // Video list - ALL in ONE section card
+                    Section {
+                        VStack(spacing: 0) {
+                            ForEach(sortedVideos.indices, id: \.self) { index in
+                                videoRow(liveVideo(sortedVideos[index]))
+                                
+                                if index < sortedVideos.count - 1 {
+                                    Divider()
+                                        .background(Color.white.opacity(0.1))
+                                        .padding(.leading, 128)
+                                }
+                            }
                         }
+                        .background(Color.premiumCardBackground)
+                        .cornerRadius(20)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.premiumCardBorder, lineWidth: 1)
+                        )
+                        .padding(.horizontal, 20)
                     }
                 }
             }
@@ -404,20 +477,16 @@ struct FolderDetailView: View {
     
     private func sectionHeaderLabel(_ text: String) -> some View {
         HStack {
-            Text(text)
-                .font(.system(size: 14, weight: .semibold))
+            Text(text.uppercased())
+                .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.homeTextSecondary)
-                .padding(.vertical, 10)
-                .padding(.horizontal)
+                .padding(.horizontal, 4)
             Spacer()
         }
-        .background(Color.homeBackground)
-        .overlay(
-            VStack {
-                Spacer()
-                Divider().background(Color.sheetDivider)
-            }
-        )
+        .padding(.top, 24)
+        .padding(.bottom, 12)
+        .padding(.horizontal, 20)
+        .background(Color.clear)
     }
     
     private func gridVideoItem(_ video: VideoItem) -> some View {
@@ -481,9 +550,23 @@ struct FolderDetailView: View {
             }
             .padding(.top, 16)
             .padding(.bottom, 34) // Explicit safe area space
-            .background(Color.sheetSurface)
+            .background(
+                LinearGradient(
+                    colors: [.premiumGradientTop, .premiumGradientBottom],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay(
+                VStack {
+                    Rectangle()
+                        .fill(Color.premiumCardBorder)
+                        .frame(height: 1)
+                    Spacer()
+                }
+            )
             .clipShape(RoundedCorner(radius: 32, corners: [.topLeft, .topRight]))
-            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: -5)
+            .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: -5)
         }
         .ignoresSafeArea(.all, edges: .bottom)
         .transition(.move(edge: .bottom))
@@ -491,12 +574,20 @@ struct FolderDetailView: View {
     
     private func selectionBarItem(icon: String, title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: icon)
-                    .appIconStyle(size: AppDesign.Icons.actionSheetIconSize, weight: .semibold, color: .homeAccent)
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(selectedVideoIds.isEmpty ? Color.white.opacity(0.05) : Color.orange.opacity(0.1))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(selectedVideoIds.isEmpty ? .white.opacity(0.3) : .orange)
+                }
+                
                 Text(title)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.homeTextPrimary)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(selectedVideoIds.isEmpty ? .white.opacity(0.3) : .white)
             }
             .frame(maxWidth: .infinity)
         }

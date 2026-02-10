@@ -13,43 +13,41 @@ struct CastDevicePickerView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Drag Handle (only show in portrait)
+            // Drag Handle
             if !isLandscape {
                 Capsule()
-                    .fill(Color.sheetDivider)
-                    .frame(width: 36, height: 5)
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
+                    .fill(Color.white.opacity(0.3))
+                    .frame(width: 40, height: 5)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
             }
             
             // Header
             HStack {
                 Button(action: onBack) {
-                    Image(systemName: isLandscape ? "xmark" : "chevron.left")
+                    Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.sheetTextPrimary)
-                        .padding(10)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.premiumCircleBackground)
+                        .clipShape(Circle())
                 }
                 
                 Spacer()
                 
                 Text("Device List")
-                    .font(.headline)
-                    .foregroundColor(.sheetTextPrimary)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
                 
                 Spacer()
                 
                 // Invisible spacer for symmetry
-                Image(systemName: isLandscape ? "xmark" : "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.clear)
-                    .padding(10)
+                Color.clear
+                    .frame(width: 44, height: 44)
             }
-            
-            .padding(.top, isLandscape ? 10 : 0)
-            
-            Divider()
-                .background(Color.sheetDivider)
+            .padding(.horizontal, 20)
+            .padding(.top, isLandscape ? 16 : 0)
+            .padding(.bottom, 20)
             
             // Content
             if showPermissionView && !hasShownPermissionPrompt {
@@ -63,15 +61,21 @@ struct CastDevicePickerView: View {
         
         .padding(.bottom, 0)
         .applyIf(isLandscape) { $0.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top) }
-        .applyIf(!isLandscape) { $0.padding(.bottom, 20) } // Safe area padding for portrait
-        .background(Color.sheetBackground)
+        .applyIf(!isLandscape) { $0.padding(.bottom, 20) }
+        .background(
+            LinearGradient(
+                colors: [.premiumGradientTop, .premiumGradientBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
         .applyIf(isLandscape) { view in
-            view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
+            view.cornerRadiusLocal(24, corners: [.topLeft, .bottomLeft])
         }
         .applyIf(!isLandscape) { view in
-            view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
+            view.cornerRadiusLocal(24, corners: [.topLeft, .topRight])
         }
-        .shadow(color: Color.black.opacity(0.5), radius: 10, x: isLandscape ? -5 : 0, y: isLandscape ? 0 : -5)
+        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: isLandscape ? 0 : -10)
         .onAppear {
             if hasShownPermissionPrompt {
                 showPermissionView = false
@@ -180,22 +184,26 @@ struct CastDevicePickerView: View {
             VStack(spacing: 16) {
                 // Top info card - fixed height
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.sheetSurface)
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.premiumCardBackground)
                         .frame(height: 140)
                     
                     VStack(spacing: 12) {
                         Image(systemName: "tv.and.mediabox.fill")
                             .font(.system(size: 50))
-                            .foregroundColor(.themeSecondary)
+                            .foregroundColor(.white.opacity(0.2))
                         
                         Text("Make sure your phone and TV are connected to the same WiFi network.")
-                            .font(.system(size: 14))
-                            .foregroundColor(.themeSecondary)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white.opacity(0.6))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 40)
                     }
                 }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.premiumCardBorder, lineWidth: 1)
+                )
                 .padding(.horizontal, 20)
                 
                 // Show loader while scanning
@@ -257,7 +265,11 @@ struct CastDevicePickerView: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
                     .frame(height: 70)
-                    .background(Color.sheetSurface)
+                    .background(Color.premiumCardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.premiumCardBorder, lineWidth: 1)
+                    )
                     .cornerRadius(12)
                 }
                 .padding(.horizontal, 20)
@@ -295,9 +307,15 @@ struct CastDevicePickerView: View {
                     .padding(.top, 4)
             }
         }
-        .padding()
-        .background(Color.homeAccent.opacity(0.1))
-        .cornerRadius(12)
-        .padding(.horizontal)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.orange.opacity(0.1))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+        )
+        .padding(.horizontal, 20)
     }
 }

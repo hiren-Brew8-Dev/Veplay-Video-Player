@@ -95,9 +95,12 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 content()
             }
-            .background(Color.homeCardBackground)
+            .background(Color.premiumCardBackground)
             .cornerRadius(20)
-            .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.premiumCardBorder, lineWidth: 1)
+            )
         }
     }
 

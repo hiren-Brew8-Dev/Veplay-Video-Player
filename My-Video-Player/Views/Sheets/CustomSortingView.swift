@@ -18,14 +18,10 @@ struct CustomSortingView: View {
     // Computed property to filter criteria
     var availableCriteria: [SortCriteria] {
         if title == "History" {
-            // "2 sort options only... length"
             return [.date, .length]
         } else if title == "Album" || title == "Gallery" {
-             // GALLERY PHOTOS (PHAssets) usually don't have easily accessible file size without extra requests
-             // The user explicitly asked to NOT have size sorting for gallery photos.
             return [.date, .name, .length]
         } else {
-            // "for imported videos show the 4th also by size"
             return [.date, .name, .length, .size]
         }
     }
@@ -48,72 +44,94 @@ struct CustomSortingView: View {
         VStack(spacing: 0) {
             // Drag Handle
             Capsule()
-                .fill(Color.homeTextSecondary.opacity(0.4))
-                .frame(width: 36, height: 5)
-                .padding(.top, 10)
-                .padding(.bottom, 10)
+                .fill(Color.white.opacity(0.3))
+                .frame(width: 40, height: 5)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
             
             // Header
             HStack {
                 Text("Sort by")
-                    .font(.headline)
-                    .foregroundColor(.homeTextPrimary)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
                 
                 Spacer()
                 
-                Button("Done") {
+                Button(action: {
                     applySort()
                     presentationMode.wrappedValue.dismiss()
+                }) {
+                    Text("Done")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.orange.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                        )
+                        .cornerRadius(20)
                 }
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(.homeTint)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.homeTextPrimary.opacity(0.1))
-                .cornerRadius(20)
             }
-            .padding(.horizontal)
-            .padding(.bottom, 16)
+            .padding(.horizontal, 22)
+            .padding(.bottom, 24)
             
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     // Criteria Section
                     VStack(spacing: 0) {
-                        ForEach(availableCriteria, id: \.self) { criteria in
+                        ForEach(Array(availableCriteria.enumerated()), id: \.element.self) { index, criteria in
                             sortRow(title: criteria.rawValue, isSelected: selectedCriteria == criteria) {
                                 withAnimation {
                                     selectedCriteria = criteria
                                 }
                             }
-                            if criteria != availableCriteria.last {
-                                Divider().background(Color.sheetDivider).padding(.leading, 16)
+                            if index < availableCriteria.count - 1 {
+                                divider
                             }
                         }
                     }
-                    .background(Color.sheetSurface)
+                    .background(Color.premiumCardBackground)
                     .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.premiumCardBorder, lineWidth: 1)
+                    )
                     
                     // Order Section
                     VStack(spacing: 0) {
-                        ForEach(SortOrder.allCases, id: \.self) { order in
+                        ForEach(Array(SortOrder.allCases.enumerated()), id: \.element.self) { index, order in
                             sortRow(title: order.title(for: selectedCriteria), isSelected: selectedOrder == order) {
                                 withAnimation {
                                     selectedOrder = order
                                 }
                             }
-                            if order != SortOrder.allCases.last {
-                                Divider().background(Color.sheetDivider).padding(.leading, 16)
+                            if index < SortOrder.allCases.count - 1 {
+                                divider
                             }
                         }
                     }
-                    .background(Color.sheetSurface)
+                    .background(Color.premiumCardBackground)
                     .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.premiumCardBorder, lineWidth: 1)
+                    )
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
                 .padding(.bottom, 40)
             }
         }
-        .background(Color.sheetBackground.edgesIgnoringSafeArea(.all))
+        .background(
+            LinearGradient(
+                colors: [.premiumGradientTop, .premiumGradientBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .cornerRadiusLocal(28, corners: [.topLeft, .topRight])
+        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: -10)
         .onAppear {
             mapCurrentState()
         }
@@ -123,25 +141,32 @@ struct CustomSortingView: View {
         Button(action: action) {
             HStack {
                 Text(title)
-                    .foregroundColor(.homeTextPrimary)
-                    .font(.system(size: 15))
+                    .foregroundColor(isSelected ? .orange : .white)
+                    .font(.system(size: 16, weight: isSelected ? .semibold : .medium))
                 Spacer()
-                ZStack {
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.orange)
+                } else {
                     Circle()
-                        .stroke(isSelected ? Color.homeAccent : Color.homeTextSecondary.opacity(0.5), lineWidth: 2)
-                        .frame(width: 22, height: 22)
-                    if isSelected {
-                        Circle()
-                            .fill(Color.homeAccent)
-                            .frame(width: 12, height: 12)
-                    }
+                        .stroke(Color.white.opacity(0.2), lineWidth: 2)
+                        .frame(width: 20, height: 20)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 16)
+            .frame(height: 56)
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.premiumCardBorder)
+            .frame(height: 1)
+            .padding(.horizontal, 16)
     }
     
     func mapCurrentState() {

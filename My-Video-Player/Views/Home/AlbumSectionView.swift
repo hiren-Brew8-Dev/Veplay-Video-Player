@@ -17,22 +17,22 @@ struct AlbumSectionView: View {
                     VStack(spacing: 24) {
                         ZStack {
                             Circle()
-                                .fill(Color.homeCardBackground.opacity(0.5))
+                                .fill(Color.white.opacity(0.05))
                                 .frame(width: 100, height: 100)
                             
                             Image(systemName: "photo.on.rectangle.angled")
                                 .font(.system(size: 44))
-                                .foregroundColor(.homeTextSecondary)
+                                .foregroundColor(.white.opacity(0.2))
                         }
                         
                         VStack(spacing: 8) {
                             Text("No Gallery Albums Found")
                                 .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.homeTextPrimary)
+                                .foregroundColor(.white)
                             
                             Text("Grant photo access in settings to view\nyour device's video albums.")
                                 .font(.system(size: 14))
-                                .foregroundColor(.homeTextSecondary)
+                                .foregroundColor(.white.opacity(0.5))
                                 .multilineTextAlignment(.center)
                                 .lineSpacing(4)
                         }
@@ -74,12 +74,12 @@ struct AlbumSectionView: View {
                             .buttonStyle(.scalable)
                         }
                     }
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, GridLayout.horizontalPadding)
                     .padding(.bottom, 100)
                 }
             }
         }
-        .background(Color.homeBackground)
+        .background(Color.clear)
         .ignoresSafeArea(edges: .bottom)
     }
     
@@ -100,48 +100,68 @@ struct AlbumCardView: View {
 
     var body: some View {
         let size = GridLayout.itemSize
-        let padding: CGFloat = 8
-        let thumbnailSize = size - (padding * 2)
+        let padding: CGFloat = 0
+        let thumbnailSize = size
         
-        VStack(alignment: .leading, spacing: 10) {
-
-            // 🔥 VIDEO CARD STYLE THUMBNAIL
+        VStack(alignment: .leading, spacing: 12) {
+            // 1. Thumbnail Section
             ZStack(alignment: .bottomTrailing) {
-
                 if let image = thumbnail {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: thumbnailSize, height: thumbnailSize)
+                        .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
                         .clipped()
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
                 } else {
                     ZStack {
-                        Color.homeCardBackground
+                        Color.white.opacity(0.05)
                         Image(systemName: "video.fill")
-                            .appSecondaryIconStyle(size: 28, color: .homeTextPrimary.opacity(0.2))
+                            .font(.system(size: 30))
+                            .foregroundColor(.white.opacity(0.2))
                     }
-                    .frame(width: thumbnailSize, height: thumbnailSize)
+                    .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
                     .clipped()
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
                 }
             }
-            .cornerRadius(12)
-
-            // Info section (same spacing style)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(albumTitle)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.homeTextPrimary)
-                    .lineLimit(1)
-
-                Text("\(videoCount) Videos")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.homeTextSecondary)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 8)
+            .padding(.horizontal, 8)
+            
+            // 2. Info Section
+            HStack(alignment: .center, spacing: 0) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(albumTitle)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.homeTextPrimary)
+                        .lineLimit(1)
+                    
+                    Text("\(videoCount) Videos")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.homeTextSecondary)
+                }
+                
+                Spacer()
             }
-            .padding(.horizontal, 4)
+            .padding(.leading, 12)
+            .padding(.trailing, 0)
+            .padding(.bottom, 8)
         }
-        .padding(8)
-        .background(Color.homeCardBackground.opacity(0.4))
+        .background(Color.premiumCardBackground)
         .cornerRadius(20)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.premiumCardBorder, lineWidth: 1)
+        )
         .onAppear {
             fetchAlbumInfo()
         }

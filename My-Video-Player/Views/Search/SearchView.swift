@@ -30,7 +30,14 @@ struct SearchView: View {
             }
             .scrollDismissesKeyboard(.immediately)
         }
-        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
+        .background(
+            LinearGradient(
+                colors: [.premiumGradientTop, .premiumGradientBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .edgesIgnoringSafeArea(.all)
+        )
         .navigationBarHidden(true)
         .onAppear {
             viewModel.isTabBarHidden = true
@@ -48,22 +55,36 @@ struct SearchView: View {
                 viewModel.persistSearchKeyword(trimmedText)
             }
         }
-    }
     
+    
+    }
+
     private var searchBarHeader: some View {
         HStack(spacing: 12) {
-            StandardIconButton(icon: "chevron.left", action: {
+            Button(action: {
                 presentationMode.wrappedValue.dismiss()
-            })
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.premiumCircleBackground)
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                }
+            }
             
             HStack {
                 Image(systemName: "magnifyingglass")
-                    .appSecondaryIconStyle(size: AppDesign.Icons.rowIconSize)
+                    .font(.system(size: 16))
+                    .foregroundColor(.white.opacity(0.4))
                 
                 TextField("Keyword of \(contextTitle)", text: $viewModel.searchText)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .foregroundColor(.homeTextPrimary)
+                    .foregroundColor(.white)
                     .focused($isSearchFocused)
+                    .accentColor(.orange)
                     .onSubmit {
                         if !viewModel.searchText.isEmpty {
                             viewModel.persistSearchKeyword(viewModel.searchText)
@@ -75,18 +96,24 @@ struct SearchView: View {
                         viewModel.searchText = ""
                     }) {
                         Image(systemName: "xmark.circle.fill")
-                            .appSecondaryIconStyle(size: AppDesign.Icons.rowIconSize)
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.4))
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color.black.opacity(0.3))
-            .cornerRadius(20)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(22)
+            .overlay(
+                RoundedRectangle(cornerRadius: 22)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
+            )
         }
         .padding(.horizontal)
-        .padding(.vertical, 10)
-        .background(Color.homeBackground)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+        .background(Color.clear)
     }
     
     private var historySection: some View {
@@ -101,11 +128,15 @@ struct SearchView: View {
                 Button(action: {
                     viewModel.clearSearchHistory()
                 }) {
-                    Image(systemName: "trash")
-                        .appSecondaryIconStyle(size: AppDesign.Icons.rowIconSize)
-                        .padding(8)
-                        .background(Color.homeCardBackground)
-                        .clipShape(Circle())
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.05))
+                            .frame(width: 32, height: 32)
+                        
+                        Image(systemName: "trash")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.6))
+                    }
                 }
             }
             .padding(.horizontal)
@@ -121,12 +152,16 @@ struct SearchView: View {
                     isSearchFocused = false
                 }) {
                     Text(keyword)
-                        .font(.system(size: 14))
-                        .foregroundColor(.homeTextPrimary)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(Color.homeCardBackground)
-                        .cornerRadius(8)
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                        )
                 }
             }
             .padding(.horizontal)
@@ -161,10 +196,19 @@ struct SearchView: View {
             if filtered.isEmpty {
                 VStack(spacing: 20) {
                     Spacer().frame(height: 100)
-                    Image(systemName: "magnifyingglass")
-                        .appSecondaryIconStyle(size: 60, color: .homeTextSecondary.opacity(0.3))
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.05))
+                            .frame(width: 100, height: 100)
+                        
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 44))
+                            .foregroundColor(.white.opacity(0.2))
+                    }
+                    
                     Text("No results found for \"\(viewModel.searchText)\"")
-                        .foregroundColor(.homeTextSecondary)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white.opacity(0.5))
                 }
                 .frame(maxWidth: .infinity)
             } else {

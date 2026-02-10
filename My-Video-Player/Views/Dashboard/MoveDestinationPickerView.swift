@@ -97,19 +97,7 @@ struct MoveDestinationPickerView: View {
                     
                     // Photos Library Row
                     if viewModel.sourceAlbumIdentifier != nil || viewModel.sourceURL != nil {
-                        /*
-                        destinationRow(
-                            title: "Photos Library",
-                            subtitle: selectionHasIncompatible ? "Incompatible videos found" : nil,
-                            icon: "photo.on.rectangle.angled",
-                            iconColor: .homeAccent,
-                            isWarning: selectionHasIncompatible,
-                            action: {
-                                viewModel.pasteVideosToGallery(album: nil)
-                                dismiss()
-                            }
-                        )
-                         */
+                       
                         
                         if !otherAlbums.isEmpty {
                             Divider().background(Color.sheetDivider).padding(.leading, 56)

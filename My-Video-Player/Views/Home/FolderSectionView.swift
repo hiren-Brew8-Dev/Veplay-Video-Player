@@ -28,23 +28,23 @@ struct FolderSectionView: View {
                         VStack(spacing: 24) {
                             ZStack {
                                 Circle()
-                                    .fill(Color.homeCardBackground.opacity(0.5))
+                                    .fill(Color.white.opacity(0.05))
                                     .frame(width: 100, height: 100)
                                 
                                 Image(systemName: "folder.badge.plus")
                                     .font(.system(size: 40))
-                                    .foregroundColor(.homeTextSecondary)
+                                    .foregroundColor(.white.opacity(0.2))
                                     .offset(x: 2) // Optical balance
                             }
                             
                             VStack(spacing: 8) {
                                 Text("No Folders Yet")
                                     .font(.system(size: 20, weight: .bold))
-                                    .foregroundColor(.homeTextPrimary)
+                                    .foregroundColor(.white)
                                 
                                 Text("Create folders to organize your videos\nand keep your library tidy.")
                                     .font(.system(size: 14))
-                                    .foregroundColor(.homeTextSecondary)
+                                    .foregroundColor(.white.opacity(0.5))
                                     .multilineTextAlignment(.center)
                                     .lineSpacing(4)
                             }
@@ -116,7 +116,7 @@ struct FolderSectionView: View {
                 }
             }
             
-            .background(Color.homeBackground)
+            .background(Color.clear)
             .alert("Rename Folder", isPresented: $showRenameAlert) {
                 TextField("New Name", text: $newFolderName)
                 Button("Cancel", role: .cancel) {}

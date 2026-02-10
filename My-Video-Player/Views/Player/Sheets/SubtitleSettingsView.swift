@@ -7,93 +7,44 @@ struct SubtitleSettingsView: View {
     let isLandscape: Bool
     var onBack: (() -> Void)? = nil
     
-    @State private var showEditSheet = false
     @State private var showingFileImporter = false
     
     var body: some View {
         VStack(spacing: 0) {
             // Drag Handle
-            // Drag Handle
             if !isLandscape {
                 Capsule()
-                    .fill(Color.homeTextSecondary.opacity(0.4))
-                    .frame(width: 36, height: 5)
-                    .padding(.top, 10)
+                    .fill(Color.white.opacity(0.3))
+                    .frame(width: 40, height: 5)
+                    .padding(.top, 12)
                     .padding(.bottom, 20)
             }
             
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    if let onBack = onBack {
-                        StandardIconButton(icon: "chevron.left", action: onBack)
-                    } else {
-                         // Invisible spacer to balance if no back button (portrait usually has back)
-                         StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
-                    }
-                    
-                    Spacer()
-                    
-                    Text("Subtitle Track")
-                        .font(.headline)
-                        .foregroundColor(.homeTextPrimary)
-                    
-                    Spacer()
-                    
-                    // Invisible spacer to balance
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.clear)
-                        .padding(10)
+            header
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    importCard
+                    tracksCard
                 }
-                .padding(.horizontal)
-                
-                Divider()
-                    .background(Color.gray.opacity(0.3))
-                
-                // Actions
-                actionGridView
-                    .padding(.vertical, 14) // Spacing around grid
-                
-                Divider()
-                    .background(Color.gray.opacity(0.3))
-                
-                // Tracks
-                ScrollView {
-                    VStack(spacing: 0) {
-                        trackRow(title: "Disable", isSelected: subtitleManager.selectedTrackIndex == -1) {
-                            subtitleManager.selectTrack(at: -1)
-                        }
-                        
-                        if !subtitleManager.availableTracks.isEmpty {
-                            Divider().background(Color.sheetDivider).padding(.leading, 16)
-                        }
-                        
-                        ForEach(Array(subtitleManager.availableTracks.enumerated()), id: \.element.id) { index, track in
-                            trackRow(title: track.displayName, isSelected: subtitleManager.selectedTrackIndex == index) {
-                                subtitleManager.selectTrack(at: index)
-                            }
-                            if index < subtitleManager.availableTracks.count - 1 {
-                                Divider().background(Color.sheetDivider).padding(.leading, 16)
-                            }
-                        }
-                    }
-                }
-                .frame(maxHeight: isLandscape ? .infinity : 250) // Consistent max height
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
             }
         }
-        .background(Color.sheetBackground)
+        .background(
+            LinearGradient(
+                colors: [.premiumGradientTop, .premiumGradientBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
         .applyIf(isLandscape) { view in
-            view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
+            view.cornerRadiusLocal(24, corners: [.topLeft, .bottomLeft])
         }
         .applyIf(!isLandscape) { view in
-            view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
+            view.cornerRadiusLocal(24, corners: [.topLeft, .topRight])
         }
-        .shadow(color: Color.black.opacity(0.5), radius: 10, x: isLandscape ? -5 : 0, y: isLandscape ? 0 : -5)
-        .sheet(isPresented: $showEditSheet) {
-            SubtitleEditView(isPresented: $showEditSheet, subtitleManager: subtitleManager)
-                .presentationDetents([.fraction(0.5)])
-        }
+        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: isLandscape ? 0 : -10)
         .fileImporter(
             isPresented: $showingFileImporter,
             allowedContentTypes: [UTType.plainText, UTType(filenameExtension: "srt")!, UTType.text],
@@ -108,64 +59,135 @@ struct SubtitleSettingsView: View {
         }
     }
     
-    var actionGridView: some View {
+    private var header: some View {
         HStack {
-            Spacer()
-            actionButton(title: "Quick Import", icon: "doc.badge.arrow.up") {
-                showingFileImporter = true
+            Button(action: {
+                if let onBack = onBack {
+                    onBack()
+                } else {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isPresented = false
+                    }
+                }
+            }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Color.premiumCircleBackground)
+                    .clipShape(Circle())
             }
+            
             Spacer()
+            
+            Text("Subtitle Track")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.white)
+            
+            Spacer()
+            
+            // Invisible spacer to balance
+            Color.clear
+                .frame(width: 44, height: 44)
         }
+        .padding(.horizontal, 20)
+        .padding(.top, isLandscape ? 16 : 0)
+        .padding(.bottom, 20)
     }
     
-    func actionButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 22))
-                    .foregroundColor(.white)
+    private var importCard: some View {
+        Button(action: { showingFileImporter = true }) {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.15))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: "doc.badge.arrow.up")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.orange)
+                }
                 
-                Text(title)
-                    .font(.system(size: 11)) 
-                    .foregroundColor(.homeTextSecondary)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .multilineTextAlignment(.center)
-            }
-        }
-    }
-    
-    func trackRow(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack {
-                Text(title)
-                    .font(.system(size: 15))
-                    .foregroundColor(.white)
-                    .padding(.leading, 16)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Quick Import")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("Select a subtitle file from storage")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.6))
+                }
                 
                 Spacer()
                 
-                ZStack {
-                    Circle()
-                        .stroke(isSelected ? Color.homeAccent : Color.homeTextSecondary.opacity(0.5), lineWidth: 2)
-                        .frame(width: 22, height: 22)
-                    
-                    if isSelected {
-                        Circle()
-                            .fill(Color.homeAccent)
-                            .frame(width: 12, height: 12)
-                    }
-                }
-                .padding(.trailing, 16)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white.opacity(0.3))
             }
-            .frame(height: 54) // Matched to Audio Sheet (was 50)
+            .padding(16)
+            .background(Color.premiumCardBackground)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.premiumCardBorder, lineWidth: 1)
+            )
+        }
+    }
+    
+    private var tracksCard: some View {
+        VStack(spacing: 0) {
+            trackRow(title: "Disable", isSelected: subtitleManager.selectedTrackIndex == -1) {
+                subtitleManager.selectTrack(at: -1)
+            }
+            
+            divider
+            
+            ForEach(Array(subtitleManager.availableTracks.enumerated()), id: \.element.id) { index, track in
+                trackRow(title: track.name, isSelected: subtitleManager.selectedTrackIndex == index) {
+                    subtitleManager.selectTrack(at: index)
+                }
+                
+                if index < subtitleManager.availableTracks.count - 1 {
+                    divider
+                }
+            }
+        }
+        .background(Color.premiumCardBackground)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.premiumCardBorder, lineWidth: 1)
+        )
+    }
+    
+    private func trackRow(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 15, weight: isSelected ? .semibold : .medium))
+                    .foregroundColor(isSelected ? .orange : .white)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.orange)
+                } else {
+                    Circle()
+                        .stroke(Color.white.opacity(0.2), lineWidth: 2)
+                        .frame(width: 20, height: 20)
+                }
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 56)
             .contentShape(Rectangle())
         }
     }
-}
-
-extension SubtitleTrack {
-    var displayName: String {
-        if name.isEmpty { return "Unknown Track" }
-        return name
+    
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.premiumCardBorder)
+            .frame(height: 1)
+            .padding(.horizontal, 16)
     }
 }

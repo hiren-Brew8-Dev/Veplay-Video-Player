@@ -89,45 +89,43 @@ struct HomeView: View {
     private var topTabBar: some View {
         HStack(spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 25) {
+                HStack(spacing: 30) {
                     ForEach(tabs, id: \.self) { tab in
                         Button(action: {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 viewModel.homeSelectedTab = tab
                             }
                         }) {
-                            VStack(spacing: 6) {
+                            VStack(spacing: 8) {
                                 Text(tab)
-                                    .font(.system(size: 16, weight: viewModel.homeSelectedTab == tab ? .bold : .medium))
-                                    .foregroundColor(viewModel.homeSelectedTab == tab ? .homeAccent : .homeTextSecondary)
+                                    .font(.system(size: 16, weight: viewModel.homeSelectedTab == tab ? .bold : .semibold))
+                                    .foregroundColor(viewModel.homeSelectedTab == tab ? .orange : .white.opacity(0.5))
                                 
-                                ZStack {
-                                    if viewModel.homeSelectedTab == tab {
-                                        RoundedRectangle(cornerRadius: 1)
-                                            .fill(Color.homeAccent)
-                                            .frame(height: 3)
-                                            .matchedGeometryEffect(id: "TabIndicator", in: namespace)
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 1)
-                                            .fill(Color.clear)
-                                            .frame(height: 3)
-                                    }
-                                }
-                                .frame(width: 40)
+                                // Modern Indicator
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(viewModel.homeSelectedTab == tab ? Color.orange : Color.clear)
+                                    .frame(width: 24, height: 3)
                             }
                         }
-                        .buttonStyle(.scalable)
+                        .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 22)
             }
             
             // Only show Search and Menu for Video tab
             if viewModel.homeSelectedTab == "Video" {
                 HStack(spacing: 12) {
                     Button(action: { showSearch = true }) {
-                        Image(systemName: "magnifyingglass")
-                            .appIconStyle()
+                        ZStack {
+                            Circle()
+                                .fill(Color.premiumCircleBackground)
+                                .frame(width: 40, height: 40)
+                            
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.white)
+                        }
                     }
                     .navigationDestination(isPresented: $showSearch) {
                         SearchView(viewModel: viewModel, contextTitle: "Videos", initialVideos: viewModel.importedVideos)
@@ -143,27 +141,30 @@ struct HomeView: View {
                         Divider()
                         
                         Button(action: { isGridView = true }) {
-                            Label("Grid", systemImage: isGridView ? "checkmark" : "square.grid.2x2")
+                            Label("Grid", systemImage: "square.grid.2x2")
                         }
+                        .accentColor(isGridView ? .orange : .white)
                         
                         Button(action: { isGridView = false }) {
-                            Label("List", systemImage: !isGridView ? "checkmark" : "list.bullet")
+                            Label("List", systemImage: "list.bullet")
                         }
+                        .accentColor(!isGridView ? .orange : .white)
                         
                         Divider()
                         
                         Button(action: { showSortSheet = true }) {
-                            Label("Sort", systemImage: "arrow.up.arrow.down")
+                            Label("Sort by", systemImage: "arrow.up.arrow.down")
                         }
                     } label: {
                         ZStack {
                             Circle()
-                                .fill(Color.clear)
-                                .frame(width: 32, height: 32)
+                                .fill(Color.premiumCircleBackground)
+                                .frame(width: 40, height: 40)
                             
                             Image(systemName: "ellipsis")
                                 .rotationEffect(.degrees(90))
-                                .appIconStyle()
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.white)
                         }
                     }
                 }
