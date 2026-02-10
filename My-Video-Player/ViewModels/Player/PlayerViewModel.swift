@@ -30,6 +30,8 @@ import UIKit
     @MainActor @Published var isExternalPlaybackActive: Bool = false
     @MainActor @Published var isSeekUIActive: Bool = false
     @MainActor @Published var isSeekForward: Bool = true
+    @MainActor @Published var isLongPress2xActive: Bool = false
+    private var preLongPressSpeed: Float = 1.0
     
     
     enum ActiveMenu {
@@ -1882,6 +1884,24 @@ import UIKit
                 player?.playImmediately(atRate: speed)
             }
         }
+    }
+
+    @MainActor
+    func startLongPress2x() {
+        guard !isLongPress2xActive else { return }
+        preLongPressSpeed = playbackSpeed
+        setSpeed(2.0)
+        isLongPress2xActive = true
+        withAnimation {
+            isControlsVisible = false
+        }
+    }
+
+    @MainActor
+    func stopLongPress2x() {
+        guard isLongPress2xActive else { return }
+        setSpeed(preLongPressSpeed)
+        isLongPress2xActive = false
     }
     
     @MainActor

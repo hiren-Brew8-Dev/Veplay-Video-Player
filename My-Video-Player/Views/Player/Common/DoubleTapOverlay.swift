@@ -10,9 +10,21 @@ struct DoubleTapOverlay: View {
         verticalSizeClass == .compact
     }
     
-    private var skipAmountText: String {
+    private var overlayText: String {
+        if viewModel.isLongPress2xActive {
+            return "2.0x >>"
+        }
         let totalSeconds = Int(viewModel.accumulatedSkipAmount)
+        // If we are in the middle of a transition and speed mode just ended, keep showing speed text
+        // Or if it's a genuine skip of 0 (which shouldn't happen), return empty or previous state.
+        if totalSeconds == 0 {
+            return "2.0x >>"
+        }
         return "\(isForward ? ">>" : "<<") \(totalSeconds) secs"
+    }
+    
+    private var isActuallySpeedMode: Bool {
+        viewModel.isLongPress2xActive || Int(viewModel.accumulatedSkipAmount) == 0
     }
     
     var body: some View {
@@ -20,29 +32,38 @@ struct DoubleTapOverlay: View {
             // Invisible area - no hit testing anyway
             Color.clear
             
-            if isLandscape {
-                // LANDSCAPE: Show near the side skip buttons, perfectly centered vertically
-                HStack(spacing: 0) {
-                    if !isForward {
-                        // Backward indicator on the left
-                        indicatorText
-                            .padding(.leading, 120) // Increased to clear the skip button icon
-                        Spacer()
-                    } else {
-                        // Forward indicator on the right
+            if isActuallySpeedMode {
+                // TOP CENTER for 2x Speed in ALL orientations
+                VStack {
+                    HStack {
                         Spacer()
                         indicatorText
-                            .padding(.trailing, 120) // Increased to clear the skip button icon
+                            .padding(.top, isLandscape ? 20 : 50)
+                        Spacer()
                     }
+                    Spacer()
                 }
             } else {
-                // PORTRAIT: 
-                VStack {
-                    Spacer()
-                    indicatorText
-                        // ONLY push it below the center if the large Play button is visible
-                        .padding(.top, viewModel.isControlsVisible ? 120 : 0) 
-                    Spacer()
+                // Regular Skip UI
+                if isLandscape {
+                    HStack(spacing: 0) {
+                        if !isForward {
+                            indicatorText
+                                .padding(.leading, 120)
+                            Spacer()
+                        } else {
+                            Spacer()
+                            indicatorText
+                                .padding(.trailing, 120)
+                        }
+                    }
+                } else {
+                    VStack {
+                        Spacer()
+                        indicatorText
+                            .padding(.top, viewModel.isControlsVisible ? 120 : 0) 
+                        Spacer()
+                    }
                 }
             }
         }
@@ -50,7 +71,7 @@ struct DoubleTapOverlay: View {
     }
     
     private var indicatorText: some View {
-        Text(skipAmountText)
+        Text(overlayText)
             .font(.system(size: 16, weight: .bold))
             .foregroundColor(.white)
             .padding(.horizontal, 14)

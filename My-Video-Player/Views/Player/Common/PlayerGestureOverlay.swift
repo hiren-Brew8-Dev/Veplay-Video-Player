@@ -17,6 +17,11 @@ struct PlayerGestureOverlay: View {
     @State private var dragStartValue: Float = 0.0
     @State private var isDraggingLeft = false
     @State private var isDraggingRight = false
+    
+    // Long Press 2x Speed
+    @State private var longPressTask: Task<Void, Never>? = nil
+    @State private var longPressStartLocation: CGPoint? = nil
+    @State private var didJustFinishLongPress = false
 
     var body: some View {
         GeometryReader { geo in
@@ -25,8 +30,11 @@ struct PlayerGestureOverlay: View {
                 Color.black.opacity(0.001)
                     .contentShape(Rectangle())
                     .onTapGesture(coordinateSpace: .local) { location in
-                        if viewModel.isLocked || viewModel.isPiPActive || viewModel.duration.isInfinite || viewModel.duration <= 0 { 
-                            toggleControls()
+                        // Block tap if we just finished a long press or if it's currently active
+                        if viewModel.isLocked || viewModel.isPiPActive || viewModel.duration.isInfinite || viewModel.duration <= 0 || viewModel.isLongPress2xActive || didJustFinishLongPress { 
+                            if !viewModel.isLongPress2xActive {
+                                toggleControls()
+                            }
                             return 
                         }
                         
@@ -123,6 +131,88 @@ struct PlayerGestureOverlay: View {
                     .onEnded { _ in
                         isDraggingLeft = false
                         isDraggingRight = false
+                    }
+            )
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                    .onChanged { value in
+                        if viewModel.isLocked || viewModel.isPiPActive || !viewModel.isPlaying { return }
+                        
+                        let screenWidth = geo.size.width
+                        let screenHeight = geo.size.height
+                        let tapX = value.startLocation.x
+                        let tapY = value.startLocation.y
+                        
+                        let isLandscape = screenWidth > screenHeight
+                        let isControlsVisible = viewModel.isControlsVisible
+                        let isValidArea: Bool
+                        
+                        if !isControlsVisible {
+                            // FULL SCREEN when controls are hidden
+                            isValidArea = true
+                        } else {
+                            // Controls are visible
+                            if isLandscape {
+                                // LANDSCAPE: Full width, but avoid TopBar (~60pt) and BottomBar (~80pt)
+                                let topLimit: CGFloat = 60
+                                let bottomLimit: CGFloat = 80
+                                isValidArea = tapY >= topLimit && tapY <= (screenHeight - bottomLimit)
+                            } else {
+                                // PORTRAIT: Center area to avoid TopBar and BottomBar
+                                let horizontalLimit = screenWidth * 0.20
+                                let topLimit: CGFloat = 100
+                                let bottomLimit: CGFloat = 140
+                                
+                                isValidArea = tapX >= horizontalLimit && tapX <= (screenWidth - horizontalLimit) &&
+                                             tapY >= topLimit && tapY <= (screenHeight - bottomLimit)
+                            }
+                        }
+                        
+                        if isValidArea {
+                            if longPressStartLocation == nil {
+                                // Start tracking potential long press
+                                longPressStartLocation = value.startLocation
+                                
+                                longPressTask?.cancel()
+                                longPressTask = Task {
+                                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s hold delay
+                                    guard !Task.isCancelled else { return }
+                                    await MainActor.run {
+                                        viewModel.startLongPress2x()
+                                        // Optional: Add haptic feedback here
+                                        let impact = UIImpactFeedbackGenerator(style: .medium)
+                                        impact.impactOccurred()
+                                    }
+                                }
+                            } else {
+                                // Already tracking, check for movement threshold
+                                if let start = longPressStartLocation {
+                                    let dist = sqrt(pow(value.location.x - start.x, 2) + pow(value.location.y - start.y, 2))
+                                    if dist > 30 {
+                                        // Moved too much, cancel long press
+                                        longPressTask?.cancel()
+                                        longPressTask = nil
+                                        if viewModel.isLongPress2xActive {
+                                            viewModel.stopLongPress2x()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .onEnded { _ in
+                        longPressTask?.cancel()
+                        longPressTask = nil
+                        longPressStartLocation = nil
+                        
+                        if viewModel.isLongPress2xActive {
+                            viewModel.stopLongPress2x()
+                            // Set flag to block subsequent tap gesture
+                            didJustFinishLongPress = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                didJustFinishLongPress = false
+                            }
+                        }
                     }
             )
         }

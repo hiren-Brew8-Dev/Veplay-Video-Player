@@ -147,9 +147,9 @@ struct PlayerView: View {
             
             dismissGuideLayer(geo: geo)
             
-            if viewModel.isSeekUIActive {
+            if viewModel.isSeekUIActive || viewModel.isLongPress2xActive {
                 DoubleTapOverlay(
-                    isForward: viewModel.isSeekForward,
+                    isForward: viewModel.isLongPress2xActive ? true : viewModel.isSeekForward,
                     onClose: {
                         withAnimation(.easeOut(duration: 0.3)) {
                             viewModel.isSeekUIActive = false
@@ -220,6 +220,7 @@ struct PlayerView: View {
                     // STRICT CONSTRAINTS TO AVOID CONFLICTS:
                     // We now allow dismissal even when controls are visible, as requested.
                     guard !viewModel.isAnySheetVisible else { return }
+                    guard !viewModel.isLongPress2xActive else { return }
                     
                     let startY = value.startLocation.y
                     let startX = value.startLocation.x
