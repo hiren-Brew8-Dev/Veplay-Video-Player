@@ -1265,6 +1265,8 @@ class PlayerViewModel: NSObject, ObservableObject {
                             self.embeddedSubtitleOptions.append(option)
                         }
                     }
+                    // Force UI update
+                    self.subtitleManager.objectWillChange.send()
                 }
             }
         }
@@ -1300,6 +1302,8 @@ class PlayerViewModel: NSObject, ObservableObject {
                                 } else {
                                     self.selectedAudioTrackIndex = -1
                                 }
+                                // Force UI update
+                                self.objectWillChange.send()
                             }
                         }
                     } else if audioOptions.count == 1 && audioOptions[0].displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -1307,14 +1311,18 @@ class PlayerViewModel: NSObject, ObservableObject {
                         self.availableAudioTracks.append("Track 1")
                         self.embeddedAudioOptions.append(audioOptions[0])
                         self.selectedAudioTrackIndex = 0
+                        // Force UI update
+                        self.objectWillChange.send()
                     } else {
                         // Scenario 1: Named tracks (MKV) - use original names
                         for option in audioOptions {
                             let trackName = option.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-                            self.availableAudioTracks.append(trackName.isEmpty ? "Track \\(self.availableAudioTracks.count + 1)" : trackName)
+                            self.availableAudioTracks.append(trackName.isEmpty ? "Track \(self.availableAudioTracks.count + 1)" : trackName)
                             self.embeddedAudioOptions.append(option)
                         }
                         self.selectedAudioTrackIndex = 0
+                        // Force UI update
+                        self.objectWillChange.send()
                     }
                 } else {
                     // No audioGroup - check if asset has audio tracks directly
@@ -1336,6 +1344,8 @@ class PlayerViewModel: NSObject, ObservableObject {
                             } else {
                                 self.selectedAudioTrackIndex = -1
                             }
+                            // Force UI update
+                            self.objectWillChange.send()
                         }
                     }
                 }
