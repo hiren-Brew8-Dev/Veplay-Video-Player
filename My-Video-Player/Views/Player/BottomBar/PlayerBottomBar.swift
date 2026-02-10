@@ -200,7 +200,13 @@ struct PlayerBottomBar: View {
             .padding(.horizontal, isLandscape ? 50 : 16)
         }
         .padding(.bottom, isLandscape ? 15 : 30) // Adjusted for safe area balance
-        .background(Color.black.opacity(0.001))
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.8)]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
         .contentShape(Rectangle())
     }
     
