@@ -37,7 +37,7 @@ struct VideoRowView: View {
                     Image(uiImage: thumb)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 100, height: 62)
+                        .frame(width: 96, height: 72)
                         .clipped()
                         .cornerRadius(10)
                         .overlay(
@@ -47,7 +47,7 @@ struct VideoRowView: View {
                 } else {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(Color.white.opacity(0.05))
-                        .frame(width: 100, height: 62)
+                        .frame(width: 96, height: 72)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(Color.white.opacity(0.1), lineWidth: 1)

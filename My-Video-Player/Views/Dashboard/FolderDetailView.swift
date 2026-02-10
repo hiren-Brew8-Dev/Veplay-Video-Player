@@ -410,7 +410,7 @@ struct FolderDetailView: View {
                                     if index < section.videos.count - 1 {
                                         Divider()
                                             .background(Color.white.opacity(0.1))
-                                            .padding(.leading, 128)
+                                            .padding(.leading, 124)
                                     }
                                 }
                             }
@@ -420,7 +420,7 @@ struct FolderDetailView: View {
                                 RoundedRectangle(cornerRadius: 20)
                                     .stroke(Color.premiumCardBorder, lineWidth: 1)
                             )
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 10)
                         } header: {
                             sectionHeader(for: section.date)
                         }
@@ -440,7 +440,7 @@ struct FolderDetailView: View {
                                 RoundedRectangle(cornerRadius: 20)
                                     .stroke(Color.premiumCardBorder, lineWidth: 1)
                             )
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 10)
                             .padding(.bottom, 20)
                         }
                     }
@@ -454,7 +454,7 @@ struct FolderDetailView: View {
                                 if index < sortedVideos.count - 1 {
                                     Divider()
                                         .background(Color.white.opacity(0.1))
-                                        .padding(.leading, 128)
+                                        .padding(.leading, 124)
                                 }
                             }
                         }
@@ -464,7 +464,7 @@ struct FolderDetailView: View {
                             RoundedRectangle(cornerRadius: 20)
                                 .stroke(Color.premiumCardBorder, lineWidth: 1)
                         )
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 10)
                     }
                 }
             }
@@ -485,7 +485,7 @@ struct FolderDetailView: View {
         }
         .padding(.top, 24)
         .padding(.bottom, 12)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 10)
         .background(Color.clear)
     }
     

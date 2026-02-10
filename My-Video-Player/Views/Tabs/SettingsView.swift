@@ -76,7 +76,7 @@ struct SettingsView: View {
                         .padding(16)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 10)
                 .padding(.bottom, 100) // Space for tab bar
             }
         }
