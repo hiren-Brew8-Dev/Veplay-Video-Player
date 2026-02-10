@@ -80,7 +80,7 @@ struct SettingsView: View {
                 .padding(.bottom, 100) // Space for tab bar
             }
         }
-        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
+//        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
     }
 
     // MARK: - Components

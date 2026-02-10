@@ -28,6 +28,7 @@ struct FolderDetailView: View {
     @State private var folderToRename: Folder?
     @State private var showRenameVideoAlert = false
     @State private var showDeleteVideoAlert = false
+    @State private var showDeleteSelectedAlert = false
     @State private var showRenameFolderAlert = false
     @State private var newVideoName = ""
     @State private var newFolderName = ""
@@ -144,6 +145,19 @@ struct FolderDetailView: View {
         } message: {
             Text("Are you sure you want to delete this video? This cannot be undone.")
         }
+        .alert("Delete Selected Videos", isPresented: $showDeleteSelectedAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                let selectedVideos = folder.videos.filter { selectedVideoIds.contains($0.id) }
+                for video in selectedVideos {
+                    viewModel.deleteVideo(video)
+                }
+                viewModel.isSelectionMode = false
+                selectedVideoIds.removeAll()
+            }
+        } message: {
+            Text("Are you sure you want to delete \(selectedVideoIds.count) videos? This cannot be undone.")
+        }
         .alert("Rename Folder", isPresented: $showRenameFolderAlert) {
             TextField("New Name", text: $newFolderName)
             Button("Cancel", role: .cancel) { folderToRename = nil }
@@ -225,51 +239,53 @@ struct FolderDetailView: View {
             
             Spacer()
             
-            HStack(spacing: 12) {
-                Button(action: { showSearch = true }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.premiumCircleBackground)
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
+            if !displayVideos.isEmpty {
+                HStack(spacing: 12) {
+                    Button(action: { showSearch = true }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.premiumCircleBackground)
+                                .frame(width: 40, height: 40)
+                            
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.white)
+                        }
                     }
-                }
-                .navigationDestination(isPresented: $showSearch) {
-                    SearchView(viewModel: viewModel, contextTitle: folder.name, initialVideos: displayVideos)
-                }
-                
-                Menu {
-                    Button(action: { viewModel.isSelectionMode = true }) {
-                        Label("Select", systemImage: "checkmark.circle")
+                    .navigationDestination(isPresented: $showSearch) {
+                        SearchView(viewModel: viewModel, contextTitle: folder.name, initialVideos: displayVideos)
                     }
-                    Divider()
-                    Button(action: { isGridView = true }) {
-                        Label("Grid", systemImage: "square.grid.2x2")
-                    }
-                    .accentColor(isGridView ? .orange : .white)
                     
-                    Button(action: { isGridView = false }) {
-                        Label("List", systemImage: "list.bullet")
-                    }
-                    .accentColor(!isGridView ? .orange : .white)
-                    
-                    Divider()
-                    Button(action: { showSortSheet = true }) {
-                        Label("Sort", systemImage: "arrow.up.arrow.down")
-                    }
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(Color.premiumCircleBackground)
-                            .frame(width: 40, height: 40)
+                    Menu {
+                        Button(action: { viewModel.isSelectionMode = true }) {
+                            Label("Select", systemImage: "checkmark.circle")
+                        }
+                        Divider()
+                        Button(action: { isGridView = true }) {
+                            Label("Grid", systemImage: "square.grid.2x2")
+                        }
+                        .accentColor(isGridView ? .orange : .white)
                         
-                        Image(systemName: "ellipsis")
-                            .rotationEffect(.degrees(90))
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
+                        Button(action: { isGridView = false }) {
+                            Label("List", systemImage: "list.bullet")
+                        }
+                        .accentColor(!isGridView ? .orange : .white)
+                        
+                        Divider()
+                        Button(action: { showSortSheet = true }) {
+                            Label("Sort", systemImage: "arrow.up.arrow.down")
+                        }
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(Color.premiumCircleBackground)
+                                .frame(width: 40, height: 40)
+                            
+                            Image(systemName: "ellipsis")
+                                .rotationEffect(.degrees(90))
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.white)
+                        }
                     }
                 }
             }
@@ -621,12 +637,7 @@ struct FolderDetailView: View {
     }
     
     private func deleteSelected() {
-        let selectedVideos = folder.videos.filter { selectedVideoIds.contains($0.id) }
-        for video in selectedVideos {
-            viewModel.deleteVideo(video)
-        }
-        viewModel.isSelectionMode = false
-        selectedVideoIds.removeAll()
+        showDeleteSelectedAlert = true
     }
     
     // MARK: - Grouping Logic

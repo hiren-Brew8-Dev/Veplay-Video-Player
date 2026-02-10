@@ -283,9 +283,12 @@ struct DashboardView: View {
             .padding(.horizontal, 40)
             .padding(.vertical, 30)
             .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.premiumCardBackground)
-                    .background(.ultraThinMaterial)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(.ultraThinMaterial)
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.premiumCardBackground.opacity(0.7))
+                }
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 24)

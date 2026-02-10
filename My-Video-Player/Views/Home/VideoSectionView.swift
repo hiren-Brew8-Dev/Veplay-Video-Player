@@ -11,6 +11,7 @@ struct VideoSectionView: View {
     @State private var videoToDelete: VideoItem?
     @State private var showRenameVideoAlert = false
     @State private var showDeleteVideoAlert = false
+    @State private var showDeleteSelectedAlert = false
     @State private var newVideoName = ""
     
     @AppStorage("isGridView") private var isGridView: Bool = true
@@ -80,7 +81,20 @@ struct VideoSectionView: View {
                     viewModel.deleteVideo(video)
                 }
             }
-        
+        }
+        .alert("Delete Selected Videos", isPresented: $showDeleteSelectedAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                let allVideos = viewModel.importedVideos + viewModel.allGalleryVideos
+                let selectedVideos = allVideos.filter { viewModel.selectedVideoIds.contains($0.id) }
+                for video in selectedVideos {
+                    viewModel.deleteVideo(video)
+                }
+                viewModel.isSelectionMode = false
+                viewModel.selectedVideoIds.removeAll()
+            }
+        } message: {
+            Text("Are you sure you want to delete \(viewModel.selectedVideoIds.count) videos? This cannot be undone.")
         }
         .background(Color.clear)
         .ignoresSafeArea(edges: .bottom)
@@ -546,12 +560,6 @@ struct VideoSectionView: View {
     }
     
     private func deleteSelected() {
-        let allVideos = viewModel.importedVideos + viewModel.allGalleryVideos
-        let selectedVideos = allVideos.filter { viewModel.selectedVideoIds.contains($0.id) }
-        for video in selectedVideos {
-            viewModel.deleteVideo(video)
-        }
-        viewModel.isSelectionMode = false
-        viewModel.selectedVideoIds.removeAll()
+        showDeleteSelectedAlert = true
     }
 }

@@ -113,8 +113,8 @@ struct HomeView: View {
                 .padding(.horizontal, 22)
             }
             
-            // Only show Search and Menu for Video tab
-            if viewModel.homeSelectedTab == "Video" {
+            // Only show Search and Menu for Video tab if there are videos
+            if viewModel.homeSelectedTab == "Video" && !viewModel.importedVideos.isEmpty {
                 HStack(spacing: 12) {
                     Button(action: { showSearch = true }) {
                         ZStack {
