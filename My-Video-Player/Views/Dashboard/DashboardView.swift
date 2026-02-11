@@ -87,7 +87,9 @@ struct DashboardView: View {
                 
                 // MARK: Search
                 Tab(value: .search, role: .search) {
-                    SearchView(viewModel: viewModel)
+                    NavigationStack {
+                        SearchView(viewModel: viewModel)
+                    }
                 }
             }
             .accentColor(.homeAccent)
@@ -177,6 +179,8 @@ struct DashboardView: View {
             FolderSectionView(viewModel: viewModel)
         case .folderDetail(let folder):
             FolderDetailView(initialFolder: folder, viewModel: viewModel)
+        case .search(let title, let videos):
+            SearchView(viewModel: viewModel, contextTitle: title, initialVideos: videos)
         }
     }
 

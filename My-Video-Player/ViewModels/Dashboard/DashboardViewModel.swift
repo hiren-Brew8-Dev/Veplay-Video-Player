@@ -72,11 +72,20 @@ class DashboardViewModel: ObservableObject {
     enum NavigationDestination: Hashable {
         case allFolders
         case folderDetail(Folder)
+        case search(contextTitle: String, initialVideos: [VideoItem]?)
         
         func hash(into hasher: inout Hasher) {
             switch self {
-            case .allFolders: hasher.combine("allFolders")
-            case .folderDetail(let folder): hasher.combine(folder.id)
+            case .allFolders: 
+                hasher.combine("allFolders")
+            case .folderDetail(let folder): 
+                hasher.combine(folder.id)
+            case .search(let title, let videos):
+                hasher.combine("search")
+                hasher.combine(title)
+                if let count = videos?.count {
+                    hasher.combine(count)
+                }
             }
         }
         
@@ -84,6 +93,8 @@ class DashboardViewModel: ObservableObject {
             switch (lhs, rhs) {
             case (.allFolders, .allFolders): return true
             case (.folderDetail(let f1), .folderDetail(let f2)): return f1.id == f2.id
+            case (.search(let t1, let v1), .search(let t2, let v2)):
+                return t1 == t2 && v1 == v2
             default: return false
             }
         }

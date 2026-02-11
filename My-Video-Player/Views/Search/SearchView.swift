@@ -6,11 +6,13 @@ struct SearchView: View {
     @FocusState private var isSearchFocused: Bool
     
     // Context can be used to filter search specifically for a folder or album
-    var contextTitle: String = "Video&Music"
+    var contextTitle: String = ""
     var initialVideos: [VideoItem]? = nil 
     
     var body: some View {
-        NavigationStack {
+        ZStack {
+            Color.homeBackground.ignoresSafeArea()
+            
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     if viewModel.searchText.isEmpty {
@@ -25,22 +27,14 @@ struct SearchView: View {
                 }
                 .padding(.top, 20)
             }
-            .navigationTitle("Search in \(viewModel.lastActiveDataTab.rawValue)")
-            .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always))
+        }
+        .navigationTitle("Search in \(contextTitle.isEmpty ? viewModel.lastActiveDataTab.rawValue : contextTitle)")
+        .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always))
             .onSubmit(of: .search) {
                 if !viewModel.searchText.isEmpty {
                     viewModel.persistSearchKeyword(viewModel.searchText)
                 }
             }
-            .background(
-                LinearGradient(
-                    colors: [.premiumGradientTop, .premiumGradientBottom],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .edgesIgnoringSafeArea(.all)
-            )
-        }
         .onAppear {
             if viewModel.selectedTab == .search {
                 viewModel.isTabBarHidden = false
@@ -117,6 +111,10 @@ struct SearchView: View {
     @ViewBuilder
     private var resultsSection: some View {
         let baseVideos: [VideoItem] = {
+            if let initialVideos = initialVideos {
+                return initialVideos
+            }
+            
             if viewModel.lastActiveDataTab == .home {
                 return viewModel.allLocalSearchableVideos
             } else {

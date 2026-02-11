@@ -231,7 +231,10 @@ struct FolderDetailView: View {
             
             if !displayVideos.isEmpty {
                 HStack(spacing: 12) {
-                    Button(action: { showSearch = true }) {
+                    Button(action: { 
+                        let updatedVideos = displayVideos.map { liveVideo($0) }
+                        viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.search(contextTitle: folder.name, initialVideos: updatedVideos))
+                    }) {
                         ZStack {
                             Circle()
                                 .fill(Color.premiumCircleBackground)
@@ -241,9 +244,6 @@ struct FolderDetailView: View {
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(.white)
                         }
-                    }
-                    .navigationDestination(isPresented: $showSearch) {
-                        SearchView(viewModel: viewModel, contextTitle: folder.name, initialVideos: displayVideos)
                     }
                     
                     Menu {
