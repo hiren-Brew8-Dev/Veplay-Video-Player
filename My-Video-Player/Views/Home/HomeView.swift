@@ -31,12 +31,13 @@ struct HomeView: View {
                     .tag("Gallery")
                 
             }
+           
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .allowsHitTesting(true) 
             .gesture(viewModel.isSelectionMode ? DragGesture() : nil)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.homeBackground.ignoresSafeArea())
+        
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.homeBackground)
         .navigationBarHidden(true)
         .onAppear {
             // Ensure tab bar is visible when home view appears
@@ -75,15 +76,11 @@ struct HomeView: View {
                         
                         Divider()
                         
-                        Button(action: { isGridView = true }) {
-                            Label("Grid", systemImage: "square.grid.2x2")
+                        Picker(selection: $isGridView, label: EmptyView()) {
+                            Label("Grid", systemImage: "square.grid.2x2").tag(true)
+                            Label("List", systemImage: "list.bullet").tag(false)
                         }
-                        .accentColor(isGridView ? .orange : .white)
-                        
-                        Button(action: { isGridView = false }) {
-                            Label("List", systemImage: "list.bullet")
-                        }
-                        .accentColor(!isGridView ? .orange : .white)
+                        .pickerStyle(.inline)
                         
                         Divider()
                         

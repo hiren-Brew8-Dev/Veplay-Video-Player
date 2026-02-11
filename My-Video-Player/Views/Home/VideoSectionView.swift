@@ -21,7 +21,7 @@ struct VideoSectionView: View {
 
     var body: some View {
         ZStack {
-            Color.clear.edgesIgnoringSafeArea(.all)
+//            Color.clear.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
                 // Header
@@ -47,7 +47,7 @@ struct VideoSectionView: View {
                                 // Imported Videos Section
                                 videosSection
                             }
-                            .padding(.bottom, 90)
+                            .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
                         }
                         .onChange(of: viewModel.highlightVideoId) { oldId, newId in
                             if let id = newId {
@@ -103,7 +103,6 @@ struct VideoSectionView: View {
             Text("Are you sure you want to delete \(viewModel.selectedVideoIds.count) videos? This cannot be undone.")
         }
         .background(Color.clear)
-        .ignoresSafeArea(edges: .bottom)
     }
     
     var isAllSelected: Bool {
@@ -121,7 +120,9 @@ struct VideoSectionView: View {
                 
                 Spacer()
                 
-                NavigationLink(destination: FolderSectionView(viewModel: viewModel).navigationBarHidden(true)) {
+                Button(action: {
+                    viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.allFolders)
+                }) {
                     HStack(spacing: 4) {
                         Text("View All")
                         Image(systemName: "chevron.right")
@@ -142,7 +143,9 @@ struct VideoSectionView: View {
                     
                     // Folder Cards
                     ForEach(viewModel.sortedFolders) { folder in
-                        NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
+                        Button(action: {
+                            viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.folderDetail(folder))
+                        }) {
                             FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
                                 triggerFolderActionSheet(for: folder)
                             }, size: 150)
@@ -247,15 +250,11 @@ struct VideoSectionView: View {
                     
                     Divider()
                     
-                    Button(action: { isGridView = true }) {
-                        Label("Grid", systemImage: "square.grid.2x2")
+                    Picker(selection: $isGridView, label: EmptyView()) {
+                        Label("Grid", systemImage: "square.grid.2x2").tag(true)
+                        Label("List", systemImage: "list.bullet").tag(false)
                     }
-                    .accentColor(isGridView ? .orange : .white)
-                    
-                    Button(action: { isGridView = false }) {
-                        Label("List", systemImage: "list.bullet")
-                    }
-                    .accentColor(!isGridView ? .orange : .white)
+                    .pickerStyle(.inline)
                     
                     Divider()
                     
@@ -568,8 +567,8 @@ struct VideoSectionView: View {
                     .padding(.horizontal, 4)
                 Spacer()
             }
-            .padding(.top, 24)
-            .padding(.bottom, 12)
+            .padding(.top, 5)
+            .padding(.bottom, 5)
             .padding(.horizontal, 10)
             .background(Color.clear)
         }

@@ -85,7 +85,9 @@ struct FolderSectionView: View {
                             ScrollView {
                                 LazyVGrid(columns: columns, spacing: GridLayout.spacing) {
                                     ForEach(viewModel.sortedFolders) { folder in
-                                        NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
+                                        Button(action: {
+                                            viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.folderDetail(folder))
+                                        }) {
                                             FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
                                                 viewModel.actionSheetTarget = .folder(folder)
                                                 viewModel.actionSheetItems = [
@@ -160,14 +162,15 @@ struct FolderSectionView: View {
             }
             .navigationBarHidden(true)
             .navigationBarBackButtonHidden(true)
-            .ignoresSafeArea(edges: .bottom)
         }
     }
     
     private var headerView: some View {
         HStack {
             Button(action: {
-                presentationMode.wrappedValue.dismiss()
+                if !viewModel.navigationPath.isEmpty {
+                    viewModel.navigationPath.removeLast()
+                }
             }) {
                 ZStack {
                     Circle()

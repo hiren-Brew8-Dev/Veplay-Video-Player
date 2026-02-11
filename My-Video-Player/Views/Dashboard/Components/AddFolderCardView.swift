@@ -6,49 +6,42 @@ struct AddFolderCardView: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                // 1. Icon Section
+            VStack(alignment: .center, spacing: 12) {
+                // Main Action Area
                 ZStack {
-                    Color.white.opacity(0.05)
+                    // Unique Background
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.homeAccent.opacity(0.05))
+                    
+                    // Dashed Border
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                        .foregroundColor(Color.homeAccent.opacity(0.3))
                     
                     VStack(spacing: 8) {
                         Image(systemName: "folder.badge.plus")
-                            .font(.system(size: 30, weight: .bold))
+                            .font(.system(size: 32, weight: .bold))
                             .foregroundColor(.homeAccent)
                         
                         Text("New Folder")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.homeTextSecondary)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.homeAccent)
                     }
                 }
                 .frame(width: size - 16, height: size - 16)
-                .clipped()
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                )
                 .padding(.top, 8)
-                .padding(.horizontal, 8)
                 
-                // 2. Info Section
-                HStack(alignment: .center, spacing: 0) {
-                    Text("Create Folder")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.homeTextPrimary)
-                        .lineLimit(1)
-                    
-                    Spacer()
-                }
-                .padding(.leading, 12)
-                .padding(.bottom, 8)
+                Text("Create Folder")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.homeTextSecondary)
+                    .padding(.bottom, 8)
             }
             .frame(width: size)
-            .background(Color.premiumCardBackground)
+            .background(Color.white.opacity(0.03))
             .cornerRadius(20)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.premiumCardBorder, lineWidth: 1)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
             )
         }
         .buttonStyle(.scalable)

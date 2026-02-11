@@ -105,7 +105,7 @@ struct FolderDetailView: View {
                             listView
                         }
                     }
-                    .padding(.bottom, 90)
+                    .padding(.bottom, viewModel.isSelectionMode ? 140 : 90)
                 }
             }
             
@@ -183,36 +183,20 @@ struct FolderDetailView: View {
         }
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .tabBar)
         .onAppear {
-            viewModel.isTabBarHidden = true
             viewModel.markFolderAsAccessed(folder)
-        }
-        .task {
-            await fetchAlbumVideos()
-        }
-        .onDisappear {
-            viewModel.isTabBarHidden = false
-        }
-        .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
-            if newVideo == nil {
-                viewModel.isTabBarHidden = true
-            }
-        }
-        .onChange(of: viewModel.isSelectionMode) { oldVal, isSelectionMode in
-            if !isSelectionMode {
-                selectedVideoIds.removeAll()
-            }
-        }
-        .onAppear {
-            viewModel.isTabBarHidden = true
             // Resolve titles for album videos if not already done
             if folder.url == nil {
                 viewModel.preFetchTitles(for: folder.videos)
             }
         }
-        .onDisappear {
-            viewModel.isTabBarHidden = false
+        .task {
+            await fetchAlbumVideos()
+        }
+        .onChange(of: viewModel.isSelectionMode) { oldVal, isSelectionMode in
+            if !isSelectionMode {
+                selectedVideoIds.removeAll()
+            }
         }
     }
     
@@ -221,7 +205,11 @@ struct FolderDetailView: View {
     var standardHeader: some View {
         HStack {
             Button(action: {
-                presentationMode.wrappedValue.dismiss()
+                if !viewModel.navigationPath.isEmpty {
+                    viewModel.navigationPath.removeLast()
+                } else {
+                    presentationMode.wrappedValue.dismiss()
+                }
             }) {
                 ZStack {
                     Circle()
@@ -262,15 +250,11 @@ struct FolderDetailView: View {
                             Label("Select", systemImage: "checkmark.circle")
                         }
                         Divider()
-                        Button(action: { isGridView = true }) {
-                            Label("Grid", systemImage: "square.grid.2x2")
+                        Picker(selection: $isGridView, label: EmptyView()) {
+                            Label("Grid", systemImage: "square.grid.2x2").tag(true)
+                            Label("List", systemImage: "list.bullet").tag(false)
                         }
-                        .accentColor(isGridView ? .orange : .white)
-                        
-                        Button(action: { isGridView = false }) {
-                            Label("List", systemImage: "list.bullet")
-                        }
-                        .accentColor(!isGridView ? .orange : .white)
+                        .pickerStyle(.inline)
                         
                         Divider()
                         Button(action: { showSortSheet = true }) {
@@ -500,8 +484,8 @@ struct FolderDetailView: View {
                 .padding(.horizontal, 4)
             Spacer()
         }
-        .padding(.top, 24)
-        .padding(.bottom, 12)
+        .padding(.top, 5)
+        .padding(.bottom, 5)
         .padding(.horizontal, 10)
         .background(Color.clear)
     }

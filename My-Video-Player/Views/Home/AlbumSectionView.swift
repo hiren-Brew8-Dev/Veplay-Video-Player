@@ -80,7 +80,6 @@ struct AlbumSectionView: View {
             }
         }
         .background(Color.clear)
-        .ignoresSafeArea(edges: .bottom)
     }
     
     private func albumDestination(for album: PHAssetCollection) -> some View {

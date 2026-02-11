@@ -33,6 +33,27 @@ class DashboardViewModel: ObservableObject {
     @Published var isImporting: Bool = false
     @Published var isShowingSearch: Bool = false
     @Published var homeSelectedTab: String = "Video"
+    @Published var navigationPath = NavigationPath()
+    
+    enum NavigationDestination: Hashable {
+        case allFolders
+        case folderDetail(Folder)
+        
+        func hash(into hasher: inout Hasher) {
+            switch self {
+            case .allFolders: hasher.combine("allFolders")
+            case .folderDetail(let folder): hasher.combine(folder.id)
+            }
+        }
+        
+        static func == (lhs: NavigationDestination, rhs: NavigationDestination) -> Bool {
+            switch (lhs, rhs) {
+            case (.allFolders, .allFolders): return true
+            case (.folderDetail(let f1), .folderDetail(let f2)): return f1.id == f2.id
+            default: return false
+            }
+        }
+    }
     
     // Data Sources
     @Published var videos: [VideoItem] = []

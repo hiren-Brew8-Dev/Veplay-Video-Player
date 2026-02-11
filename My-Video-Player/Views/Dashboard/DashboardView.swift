@@ -32,106 +32,75 @@ struct DashboardView: View {
     
     var body: some View {
         ZStack {
-            TabView(selection: $viewModel.selectedTab) {
-                NavigationStack {
+            NavigationStack(path: $viewModel.navigationPath) {
+                TabView(selection: $viewModel.selectedTab) {
                     HomeView(viewModel: viewModel, paddingBottom: .constant(0))
-                }
-                .tabItem {
-                    Label("Home", systemImage: "house")
-                }
-                .tag(0)
-                .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
-                
-                // Middle Dummy Tab for space
-                Color.clear
-                    .tabItem {
-                        Label("", systemImage: "")
-                    }
-                    .tag(100)
-                
-                NavigationStack {
-                    SettingsView()
-                }
-                .tabItem {
-                    Label("Settings", systemImage: "gearshape")
-                }
-                .tag(1)
-                .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
-            }
-            .accentColor(.homeAccent)
-            .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
-            .fullScreenCover(item: $viewModel.playingVideo) { video in
-                PlayerView(
-                    video: video,
-                    playlist: viewModel.currentPlaylist,
-                    onPlaybackEnded: {
-                        viewModel.playingVideo = nil
-                    }
-                )
-                .environmentObject(viewModel)
-                
-            }
-            .ignoresSafeArea(.all, edges: .bottom)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            if viewModel.isImporting {
-                importingOverlay
-            }
-            
-            if viewModel.showActionSheet {
-                ZStack {
-                    // Background Dimming
-                    Color.black.opacity(0.4)
-                        .edgesIgnoringSafeArea(.all)
-                        .onTapGesture {
-                            withAnimation {
-                                viewModel.showActionSheet = false
-                            }
+                        .tabItem {
+                            Label("Home", systemImage: "house")
                         }
-                        .transition(.opacity)
+                        .tag(0)
+                        
+                    // Middle Dummy Tab for space
+                    Color.clear
+                        .tabItem {
+                            Label("", systemImage: "")
+                        }
+                        .tag(100)
                     
-                    // Sheet Content
-                    CustomActionSheet(
-                        target: viewModel.actionSheetTarget,
-                        items: viewModel.actionSheetItems,
-                        isPresented: $viewModel.showActionSheet
-                    )
-                    .transition(.move(edge: .bottom))
+                    SettingsView()
+                        .tabItem {
+                            Label("Settings", systemImage: "gearshape")
+                        }
+                        .tag(1)
                 }
-                .zIndex(200)
+                .accentColor(.homeAccent)
+                .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+                .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
+                    switch destination {
+                    case .allFolders:
+                        FolderSectionView(viewModel: viewModel)
+                    case .folderDetail(let folder):
+                        FolderDetailView(initialFolder: folder, viewModel: viewModel)
+                    }
+                }
             }
             
             if showTabBar {
                 PlusButtonOverlay(viewModel: viewModel)
             }
             
+            // Global Overlays (Must be outside NavigationStack to stay on top)
+            if viewModel.isImporting {
+                importingOverlay
+            }
+            
+            if viewModel.showActionSheet {
+                actionSheetOverlay
+            }
+            
             if viewModel.showUnsupportedFormatAlert {
                 UnsupportedFormatAlert(video: viewModel.unsupportedVideoForAlbum, isPresented: $viewModel.showUnsupportedFormatAlert)
             }
         }
+        
+        .background(Color.homeBackground.ignoresSafeArea())
+        .ignoresSafeArea(edges: .bottom)
+        .fullScreenCover(item: $viewModel.playingVideo) { video in
+            PlayerView(
+                video: video,
+                playlist: viewModel.currentPlaylist,
+                onPlaybackEnded: {
+                    viewModel.playingVideo = nil
+                }
+            )
+            .environmentObject(viewModel)
+        }
+        
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: viewModel.showActionSheet)
         .environmentObject(viewModel)
         .preferredColorScheme(isDarkMode ? .dark : .light)
         .alert("Create New Folder", isPresented: $viewModel.showCreateFolderAlert) {
-            TextField("Folder Name", text: $viewModel.newFolderName)
-            Button("Cancel", role: .cancel) { viewModel.newFolderName = "" }
-            Button("Create") {
-                let name = viewModel.newFolderName
-                if viewModel.createFolder(name: name) {
-                    // Success case
-                    viewModel.selectedTab = 0
-                    viewModel.homeSelectedTab = "Folder"
-                } else {
-                    // Fail case (exists or error)
-                    // If it was already there, the VM would have set alertMessage
-                    // We still switch to Folder tab to show the highlight if it exists
-                    if viewModel.folders.contains(where: { $0.name.lowercased() == name.lowercased() }) {
-                        viewModel.selectedTab = 0
-                        viewModel.homeSelectedTab = "Folder"
-                        viewModel.showCreateFolderAlert = false
-                    }
-                }
-            }
+            folderAlertContent
         } message: {
             Text("Enter a name for the new folder")
         }
@@ -148,19 +117,7 @@ struct DashboardView: View {
             allowedContentTypes: [.movie, .video],
             allowsMultipleSelection: true
         ) { result in
-            switch result {
-            case .success(let urls):
-                Task {
-                    await viewModel.importVideos(from: urls)
-                    await MainActor.run {
-                        // Universal rule: Move to Video section after importing
-                        viewModel.selectedTab = 0
-                        viewModel.homeSelectedTab = "Video"
-                    }
-                }
-            case .failure(let error):
-                print("File import failed: \(error.localizedDescription)")
-            }
+            handleFileImport(result)
         }
         .photosPicker(
             isPresented: $viewModel.showPhotoPicker,
@@ -168,45 +125,10 @@ struct DashboardView: View {
             matching: .videos
         )
         .onChange(of: selectedPhotoItems) { oldItems, newItems in
-            guard !newItems.isEmpty else { return }
-            viewModel.isImporting = true
-            Task {
-                var importedURLs = [URL]()
-                var importedNames = [String]()
-                
-                for item in newItems {
-                    // Try to get original filename
-                    var fileName: String?
-                    if let localID = item.itemIdentifier {
-                        let result = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil)
-                        if let asset = result.firstObject {
-                            let resources = PHAssetResource.assetResources(for: asset)
-                            fileName = resources.first?.originalFilename
-                        }
-                    }
-                    
-                    if let movie = try? await item.loadTransferable(type: VideoTransferable.self) {
-                        importedURLs.append(movie.url)
-                        importedNames.append(fileName ?? movie.url.lastPathComponent)
-                    }
-                }
-                
-                await MainActor.run {
-                    selectedPhotoItems.removeAll()
-                    // Universal rule: Move to Video section after importing
-                    viewModel.selectedTab = 0
-                    viewModel.homeSelectedTab = "Video"
-                }
-                
-                await viewModel.importVideos(from: importedURLs, names: importedNames)
-            }
+            handlePhotoImport(newItems)
         }
         .sheet(isPresented: $viewModel.showShareSheetGlobal) {
-            if !viewModel.activityItems.isEmpty {
-                ShareSheet(activityItems: viewModel.activityItems)
-            } else if let url = viewModel.shareURL {
-                ShareSheet(activityItems: [url])
-            }
+            shareSheetContent
         }
         .overlay {
             if viewModel.isSharing {
@@ -214,22 +136,96 @@ struct DashboardView: View {
             }
         }
         .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
-            if newVideo != nil {
-                viewModel.isTabBarHidden = true
-            } else {
-                // Restore tab bar when video player is closed
-                viewModel.isTabBarHidden = false
+            viewModel.isTabBarHidden = (newVideo != nil)
+        }
+    }
+    
+    private var actionSheetOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    withAnimation {
+                        viewModel.showActionSheet = false
+                    }
+                }
+                .transition(.opacity)
+            
+            CustomActionSheet(
+                target: viewModel.actionSheetTarget,
+                items: viewModel.actionSheetItems,
+                isPresented: $viewModel.showActionSheet
+            )
+            .transition(.move(edge: .bottom))
+        }
+        .zIndex(200)
+    }
+
+    @ViewBuilder
+    private var folderAlertContent: some View {
+        TextField("Folder Name", text: $viewModel.newFolderName)
+        Button("Cancel", role: .cancel) { viewModel.newFolderName = "" }
+        Button("Create") {
+            let name = viewModel.newFolderName
+            if viewModel.createFolder(name: name) {
+                viewModel.selectedTab = 0
+                viewModel.homeSelectedTab = "Video"
             }
         }
-        .onChange(of: viewModel.selectedTab) { oldTab, newTab in
-            // Ensure tab bar visibility
-            if newTab == 0 {
-                viewModel.isTabBarHidden = false
-            } else if newTab == 100 {
-                // If user somehow taps the blank middle tab, revert to previous
-                viewModel.selectedTab = oldTab
+    }
+
+    private func handleFileImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            Task {
+                await viewModel.importVideos(from: urls)
+                await MainActor.run {
+                    viewModel.selectedTab = 0
+                    viewModel.homeSelectedTab = "Video"
+                }
             }
+        case .failure(let error):
+            print("File import failed: \(error.localizedDescription)")
         }
+    }
+
+    private func handlePhotoImport(_ items: [PhotosPickerItem]) {
+        guard !items.isEmpty else { return }
+        viewModel.isImporting = true
+        Task {
+            var importedURLs = [URL]()
+            var importedNames = [String]()
+            for item in items {
+                var fileName: String?
+                if let localID = item.itemIdentifier {
+                    let result = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil)
+                    if let asset = result.firstObject {
+                        let resources = PHAssetResource.assetResources(for: asset)
+                        fileName = resources.first?.originalFilename
+                    }
+                }
+                if let movie = try? await item.loadTransferable(type: VideoTransferable.self) {
+                    importedURLs.append(movie.url)
+                    importedNames.append(fileName ?? movie.url.lastPathComponent)
+                }
+            }
+            await MainActor.run {
+                selectedPhotoItems.removeAll()
+                viewModel.selectedTab = 0
+                viewModel.homeSelectedTab = "Video"
+            }
+            await viewModel.importVideos(from: importedURLs, names: importedNames)
+        }
+    }
+
+    @ViewBuilder
+    private var shareSheetContent: some View {
+        if !viewModel.activityItems.isEmpty {
+            ShareSheet(activityItems: viewModel.activityItems)
+        } else if let url = viewModel.shareURL {
+            ShareSheet(activityItems: [url])
+        }
+    
     }
     
     private var sharingOverlay: some View {
@@ -338,8 +334,7 @@ struct PlusButtonOverlay: View {
                     
                 }
             }
-            .padding(.bottom, -10) // Corrected for vertical centering with native icons
-            .ignoresSafeArea(.keyboard)
+            .padding(.bottom, UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0)
             .ignoresSafeArea(.keyboard)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
