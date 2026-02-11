@@ -433,29 +433,15 @@ struct PlusButtonOverlay: View {
             HStack {
                 Spacer()
                 
-                Menu {
-                    Button(action: { viewModel.showCreateFolderAlert = true }) {
-                        Label("Create Folder", systemImage: "folder.badge.plus")
-                    }
-                    Button(action: { viewModel.showPhotoPicker = true }) {
-                        Label("Import from Photos", systemImage: "photo.on.rectangle")
-                    }
-                    Button(action: { viewModel.showFileImporter = true }) {
-                        Label("Add From iOS Files", systemImage: "plus.rectangle.on.folder")
-                    }
-                } label: {
+                ZStack {
+                    // Static Background (No Glitch)
                     ZStack {
-                        // Glass Effect
                         Circle()
                             .fill(.ultraThinMaterial)
                             .environment(\.colorScheme, .dark)
                         
                         Circle()
                             .fill(Color.white.opacity(0.05))
-
-                        Image(systemName: "plus")
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundColor(.white)
                     }
                     .frame(width: 56, height: 56)
                     .overlay(
@@ -470,6 +456,30 @@ struct PlusButtonOverlay: View {
                             )
                     )
                     .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: 5)
+                    
+                    // Interactive Menu (Overlay)
+                    Menu {
+                        Button(action: { viewModel.showCreateFolderAlert = true }) {
+                            Label("Create Folder", systemImage: "folder.badge.plus")
+                        }
+                        Button(action: { viewModel.showPhotoPicker = true }) {
+                            Label("Import from Photos", systemImage: "photo.on.rectangle")
+                        }
+                        Button(action: { viewModel.showFileImporter = true }) {
+                            Label("Add From iOS Files", systemImage: "plus.rectangle.on.folder")
+                        }
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(Color.clear)
+                                .contentShape(Circle())
+                            
+                            Image(systemName: "plus")
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+                        .frame(width: 56, height: 56)
+                    }
                 }
             }
             .padding(.trailing, 24)
