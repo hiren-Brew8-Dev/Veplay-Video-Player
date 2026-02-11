@@ -1,4 +1,5 @@
 import SwiftUI
+import LocalAuthentication
 
 struct SettingsView: View {
     @AppStorage("useFaceID") private var useFaceID = false
@@ -47,7 +48,12 @@ struct SettingsView: View {
                                 icon: "faceid",
                                 title: "FaceID Protection",
                                 subtitle: "Secure app with biometric lock",
-                                isOn: $useFaceID,
+                                isOn: Binding(
+                                    get: { useFaceID },
+                                    set: { newValue in
+                                        handleFaceIDToggle(newValue)
+                                    }
+                                ),
                                 iconColor: .green
                             )
                         }
@@ -100,8 +106,67 @@ struct SettingsView: View {
                 .padding(.horizontal, 10)
                 .padding(.bottom, 100) // Space for tab bar
             }
+            
         }
-//        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
+        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
+        .alert(isPresented: $showBiometricAlert) {
+            Alert(
+                title: Text("Face ID Unavailable"),
+                message: Text(biometricAlertMessage),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+
+    // MARK: - FaceID Handling
+    
+    @State private var showBiometricAlert = false
+    @State private var biometricAlertMessage = ""
+
+    private func handleFaceIDToggle(_ newValue: Bool) {
+        let context = LAContext()
+        var error: NSError?
+
+        // 1. Check if Biometrics are available
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+            // Case: FaceID/Passcode not set up or unavailable
+            biometricAlertMessage = "Face ID or Passcode is not set up on this device. Please enable it in iOS Settings to use this feature."
+            showBiometricAlert = true
+            // Ensure toggle remains off if it was off
+            if newValue { useFaceID = false }
+            return
+        }
+
+        // 2. If turning OFF, require authentication
+        if !newValue {
+            // User wants to DISABLE FaceID -> Verify Identity first
+            context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Verify to disable FaceID Protection") { success, authenticationError in
+                DispatchQueue.main.async {
+                    if success {
+                        // Auth successful, allow disabling
+                        self.useFaceID = false
+                    } else {
+                        // Auth failed, keep it ON
+                        self.useFaceID = true
+                        if let error = authenticationError {
+                             print("Auth failed: \(error.localizedDescription)")
+                        }
+                    }
+                }
+            }
+        } else {
+            // 3. If turning ON, we might also want to verify simply to ensure it works, 
+            // but usually it's okay to just enable. However, to be "proper", let's verify.
+            context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Verify to enable FaceID Protection") { success, authenticationError in
+                DispatchQueue.main.async {
+                    if success {
+                        self.useFaceID = true
+                    } else {
+                        self.useFaceID = false
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Components
