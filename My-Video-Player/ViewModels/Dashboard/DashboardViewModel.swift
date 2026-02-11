@@ -13,6 +13,8 @@ struct VideoSection: Identifiable {
 }
 
 class DashboardViewModel: ObservableObject {
+    static let supportedVideoExtensions = ["mp4", "mov", "m4v", "avi", "mkv", "3gp", "wmv", "flv", "webm", "ts", "mpg", "mpeg", "vob", "ogv", "divx", "asf", "m2ts", "rmvb", "rm", "mts", "swf", "dv", "m2t", "m2p", "m4p", "m4b", "flc", "f4v"]
+    
     // Access Tracking
     private var folderAccessTimes: [String: Date] {
         get {
@@ -626,8 +628,7 @@ class DashboardViewModel: ObservableObject {
     }
     
     private func videoItem(from url: URL) -> VideoItem? {
-        let videoExtensions = ["mp4", "mov", "m4v", "avi", "mkv"]
-        guard videoExtensions.contains(url.pathExtension.lowercased()) else { return nil }
+        guard DashboardViewModel.supportedVideoExtensions.contains(url.pathExtension.lowercased()) else { return nil }
         
         let asset = AVURLAsset(url: url)
         var duration = CMTimeGetSeconds(asset.duration)
@@ -1044,10 +1045,10 @@ class DashboardViewModel: ObservableObject {
                                 // But simpler: if Move mode and results contains the new destination,
                                 // we can delete the source if it's different from all results.
                                 // Higher level: Results contains only SUCCESSFUL paste operations.
-                                if results.contains(where: { $0.lastPathComponent == url.lastPathComponent }) {
+                                if results.contains(where: { $0.url?.lastPathComponent == url.lastPathComponent }) {
                                     // The file was successfully pasted with this name.
                                     // If the source path is different from any successful destination path, delete source.
-                                    if !results.contains(where: { $0.path == url.path }) {
+                                    if !results.contains(where: { $0.url?.path == url.path }) {
                                          self.deleteVideo(video)
                                     }
                                 }
@@ -1207,25 +1208,36 @@ class DashboardViewModel: ObservableObject {
         return items
     }
     
-    func importVideo(from url: URL, withName name: String? = nil, to destination: URL? = nil) {
+    func importVideo(from url: URL, withName name: String? = nil, to destination: URL? = nil, autoPlay: Bool = false) {
+        // If it's an external URL, check if we already have it imported by filename
+        if let existing = checkDuplicate(url: url) {
+            Task { @MainActor in
+                self.playingVideo = existing
+            }
+            return
+        }
+        
         Task {
-            await importVideos(from: [url], names: name != nil ? [name!] : nil, to: destination)
+            if autoPlay, let firstItem = (await importVideos(from: [url], names: name != nil ? [name!] : nil, to: destination)).first {
+                await MainActor.run {
+                    self.playingVideo = firstItem
+                }
+            }
         }
     }
     
     private func checkDuplicate(url: URL) -> VideoItem? {
         // Check both imported and gallery videos
         let all = importedVideos + allGalleryVideos + folders.flatMap { $0.videos }
-        // Simple check by filename or usage of identifier if possible
-        // Ideally we check if we already have this URL imported
-        // For now, let's just check filename match which is common for "duplicate import" logic
-        return all.first(where: { $0.url?.lastPathComponent == url.lastPathComponent })
+        // Proper check: compare full filename with extension
+        let targetName = url.lastPathComponent.lowercased()
+        return all.first(where: { ($0.url?.lastPathComponent)?.lowercased() == targetName })
     }
     
     // Import logic
     @discardableResult
-    func importVideos(from urls: [URL], names: [String]? = nil, to destination: URL? = nil, shouldMove: Bool = false) async -> [URL] {
-        var successfulURLs: [URL] = []
+    func importVideos(from urls: [URL], names: [String]? = nil, to destination: URL? = nil, shouldMove: Bool = false) async -> [VideoItem] {
+        var successfulItems: [VideoItem] = []
         
         // Start Loading
         await MainActor.run {
@@ -1234,6 +1246,7 @@ class DashboardViewModel: ObservableObject {
         
         let targetDirectory = destination ?? self.activeImportFolderURL ?? self.importedVideosDirectory
         let context = CDManager.shared.container.viewContext
+        let fileManager = FileManager.default
         
             for (index, url) in urls.enumerated() {
                 var filename: String
@@ -1249,7 +1262,34 @@ class DashboardViewModel: ObservableObject {
                    // However, DashboardView should have passed the correct name.
                 }
                 
-                let destinationURL = targetDirectory.appendingPathComponent(filename)
+                var destinationURL = targetDirectory.appendingPathComponent(filename)
+                
+                // If a file already exists at the destination, generate a unique name
+                if fileManager.fileExists(atPath: destinationURL.path) {
+                    // Check if it's the exact SAME file being re-imported from the same location (skip case)
+                    if url.path == destinationURL.path {
+                        print("ℹ️ File already exists at destination and is the same source. Skipping copy.")
+                        if let item = self.videoItem(from: destinationURL) {
+                            successfulItems.append(item)
+                        }
+                        continue
+                    }
+                    
+                    // Generate unique name: "video (1).mp4", "video (2).mp4", etc.
+                    let baseName = (filename as NSString).deletingPathExtension
+                    let ext = (filename as NSString).pathExtension
+                    var counter = 1
+                    var uniqueName = filename
+                    
+                    while fileManager.fileExists(atPath: targetDirectory.appendingPathComponent(uniqueName).path) {
+                        uniqueName = "\(baseName) (\(counter)).\(ext)"
+                        counter += 1
+                    }
+                    
+                    filename = uniqueName
+                    destinationURL = targetDirectory.appendingPathComponent(filename)
+                    print("🔄 Renamed duplicate to: \(filename)")
+                }
                 
                 // 1. Save to History (Core Data)
                 await MainActor.run {
@@ -1257,12 +1297,8 @@ class DashboardViewModel: ObservableObject {
                     newItem.id = UUID()
                     newItem.videoUrlString = destinationURL.absoluteString
                     
-                    // Clean title - don't save placeholder or extension
-                    var cleanTitle = (filename as NSString).deletingPathExtension
-                    if cleanTitle == VideoItem.titlePlaceholder {
-                        cleanTitle = "Video_\(Int(Date().timeIntervalSince1970))"
-                    }
-                    newItem.title = cleanTitle
+                    let cleanTitle = (filename as NSString).deletingPathExtension
+                    newItem.title = cleanTitle != VideoItem.titlePlaceholder ? cleanTitle : "Video_\(Int(Date().timeIntervalSince1970))"
                     
                     newItem.timestamp = Date()
                     try? context.save()
@@ -1270,38 +1306,23 @@ class DashboardViewModel: ObservableObject {
             
             // 2. Copy/Move File
             do {
-                let fileManager = FileManager.default
-                
                 // Ensure access
                 let gainedAccess = url.startAccessingSecurityScopedResource()
                 defer { if gainedAccess { url.stopAccessingSecurityScopedResource() } }
-                
-                if fileManager.fileExists(atPath: destinationURL.path) {
-                    print("⚠️ Duplicate detected at destination: \(filename)")
-                    // If source is same as destination, it's just a user error / pointess move
-                    if url.path == destinationURL.path {
-                        await MainActor.run {
-                            self.alertMessage = "'\(filename)' is already in this folder."
-                            self.showAlert = true
-                        }
-                    } else {
-                        await MainActor.run {
-                            self.alertMessage = "A file named '\(filename)' already exists in the destination folder."
-                            self.showAlert = true
-                        }
-                    }
-                    continue 
-                }
                 
                 // Try to move if requested, otherwise copy
                 do {
                     if shouldMove {
                         try fileManager.moveItem(at: url, to: destinationURL)
-                        successfulURLs.append(destinationURL)
+                        if let item = self.videoItem(from: destinationURL) {
+                            successfulItems.append(item)
+                        }
                         print("⚡ Moved (instant): \(filename)")
                     } else {
                         try fileManager.copyItem(at: url, to: destinationURL)
-                        successfulURLs.append(destinationURL)
+                        if let item = self.videoItem(from: destinationURL) {
+                            successfulItems.append(item)
+                        }
                         print("✅ Copied: \(filename)")
                     }
                 } catch {
@@ -1309,7 +1330,9 @@ class DashboardViewModel: ObservableObject {
                     if shouldMove {
                         do {
                             try fileManager.copyItem(at: url, to: destinationURL)
-                            successfulURLs.append(destinationURL)
+                            if let item = self.videoItem(from: destinationURL) {
+                                successfulItems.append(item)
+                            }
                             print("✅ Copied (Move fallback): \(filename)")
                         } catch {
                             print("❌ Error importing \(url.lastPathComponent): \(error)")
@@ -1338,7 +1361,7 @@ class DashboardViewModel: ObservableObject {
             self.isSelectionMode = false 
         }
         
-        return successfulURLs
+        return successfulItems
     }
 
     func findFolder(byId id: UUID) -> Folder? {
@@ -1469,8 +1492,7 @@ class DashboardViewModel: ObservableObject {
             do {
                 let fileURLs = try FileManager.default.contentsOfDirectory(at: videosPath, includingPropertiesForKeys: [.creationDateKey, .fileSizeKey], options: .skipsHiddenFiles)
                 
-                let videoExtensions = ["mp4", "mov", "m4v", "avi", "mkv"]
-                let videoFiles = fileURLs.filter { videoExtensions.contains($0.pathExtension.lowercased()) }
+                let videoFiles = fileURLs.filter { DashboardViewModel.supportedVideoExtensions.contains($0.pathExtension.lowercased()) }
                 
                 let loadedVideos = videoFiles.compactMap { url -> VideoItem? in
                     // Verify file exists and has size

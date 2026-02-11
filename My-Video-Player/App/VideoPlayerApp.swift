@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import CoreData
+import GoogleCast
 
 @main
 struct VideoPlayerApp: App {
@@ -63,10 +64,27 @@ struct VideoPlayerApp: App {
     }
 }
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, GCKLoggerDelegate {
     static var orientationLock = UIInterfaceOrientationMask.portrait
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        
+        let criteria = GCKDiscoveryCriteria(applicationID: kGCKDefaultMediaReceiverApplicationID)
+        let options = GCKCastOptions(discoveryCriteria: criteria)
+        GCKCastContext.setSharedInstanceWith(options)
+        
+        // Enable logging for debug
+        GCKLogger.sharedInstance().delegate = self
+        
+        return true
+    }
 
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         return AppDelegate.orientationLock
+    }
+    
+    // MARK: - GCKLoggerDelegate
+    func logMessage(_ message: String, at level: GCKLoggerLevel, fromFunction function: String, location: String) {
+        // print("GCK: \(message)")
     }
 }

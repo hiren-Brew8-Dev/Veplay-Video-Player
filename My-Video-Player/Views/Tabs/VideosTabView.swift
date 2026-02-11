@@ -174,7 +174,7 @@ struct VideosTabView: View {
             .environmentObject(viewModel) // Inject VM for child views
             .fileImporter(
                 isPresented: $showFileImporter,
-                allowedContentTypes: [.movie, .video],
+                allowedContentTypes: [.movie, .video, .quickTimeMovie, .mpeg4Movie, .mpeg, .avi, .item],
                 allowsMultipleSelection: false
             ) { result in
                 switch result {

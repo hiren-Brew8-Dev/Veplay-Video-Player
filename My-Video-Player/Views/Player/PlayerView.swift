@@ -115,23 +115,39 @@ struct PlayerView: View {
                     .id(ObjectIdentifier(vlcPlayer))
                     .edgesIgnoringSafeArea(.all)
             } else if let player = viewModel.player {
-                if viewModel.aspectRatio.isUnconstrained {
-                    CustomVideoPlayer(
-                        player: player,
-                        videoGravity: viewModel.aspectRatio.gravity,
-                        isPiPActive: $viewModel.isPiPActive,
-                        onRestore: { viewModel.handleRestoreFromPiP() }
-                    )
-                    .edgesIgnoringSafeArea(.all)
-                } else {
-                    CustomVideoPlayer(
-                        player: player,
-                        videoGravity: viewModel.aspectRatio.gravity,
-                        isPiPActive: $viewModel.isPiPActive,
-                        onRestore: { viewModel.handleRestoreFromPiP() }
-                    )
-                    .aspectRatio(viewModel.aspectRatio.ratioValue, contentMode: .fit)
-                    .edgesIgnoringSafeArea(.all)
+                ZStack {
+                    if viewModel.aspectRatio.isUnconstrained {
+                        CustomVideoPlayer(
+                            player: player,
+                            videoGravity: viewModel.aspectRatio.gravity,
+                            isPiPActive: $viewModel.isPiPActive,
+                            onRestore: { viewModel.handleRestoreFromPiP() }
+                        )
+                        .edgesIgnoringSafeArea(.all)
+                    } else {
+                        CustomVideoPlayer(
+                            player: player,
+                            videoGravity: viewModel.aspectRatio.gravity,
+                            isPiPActive: $viewModel.isPiPActive,
+                            onRestore: { viewModel.handleRestoreFromPiP() }
+                        )
+                        .aspectRatio(viewModel.aspectRatio.ratioValue, contentMode: .fit)
+                        .edgesIgnoringSafeArea(.all)
+                    }
+                    
+                    if viewModel.isExternalPlaybackActive {
+                        VStack(spacing: 20) {
+                            Image(systemName: "airplayvideo")
+                                .font(.system(size: 60))
+                                .foregroundColor(.white)
+                            Text("This video is playing on AirPlay")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.black)
+                        .edgesIgnoringSafeArea(.all)
+                    }
                 }
             } else {
                 ProgressView()

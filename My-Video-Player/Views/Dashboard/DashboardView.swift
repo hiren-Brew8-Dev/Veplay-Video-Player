@@ -131,6 +131,9 @@ struct DashboardView: View {
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: viewModel.showActionSheet)
         .environmentObject(viewModel)
         .preferredColorScheme(isDarkMode ? .dark : .light)
+        .onOpenURL { url in
+            viewModel.importVideo(from: url, autoPlay: true)
+        }
         .alert("Create New Folder", isPresented: $viewModel.showCreateFolderAlert) {
             folderAlertContent
         } message: {
@@ -146,7 +149,7 @@ struct DashboardView: View {
         }
         .fileImporter(
             isPresented: $viewModel.showFileImporter,
-            allowedContentTypes: [.movie, .video],
+            allowedContentTypes: [.movie, .video, .quickTimeMovie, .mpeg4Movie, .mpeg, .avi, .item],
             allowsMultipleSelection: true
         ) { result in
             handleFileImport(result)

@@ -1,7 +1,12 @@
 import SwiftUI
+import AVKit
+import GoogleCast
 
 struct CastDevicePickerView: View {
-    @ObservedObject var discoveryManager = DiscoveryManager()
+    @ObservedObject var castManager = GoogleCastManager.shared
+    // We can keep DiscoveryManager for AirPlay custom discovery if we wanted, 
+    // but we use the system button now. So we can remove it or keep it for checking permissions.
+    @ObservedObject var discoveryManager = DiscoveryManager() 
     @Environment(\.dismiss) var dismiss
     @Environment(\.openURL) var openURL
     let isLandscape: Bool
@@ -77,12 +82,16 @@ struct CastDevicePickerView: View {
         }
         .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: isLandscape ? 0 : -10)
         .onAppear {
+            castManager.startDiscovery()
             if hasShownPermissionPrompt {
                 showPermissionView = false
-                discoveryManager.startScanning()
+                discoveryManager.startScanning() 
             } else {
                 showPermissionView = true
             }
+        }
+        .onDisappear {
+            castManager.stopDiscovery()
         }
     }
     
@@ -151,6 +160,7 @@ struct CastDevicePickerView: View {
                 hasShownPermissionPrompt = true
                 withAnimation {
                     showPermissionView = false
+                    castManager.startDiscovery()
                     discoveryManager.startScanning()
                 }
             }) {
@@ -221,13 +231,14 @@ struct CastDevicePickerView: View {
                     .frame(maxWidth: .infinity)
                 }
                 
+                airPlaySection
+                
                 // Device list or no devices message
-                if !discoveryManager.isScanning {
-                    if discoveryManager.discoveredDevices.isEmpty {
-                        noDevicesFooter
-                    } else {
-                        deviceList
-                    }
+                // We now check castManager.devices instead of discoveryManager.discoveredDevices for Chromecast
+                if castManager.devices.isEmpty {
+                    noDevicesFooter
+                } else {
+                    deviceList
                 }
             }
             .padding(.top, 16)
@@ -237,30 +248,36 @@ struct CastDevicePickerView: View {
     
     private var deviceList: some View {
         VStack(spacing: 12) {
-            ForEach(discoveryManager.discoveredDevices) { device in
+            ForEach(castManager.devices, id: \.deviceID) { device in
                 Button(action: {
-                    // Handle device selection
+                    castManager.connect(to: device)
+                    dismiss()
                 }) {
                     HStack(spacing: 16) {
-                        Image(systemName: device.type == .chromecast ? "tv" : "airplayvideo")
+                        Image(systemName: "tv")
                             .foregroundColor(.sheetTextPrimary)
                             .font(.system(size: 22))
                             .frame(width: 32)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(device.name)
+                            Text(device.friendlyName ?? "Google Cast Device")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.sheetTextPrimary)
-                            Text(device.model)
+                            Text(device.modelName ?? "Chromecast")
                                 .font(.system(size: 14))
                                 .foregroundColor(.themeSecondary)
                         }
                         
                         Spacer()
                         
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(.themeSecondary)
+                        if castManager.isConnected && castManager.currentSession?.device.deviceID == device.deviceID {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                        } else {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14))
+                                .foregroundColor(.themeSecondary)
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
@@ -277,6 +294,55 @@ struct CastDevicePickerView: View {
         }
     }
     
+    // MARK: - AirPlay Section
+    private var airPlaySection: some View {
+        ZStack {
+             HStack(spacing: 16) {
+                // Static Icon on left
+                Image(systemName: "airplayvideo")
+                    .foregroundColor(.sheetTextPrimary)
+                    .font(.system(size: 22))
+                    .frame(width: 32)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("AirPlay & Bluetooth")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.sheetTextPrimary)
+                    Text("Tap icon to connect")
+                        .font(.system(size: 14))
+                        .foregroundColor(.themeSecondary)
+                }
+                
+                Spacer()
+                
+                // The Helper Arrow to suggest clicking
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(.themeSecondary)
+                    .padding(.trailing, 8)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .frame(height: 70)
+            .background(Color.premiumCardBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.premiumCardBorder, lineWidth: 1)
+            )
+            .cornerRadius(12)
+            
+            // The Actual AVRoutePickerView overlaid on top but invisible/transparent
+            // effectively making the whole card a trigger for the system picker
+            AirPlayButton()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // We use a custom coordinator or just let it handle touches.
+                // Note: AVRoutePickerView usually draws the icon. 
+                // To make a custom UI trigger it, we layer it on top with opacity 0.01
+                .opacity(0.02) 
+        }
+        .padding(.horizontal, 20)
+    }
+    
     private var noDevicesFooter: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -289,6 +355,12 @@ struct CastDevicePickerView: View {
             
             VStack(alignment: .leading, spacing: 8) {
                 Text("• Allow Local Network access in your phone settings.")
+                    .font(.system(size: 13))
+                    .foregroundColor(.homeAccent.opacity(0.8))
+                Text("• Allow Local Network access in your phone settings.")
+                    .font(.system(size: 13))
+                    .foregroundColor(.homeAccent.opacity(0.8))
+                Text("• For Mac/Apple TV, use the AirPlay option above.")
                     .font(.system(size: 13))
                     .foregroundColor(.homeAccent.opacity(0.8))
                 Text("• Try restarting your Wi-Fi router or casting device.")

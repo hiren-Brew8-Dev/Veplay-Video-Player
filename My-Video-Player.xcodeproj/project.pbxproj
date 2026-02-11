@@ -101,6 +101,7 @@
 				6C51DFEB2F3453C500844EFE /* Frameworks */,
 				6C51DFEC2F3453C500844EFE /* Resources */,
 				50B4DFBFF1B6055471527659 /* [CP] Embed Pods Frameworks */,
+				A7C13CD8FC4E629F6B772F3F /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -204,6 +205,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A7C13CD8FC4E629F6B772F3F /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */

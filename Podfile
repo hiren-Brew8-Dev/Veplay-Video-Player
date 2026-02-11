@@ -11,5 +11,6 @@ pod 'MobileVLCKit'
 pod 'SSZipArchive'
 pod 'SwiftSoup'
 # pod 'Alamofire' # Removed because it's already in SPM, causing duplicate class errors
+pod 'google-cast-sdk'
 
 end

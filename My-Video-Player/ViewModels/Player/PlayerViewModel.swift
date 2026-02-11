@@ -495,7 +495,14 @@ import UIKit
         // and the user explicitly rejected the custom overlay ("not want custom..."),
         // we must fallback to VLC for everything to guarantee native subtitle support.
         if let url = video.url {
-            setupVLCPlayer(url: url, autoPlay: autoPlay)
+            if isVLCFormat(url) {
+                setupVLCPlayer(url: url, autoPlay: autoPlay)
+            } else {
+                // Native format: Use AVPlayer for best system integration (AirPlay, PiP, etc.)
+                self.currentVideoURL = url
+                let asset = AVURLAsset(url: url)
+                self.configurePlayer(asset: asset, autoPlay: autoPlay)
+            }
             return
         }
         
@@ -901,7 +908,7 @@ import UIKit
 
     private func isVLCFormat(_ url: URL) -> Bool {
         let ext = url.pathExtension.lowercased()
-        let vlcExtensions = ["mkv", "avi", "wmv", "flv", "webm", "3gp", "vob", "mpg", "mpeg", "ts", "m2ts", "divx", "asf"]
+        let vlcExtensions = ["mkv", "avi", "wmv", "flv", "webm", "3gp", "vob", "mpg", "mpeg", "ts", "m2ts", "divx", "asf", "rmvb"]
         return vlcExtensions.contains(ext)
     }
     
