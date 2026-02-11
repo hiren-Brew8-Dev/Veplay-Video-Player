@@ -63,26 +63,35 @@ struct VideoItem: Identifiable, Hashable {
     }
     
     var truncatedTitle: String {
-        let name = title
-        let ext = url?.pathExtension ?? ""
+        let baseName = title
+        let ext = url?.pathExtension.lowercased() ?? ""
         
-        // If extension is empty or title is short, just return title
-        if ext.isEmpty || name.count <= 12 {
-            return name
+        if ext.isEmpty {
+            return baseName.count > 15 ? String(baseName.prefix(12)) + "..." : baseName
         }
         
-        // Truncate name and append extension nicely
-        let prefix = String(name.prefix(6))
+        let fullDisplayName = baseName + "." + ext
+        if fullDisplayName.count <= 16 {
+            return fullDisplayName
+        }
+        
+        let prefix = String(baseName.prefix(min(baseName.count, 8)))
         return "\(prefix)...\(ext)"
     }
 }
 
 extension String {
     func truncated(ext: String) -> String {
-        if ext.isEmpty || self.count <= 12 {
-            return self
+        if ext.isEmpty {
+            return self.count > 15 ? String(self.prefix(12)) + "..." : self
         }
-        let prefix = String(self.prefix(6))
+        
+        let fullDisplayName = self + "." + ext
+        if fullDisplayName.count <= 16 {
+            return fullDisplayName
+        }
+        
+        let prefix = String(self.prefix(min(self.count, 8)))
         return "\(prefix)...\(ext)"
     }
 }
