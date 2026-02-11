@@ -13,7 +13,7 @@ struct VideoSection: Identifiable {
 }
 
 class DashboardViewModel: ObservableObject {
-    static let supportedVideoExtensions = ["mp4", "mov", "m4v", "avi", "mkv", "3gp", "wmv", "flv", "webm", "ts", "mpg", "mpeg", "vob", "ogv", "divx", "asf", "m2ts", "rmvb", "rm", "mts", "swf", "dv", "m2t", "m2p", "m4p", "m4b", "flc", "f4v"]
+    static let supportedVideoExtensions = ["mp4", "mov", "m4v", "avi", "mkv", "3gp", "wmv", "flv", "webm", "ts", "mpg", "mpeg", "vob", "ogv", "divx", "asf", "m2ts", "rmvb", "rm", "mts", "swf", "dv", "m2t", "m2p", "m4p", "m4b", "flc", "f4v", "ogg", "obb", "vro", "dat"]
     
     // Access Tracking
     private var folderAccessTimes: [String: Date] {
@@ -1606,9 +1606,10 @@ class DashboardViewModel: ObservableObject {
             for video in localVideos {
                 guard let url = video.url else { continue }
                 
-                // Check if VLC Format
+                // Check if VLC Format (basically anything not natively supported by AVAsset)
                 let ext = url.pathExtension.lowercased()
-                if ["mkv", "avi", "wmv", "flv", "webm", "3gp"].contains(ext) {
+                let nativeExtensions = ["mp4", "mov", "m4v"]
+                if !nativeExtensions.contains(ext) {
                     // Use Helper to fetch duration asynchronously via Delegate
                     let helper = VLCDurationHelper()
                     // We need to keep a reference to helper until it finishes. 

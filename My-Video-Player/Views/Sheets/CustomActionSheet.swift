@@ -247,54 +247,8 @@ struct ActionSheetThumbnailView: View {
     }
     
     private func loadThumbnail() {
-        if let asset = video.asset {
-            let options = PHImageRequestOptions()
-            options.deliveryMode = .highQualityFormat
-            options.isNetworkAccessAllowed = true
-            
-            PHImageManager.default().requestImage(
-                for: asset,
-                targetSize: CGSize(width: 200, height: 125),
-                contentMode: .aspectFill,
-                options: options
-            ) { result, _ in
-                self.thumbnail = result
-            }
-        } else if let path = video.thumbnailPath, let image = UIImage(contentsOfFile: path.path) {
+        ThumbnailCacheManager.shared.getThumbnail(for: video) { image in
             self.thumbnail = image
-        } else if let url = video.url {
-            let ext = url.pathExtension.lowercased()
-            let vlcExtensions = ["mkv", "avi", "wmv", "flv", "webm", "3gp", "vob", "mpg", "mpeg", "ts", "m2ts", "divx", "asf"]
-            
-            if vlcExtensions.contains(ext) {
-                let loader = VLCThumbnailHelper()
-                self.vlcLoader = loader
-                loader.generate(for: url) { image in
-                    self.thumbnail = image
-                    self.vlcLoader = nil
-                }
-                return
-            }
-
-            DispatchQueue.global(qos: .userInitiated).async {
-                let asset = AVAsset(url: url)
-                let generator = AVAssetImageGenerator(asset: asset)
-                generator.appliesPreferredTrackTransform = true
-                
-                let duration = asset.duration.seconds
-                let timeToCapture = duration > 2.0 ? 1.0 : 0.0
-                let time = CMTime(seconds: timeToCapture, preferredTimescale: 60)
-                
-                do {
-                    let cgImage = try generator.copyCGImage(at: time, actualTime: nil)
-                    let uiImage = UIImage(cgImage: cgImage)
-                    DispatchQueue.main.async {
-                        self.thumbnail = uiImage
-                    }
-                } catch {
-                    print("Thumbnail generation failed for action sheet: \(error)")
-                }
-            }
         }
     }
 }

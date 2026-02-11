@@ -43,11 +43,86 @@
 				<string>public.mpeg</string>
 				<string>com.real.realmedia</string>
 				<string>public.mpeg-ts</string>
+				<string>public.vob</string>
+				<string>public.ogg</string>
+				<string>public.ogv</string>
+				<string>public.webm</string>
+				<string>public.flv</string>
 			</array>
 		</dict>
 	</array>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.movie</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>VOB Video</string>
+			<key>UTTypeIdentifier</key>
+			<string>public.vob</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>vob</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.movie</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>OGG Video</string>
+			<key>UTTypeIdentifier</key>
+			<string>public.ogg</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>ogg</string>
+					<string>ogv</string>
+					<string>obb</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.movie</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>WebM Video</string>
+			<key>UTTypeIdentifier</key>
+			<string>public.webm</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>webm</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.movie</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Flash Video</string>
+			<key>UTTypeIdentifier</key>
+			<string>public.flv</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>flv</string>
+				</array>
+			</dict>
+		</dict>
 		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>
