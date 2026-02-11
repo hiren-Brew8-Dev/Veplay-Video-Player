@@ -10,8 +10,6 @@
 	<true/>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app needs to discover casting devices like Chromecast and AirPlay on your local network to play videos on your TV.</string>
-	<key>UIDesignRequiresCompatibility</key>
-	<false/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>This app uses Bluetooth to discover Google Cast devices nearby.</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -49,11 +47,92 @@
 				<string>public.ogv</string>
 				<string>public.webm</string>
 				<string>public.flv</string>
+				<string>public.3g2</string>
+				<string>public.mxf</string>
+				<string>com.adobe.flash.video</string>
+				<string>com.videoplayer.generic-video</string>
 			</array>
 		</dict>
 	</array>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Generic Video Format</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.videoplayer.generic-video</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>rrc</string>
+					<string>gifv</string>
+					<string>mng</string>
+					<string>qt</string>
+					<string>yuv</string>
+					<string>amv</string>
+					<string>mp2</string>
+					<string>mpe</string>
+					<string>mpv</string>
+					<string>svi</string>
+					<string>roq</string>
+					<string>nsv</string>
+					<string>f4p</string>
+					<string>f4a</string>
+					<string>f4b</string>
+					<string>mod</string>
+					<string>dat</string>
+					<string>vro</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>MXF Video</string>
+			<key>UTTypeIdentifier</key>
+			<string>public.mxf</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mxf</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>3G2 Video</string>
+			<key>UTTypeIdentifier</key>
+			<string>public.3g2</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>3g2</string>
+				</array>
+			</dict>
+		</dict>
 		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>

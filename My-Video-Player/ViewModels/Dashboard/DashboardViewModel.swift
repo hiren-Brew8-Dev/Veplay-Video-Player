@@ -13,7 +13,10 @@ struct VideoSection: Identifiable {
 }
 
 class DashboardViewModel: ObservableObject {
-    static let supportedVideoExtensions = ["mp4", "mov", "m4v", "avi", "mkv", "3gp", "wmv", "flv", "webm", "ts", "mpg", "mpeg", "vob", "ogv", "divx", "asf", "m2ts", "rmvb", "rm", "mts", "swf", "dv", "m2t", "m2p", "m4p", "m4b", "flc", "f4v", "ogg", "obb", "vro", "dat"]
+    static let supportedVideoExtensions = [
+        "mp4", "mov", "m4v", "avi", "mkv", "3gp", "wmv", "flv", "webm", "ts", "mpg", "mpeg", "vob", "ogv", "divx", "asf", "m2ts", "rmvb", "rm", "mts", "swf", "dv", "m2t", "m2p", "m4p", "m4b", "flc", "f4v", "ogg", "obb", "vro", "dat",
+        "rrc", "gifv", "mng", "qt", "yuv", "amv", "mp2", "mpe", "mpv", "svi", "3g2", "mxf", "roq", "nsv", "f4p", "f4a", "f4b", "mod"
+    ]
     
     // Access Tracking
     private var folderAccessTimes: [String: Date] {
