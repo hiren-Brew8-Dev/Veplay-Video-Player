@@ -4,18 +4,39 @@ struct SettingsView: View {
     @AppStorage("useFaceID") private var useFaceID = false
     @EnvironmentObject var viewModel: DashboardViewModel
 
+    @Environment(\.dismiss) var dismiss
+
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
+            // Header (Matching FolderDetailView style)
+            HStack(spacing: 12) {
+                Button(action: {
+                    if !viewModel.navigationPath.isEmpty {
+                        viewModel.navigationPath.removeLast()
+                    } else {
+                        dismiss()
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.premiumCircleBackground)
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+                
                 Text("Settings")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.homeTextPrimary)
+                
                 Spacer()
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 20)
-            .padding(.bottom, 10)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.homeBackground)
 
             ScrollView {
                 VStack(spacing: 24) {

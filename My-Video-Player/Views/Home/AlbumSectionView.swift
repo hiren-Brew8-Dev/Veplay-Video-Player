@@ -68,7 +68,8 @@ struct AlbumSectionView: View {
                 ScrollView {
                     LazyVGrid(columns: GridLayout.gridColumns, spacing: GridLayout.spacing) {
                         ForEach(viewModel.galleryAlbums, id: \.localIdentifier) { album in
-                            NavigationLink(destination: albumDestination(for: album)) {
+                            let folder = Folder(name: albumDestinationTitle(for: album), videoCount: album.estimatedAssetCount, videos: [], url: nil, albumIdentifier: album.localIdentifier, subfolders: [])
+                            NavigationLink(value: DashboardViewModel.NavigationDestination.folderDetail(folder)) {
                                 AlbumCardView(album: album)
                             }
                             .buttonStyle(.scalable)
@@ -82,11 +83,9 @@ struct AlbumSectionView: View {
         .background(Color.clear)
     }
     
-    private func albumDestination(for album: PHAssetCollection) -> some View {
+    private func albumDestinationTitle(for album: PHAssetCollection) -> String {
         let displayTitle = (album.localizedTitle ?? "Gallery") == "Videos" ? "All Videos" : (album.localizedTitle ?? "Gallery")
-        // Pass empty videos list - FolderDetailView will fetch them asynchronously
-        let folder = Folder(name: displayTitle, videoCount: album.estimatedAssetCount, videos: [], url: nil, albumIdentifier: album.localIdentifier, subfolders: [])
-        return FolderDetailView(initialFolder: folder, viewModel: viewModel)
+        return displayTitle
     }
     
 }

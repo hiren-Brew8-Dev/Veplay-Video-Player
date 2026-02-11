@@ -183,6 +183,7 @@ struct FolderDetailView: View {
         }
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .tabBar)
         .onAppear {
             viewModel.markFolderAsAccessed(folder)
             // Resolve titles for album videos if not already done
@@ -335,7 +336,7 @@ struct FolderDetailView: View {
             if !folder.subfolders.isEmpty {
                 Section(header: sectionHeaderLabel("Folders")) {
                     ForEach(folder.subfolders) { subfolder in
-                        NavigationLink(destination: FolderDetailView(initialFolder: subfolder, viewModel: viewModel)) {
+                        NavigationLink(value: DashboardViewModel.NavigationDestination.folderDetail(subfolder)) {
                             FolderCardView(folder: subfolder, viewModel: viewModel, onMenuAction: {
                                 activeActionItem = .folder(subfolder)
                                 showActionSheet = true
@@ -377,7 +378,7 @@ struct FolderDetailView: View {
             if !folder.subfolders.isEmpty {
                 Section(header: sectionHeaderLabel("Folders")) {
                     ForEach(folder.subfolders) { subfolder in
-                        NavigationLink(destination: FolderDetailView(initialFolder: subfolder, viewModel: viewModel)) {
+                        NavigationLink(value: DashboardViewModel.NavigationDestination.folderDetail(subfolder)) {
                             HStack {
                                 Image(systemName: "folder.fill")
                                     .foregroundColor(.homeTint)

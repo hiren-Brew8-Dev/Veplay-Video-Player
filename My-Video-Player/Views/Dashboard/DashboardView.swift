@@ -27,7 +27,8 @@ struct DashboardView: View {
         !viewModel.isHeaderExpanded &&
         !viewModel.isTabBarHidden &&
         !viewModel.showActionSheet &&
-        viewModel.playingVideo == nil
+        viewModel.playingVideo == nil &&
+        viewModel.navigationPath.isEmpty
     }
     
 
@@ -37,50 +38,50 @@ struct DashboardView: View {
                 // MARK: Home
                 Tab("Home", systemImage: "house", value: .home) {
                     NavigationStack(path: $viewModel.navigationPath) {
-                        VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
-                            .background(Color.homeBackground)
-                            .navigationBarTitleDisplayMode(.inline)
-                            .toolbar {
-                                ToolbarItem(placement: .navigationBarLeading) {
-                                    brandingView
-                                }
-                                ToolbarItem(placement: .navigationBarTrailing) {
-                                    headerActionButtons
-                                }
+                        VStack(spacing: 0) {
+                            if !viewModel.isSelectionMode {
+                                headerView
                             }
-                            .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
-                                destinationView(for: destination)
+                            VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
+                        }
+                        .background(Color.homeBackground)
+                        .navigationBarHidden(true)
+                        .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
+                            destinationView(for: destination)
+                                .toolbar(.hidden, for: .tabBar)
+                        }
+                        .navigationDestination(for: String.self) { value in
+                            if value == "Settings" {
+                                SettingsView()
+                                    .toolbar(.hidden, for: .tabBar)
+                                    .navigationBarHidden(true)
                             }
-                            .navigationDestination(for: String.self) { value in
-                                if value == "Settings" {
-                                    SettingsView()
-                                }
-                            }
+                        }
                     }
                 }
                 
                 // MARK: Gallery
                 Tab("Gallery", systemImage: "photo.on.rectangle", value: .gallery) {
-                    NavigationStack {
-                        AlbumSectionView(viewModel: viewModel)
-                            .background(Color.homeBackground)
-                            .navigationBarTitleDisplayMode(.inline)
-                            .toolbar {
-                                ToolbarItem(placement: .navigationBarLeading) {
-                                    brandingView
-                                }
-                                ToolbarItem(placement: .navigationBarTrailing) {
-                                    headerActionButtons
-                                }
+                    NavigationStack(path: $viewModel.navigationPath) {
+                        VStack(spacing: 0) {
+                            if !viewModel.isSelectionMode {
+                                headerView
                             }
-                            .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
-                                destinationView(for: destination)
+                            AlbumSectionView(viewModel: viewModel)
+                        }
+                        .background(Color.homeBackground)
+                        .navigationBarHidden(true)
+                        .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
+                            destinationView(for: destination)
+                                .toolbar(.hidden, for: .tabBar)
+                        }
+                        .navigationDestination(for: String.self) { value in
+                            if value == "Settings" {
+                                SettingsView()
+                                    .toolbar(.hidden, for: .tabBar)
+                                    .navigationBarHidden(true)
                             }
-                            .navigationDestination(for: String.self) { value in
-                                if value == "Settings" {
-                                    SettingsView()
-                                }
-                            }
+                        }
                     }
                 }
                 
@@ -92,7 +93,7 @@ struct DashboardView: View {
             .accentColor(.homeAccent)
             .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
             
-            if showTabBar {
+            if showTabBar && viewModel.selectedTab == .home {
                 PlusButtonOverlay(viewModel: viewModel)
             }
             
@@ -179,76 +180,84 @@ struct DashboardView: View {
         }
     }
 
-    private var brandingView: some View {
-        HStack(spacing: AppDesign.Icons.internalSpacing) {
-            Image(systemName: "play.circle.fill")
-                .appIconStyle(size: AppDesign.Icons.headerSize)
-            Text("PLAYER")
-                .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
-                .foregroundColor(.homeTextPrimary)
-        }
-    }
-
-    private var headerActionButtons: some View {
-        HStack(spacing: 12) {
-            // Settings Button
-            Button(action: {
-                viewModel.navigationPath.append("Settings")
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.premiumCircleBackground)
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                }
+    private var headerView: some View {
+        HStack(spacing: 0) {
+            // Logo & Title
+            HStack(spacing: AppDesign.Icons.internalSpacing) {
+                Image(systemName: "play.circle.fill")
+                    .appIconStyle(size: AppDesign.Icons.headerSize)
+                Text("PLAYER")
+                    .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
+                    .foregroundColor(.homeTextPrimary)
             }
+            .padding(.leading, 16)
             
-            // Ellipsis Menu
-            if viewModel.selectedTab == .home {
-                Menu {
-                    Button(action: { 
-                        withAnimation { viewModel.isSelectionMode = true }
-                    }) {
-                        Label("Select", systemImage: "checkmark.circle")
-                    }
-                    
-                    Divider()
-                    
-                    Picker(selection: Binding(
-                        get: { viewModel.isGridView },
-                        set: { viewModel.isGridView = $0 }
-                    ), label: EmptyView()) {
-                        Label("Grid", systemImage: "square.grid.2x2").tag(true)
-                        Label("List", systemImage: "list.bullet").tag(false)
-                    }
-                    .pickerStyle(.inline)
-                    
-                    Divider()
-                    
-                    Button(action: { 
-                        withAnimation {
-                            viewModel.showSortSheet = true 
-                        }
-                    }) {
-                        Label("Sort by", systemImage: "arrow.up.arrow.down")
-                    }
-                } label: {
+            Spacer()
+            
+            HStack(spacing: 12) {
+                // Settings Button (Trailing, before 3-dots)
+                Button(action: {
+                    viewModel.navigationPath.append("Settings")
+                }) {
                     ZStack {
                         Circle()
                             .fill(Color.premiumCircleBackground)
                             .frame(width: 40, height: 40)
                         
-                        Image(systemName: "ellipsis")
-                            .rotationEffect(.degrees(90))
+                        Image(systemName: "gearshape")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.white)
                     }
                 }
+                
+                // Ellipsis Menu (Shown only on Home/Video for now)
+                if viewModel.selectedTab == .home {
+                    Menu {
+                        Button(action: { 
+                            withAnimation { viewModel.isSelectionMode = true }
+                        }) {
+                            Label("Select", systemImage: "checkmark.circle")
+                        }
+                        
+                        Divider()
+                        
+                        Picker(selection: Binding(
+                            get: { viewModel.isGridView },
+                            set: { viewModel.isGridView = $0 }
+                        ), label: EmptyView()) {
+                            Label("Grid", systemImage: "square.grid.2x2").tag(true)
+                            Label("List", systemImage: "list.bullet").tag(false)
+                        }
+                        .pickerStyle(.inline)
+                        
+                        Divider()
+                        
+                        Button(action: { 
+                            withAnimation {
+                                viewModel.showSortSheet = true 
+                            }
+                        }) {
+                            Label("Sort by", systemImage: "arrow.up.arrow.down")
+                        }
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(Color.premiumCircleBackground)
+                                .frame(width: 40, height: 40)
+                            
+                            Image(systemName: "ellipsis")
+                                .rotationEffect(.degrees(90))
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    }
+                }
             }
+            .padding(.trailing, 16)
         }
+        .frame(height: 44)
+        .padding(.vertical, 8)
+        .background(Color.homeBackground.ignoresSafeArea())
     }
 
     private var actionSheetOverlay: some View {
@@ -414,18 +423,8 @@ struct PlusButtonOverlay: View {
         VStack {
             Spacer()
             
-            ZStack {
-                // Orange Action Circle
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 56, height: 56)
-                    .shadow(color: Color.homeAccent.opacity(0.4), radius: 10, x: 0, y: 5)
+            HStack {
+                Spacer()
                 
                 Menu {
                     Button(action: { viewModel.showCreateFolderAlert = true }) {
@@ -438,14 +437,19 @@ struct PlusButtonOverlay: View {
                         Label("Add From iOS Files", systemImage: "plus.rectangle.on.folder")
                     }
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 56, height: 56)
-                    
+                    ZStack {
+                        Circle()
+                            .fill(Color.premiumCircleBackground)
+                            .frame(width: 50, height: 50)
+                        
+                        Image(systemName: "plus")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.white)
+                    }
                 }
             }
-            .padding(.bottom, UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0)
+            .padding(.trailing, 24)
+            .padding(.bottom, (UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0) + 60)
             .ignoresSafeArea(.keyboard)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
