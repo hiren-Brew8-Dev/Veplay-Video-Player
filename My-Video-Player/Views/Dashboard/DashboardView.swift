@@ -30,46 +30,73 @@ struct DashboardView: View {
         viewModel.playingVideo == nil
     }
     
+
     var body: some View {
         ZStack {
-            NavigationStack(path: $viewModel.navigationPath) {
-                TabView(selection: $viewModel.selectedTab) {
-                    HomeView(viewModel: viewModel, paddingBottom: .constant(0))
-                        .tabItem {
-                            Label("Home", systemImage: "house")
-                        }
-                        .tag(0)
-                        
-                    // Middle Dummy Tab for space
-                    Color.clear
-                        .tabItem {
-                            Label("", systemImage: "")
-                        }
-                        .tag(100)
-                    
-                    SettingsView()
-                        .tabItem {
-                            Label("Settings", systemImage: "gearshape")
-                        }
-                        .tag(1)
-                }
-                .accentColor(.homeAccent)
-                .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
-                .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
-                    switch destination {
-                    case .allFolders:
-                        FolderSectionView(viewModel: viewModel)
-                    case .folderDetail(let folder):
-                        FolderDetailView(initialFolder: folder, viewModel: viewModel)
+            TabView(selection: $viewModel.selectedTab) {
+                // MARK: Home
+                Tab("Home", systemImage: "house", value: .home) {
+                    NavigationStack(path: $viewModel.navigationPath) {
+                        VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
+                            .background(Color.homeBackground)
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .navigationBarLeading) {
+                                    brandingView
+                                }
+                                ToolbarItem(placement: .navigationBarTrailing) {
+                                    headerActionButtons
+                                }
+                            }
+                            .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
+                                destinationView(for: destination)
+                            }
+                            .navigationDestination(for: String.self) { value in
+                                if value == "Settings" {
+                                    SettingsView()
+                                }
+                            }
                     }
                 }
+                
+                // MARK: Gallery
+                Tab("Gallery", systemImage: "photo.on.rectangle", value: .gallery) {
+                    NavigationStack {
+                        AlbumSectionView(viewModel: viewModel)
+                            .background(Color.homeBackground)
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .navigationBarLeading) {
+                                    brandingView
+                                }
+                                ToolbarItem(placement: .navigationBarTrailing) {
+                                    headerActionButtons
+                                }
+                            }
+                            .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
+                                destinationView(for: destination)
+                            }
+                            .navigationDestination(for: String.self) { value in
+                                if value == "Settings" {
+                                    SettingsView()
+                                }
+                            }
+                    }
+                }
+                
+                // MARK: Search
+                Tab(value: .search, role: .search) {
+                    SearchView(viewModel: viewModel)
+                }
             }
+            .accentColor(.homeAccent)
+            .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
             
             if showTabBar {
                 PlusButtonOverlay(viewModel: viewModel)
             }
             
-            // Global Overlays (Must be outside NavigationStack to stay on top)
+            // Global Overlays (Keep as is)
             if viewModel.isImporting {
                 importingOverlay
             }
@@ -82,7 +109,6 @@ struct DashboardView: View {
                 UnsupportedFormatAlert(video: viewModel.unsupportedVideoForAlbum, isPresented: $viewModel.showUnsupportedFormatAlert)
             }
         }
-        
         .background(Color.homeBackground.ignoresSafeArea())
         .ignoresSafeArea(edges: .bottom)
         .fullScreenCover(item: $viewModel.playingVideo) { video in
@@ -138,8 +164,93 @@ struct DashboardView: View {
         .onChange(of: viewModel.playingVideo) { oldVideo, newVideo in
             viewModel.isTabBarHidden = (newVideo != nil)
         }
+        .sheet(isPresented: $viewModel.showSortSheet) {
+            CustomSortingView(sortOptionRaw: $viewModel.videoSortOptionRaw, title: "Videos")
+        }
     }
-    
+
+    @ViewBuilder
+    private func destinationView(for destination: DashboardViewModel.NavigationDestination) -> some View {
+        switch destination {
+        case .allFolders:
+            FolderSectionView(viewModel: viewModel)
+        case .folderDetail(let folder):
+            FolderDetailView(initialFolder: folder, viewModel: viewModel)
+        }
+    }
+
+    private var brandingView: some View {
+        HStack(spacing: AppDesign.Icons.internalSpacing) {
+            Image(systemName: "play.circle.fill")
+                .appIconStyle(size: AppDesign.Icons.headerSize)
+            Text("PLAYER")
+                .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
+                .foregroundColor(.homeTextPrimary)
+        }
+    }
+
+    private var headerActionButtons: some View {
+        HStack(spacing: 12) {
+            // Settings Button
+            Button(action: {
+                viewModel.navigationPath.append("Settings")
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.premiumCircleBackground)
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                }
+            }
+            
+            // Ellipsis Menu
+            if viewModel.selectedTab == .home {
+                Menu {
+                    Button(action: { 
+                        withAnimation { viewModel.isSelectionMode = true }
+                    }) {
+                        Label("Select", systemImage: "checkmark.circle")
+                    }
+                    
+                    Divider()
+                    
+                    Picker(selection: Binding(
+                        get: { viewModel.isGridView },
+                        set: { viewModel.isGridView = $0 }
+                    ), label: EmptyView()) {
+                        Label("Grid", systemImage: "square.grid.2x2").tag(true)
+                        Label("List", systemImage: "list.bullet").tag(false)
+                    }
+                    .pickerStyle(.inline)
+                    
+                    Divider()
+                    
+                    Button(action: { 
+                        withAnimation {
+                            viewModel.showSortSheet = true 
+                        }
+                    }) {
+                        Label("Sort by", systemImage: "arrow.up.arrow.down")
+                    }
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color.premiumCircleBackground)
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "ellipsis")
+                            .rotationEffect(.degrees(90))
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+        }
+    }
+
     private var actionSheetOverlay: some View {
         ZStack {
             Color.black.opacity(0.4)
@@ -168,7 +279,7 @@ struct DashboardView: View {
         Button("Create") {
             let name = viewModel.newFolderName
             if viewModel.createFolder(name: name) {
-                viewModel.selectedTab = 0
+                viewModel.selectedTab = .home
                 viewModel.homeSelectedTab = "Video"
             }
         }
@@ -180,7 +291,7 @@ struct DashboardView: View {
             Task {
                 await viewModel.importVideos(from: urls)
                 await MainActor.run {
-                    viewModel.selectedTab = 0
+                    viewModel.selectedTab = .home
                     viewModel.homeSelectedTab = "Video"
                 }
             }
@@ -211,7 +322,7 @@ struct DashboardView: View {
             }
             await MainActor.run {
                 selectedPhotoItems.removeAll()
-                viewModel.selectedTab = 0
+                viewModel.selectedTab = .home
                 viewModel.homeSelectedTab = "Video"
             }
             await viewModel.importVideos(from: importedURLs, names: importedNames)

@@ -100,8 +100,12 @@ struct MoveDestinationPickerView: View {
                                 destinationCard {
                                     ForEach(Array(otherAlbums.enumerated()), id: \.element.localIdentifier) { index, album in
                                         albumRow(album: album) {
-                                            viewModel.pasteVideosToGallery(album: album)
-                                            dismiss()
+                                            Task {
+                                                await viewModel.pasteVideosToGallery(album: album)
+                                                await MainActor.run {
+                                                    dismiss()
+                                                }
+                                            }
                                         }
                                         
                                         if index < otherAlbums.count - 1 {

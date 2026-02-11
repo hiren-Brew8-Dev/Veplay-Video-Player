@@ -10,10 +10,7 @@ struct SearchView: View {
     var initialVideos: [VideoItem]? = nil 
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Search Bar Header
-            searchBarHeader
-            
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     if viewModel.searchText.isEmpty {
@@ -28,92 +25,41 @@ struct SearchView: View {
                 }
                 .padding(.top, 20)
             }
-            .scrollDismissesKeyboard(.immediately)
-        }
-        .background(
-            LinearGradient(
-                colors: [.premiumGradientTop, .premiumGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
+            .navigationTitle("Search in \(viewModel.lastActiveDataTab.rawValue)")
+            .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always))
+            .onSubmit(of: .search) {
+                if !viewModel.searchText.isEmpty {
+                    viewModel.persistSearchKeyword(viewModel.searchText)
+                }
+            }
+            .background(
+                LinearGradient(
+                    colors: [.premiumGradientTop, .premiumGradientBottom],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .edgesIgnoringSafeArea(.all)
             )
-            .edgesIgnoringSafeArea(.all)
-        )
-        .navigationBarHidden(true)
+        }
         .onAppear {
-            viewModel.isTabBarHidden = true
+            if viewModel.selectedTab == .search {
+                viewModel.isTabBarHidden = false
+            } else {
+                viewModel.isTabBarHidden = true
+            }
             viewModel.searchText = "" // Reset on every open
             isSearchFocused = true
         }
-        .onTapGesture {
-            isSearchFocused = false
-        }
         .onDisappear {
-            viewModel.isTabBarHidden = false
+            if viewModel.selectedTab != .search {
+                viewModel.isTabBarHidden = false
+            }
             // Auto-save search keyword when navigating back
             let trimmedText = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmedText.isEmpty {
                 viewModel.persistSearchKeyword(trimmedText)
             }
         }
-    
-    
-    }
-
-    private var searchBarHeader: some View {
-        HStack(spacing: 12) {
-            Button(action: {
-                presentationMode.wrappedValue.dismiss()
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.premiumCircleBackground)
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                }
-            }
-            
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 16))
-                    .foregroundColor(.white.opacity(0.4))
-                
-                TextField("Keyword of \(contextTitle)", text: $viewModel.searchText)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .foregroundColor(.white)
-                    .focused($isSearchFocused)
-                    .accentColor(.orange)
-                    .onSubmit {
-                        if !viewModel.searchText.isEmpty {
-                            viewModel.persistSearchKeyword(viewModel.searchText)
-                        }
-                    }
-                
-                if !viewModel.searchText.isEmpty {
-                    Button(action: {
-                        viewModel.searchText = ""
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white.opacity(0.4))
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color.white.opacity(0.06))
-            .cornerRadius(22)
-            .overlay(
-                RoundedRectangle(cornerRadius: 22)
-                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
-            )
-        }
-        .padding(.horizontal)
-        .padding(.top, 10)
-        .padding(.bottom, 12)
-        .background(Color.clear)
     }
     
     private var historySection: some View {
@@ -171,19 +117,10 @@ struct SearchView: View {
     @ViewBuilder
     private var resultsSection: some View {
         let baseVideos: [VideoItem] = {
-            let sources: [VideoItem]
-            if let initial = initialVideos {
-                sources = initial
+            if viewModel.lastActiveDataTab == .home {
+                return viewModel.allLocalSearchableVideos
             } else {
-                sources = viewModel.videos
-            }
-            
-            // Re-resolve from viewModel.videos to get latest titles
-            return sources.map { video in
-                if let latest = viewModel.videos.first(where: { $0.id == video.id }) {
-                    return latest
-                }
-                return video
+                return viewModel.allGallerySearchableVideos
             }
         }()
         

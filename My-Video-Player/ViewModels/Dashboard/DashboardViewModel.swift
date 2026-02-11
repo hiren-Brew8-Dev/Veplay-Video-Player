@@ -24,8 +24,27 @@ class DashboardViewModel: ObservableObject {
         }
     }
     
+    enum MainTabs: String {
+        case home = "Home"
+        case gallery = "Gallery"
+        case search = "Search"
+    }
+    
     // Navigation
-    @Published var selectedTab: Int = 0
+    @Published var selectedTab: MainTabs = .home {
+        didSet {
+            if selectedTab != .search {
+                lastActiveDataTab = selectedTab
+            }
+        }
+    }
+    @Published var lastActiveDataTab: MainTabs = .home
+    @Published var isGridView: Bool = UserDefaults.standard.bool(forKey: "isGridView") {
+        didSet {
+            UserDefaults.standard.set(isGridView, forKey: "isGridView")
+        }
+    }
+    @Published var showSortSheet: Bool = false
     @Published var isHeaderExpanded: Bool = false
     @Published var isTabBarHidden: Bool = false
     @Published var playingVideo: VideoItem? = nil
@@ -34,6 +53,21 @@ class DashboardViewModel: ObservableObject {
     @Published var isShowingSearch: Bool = false
     @Published var homeSelectedTab: String = "Video"
     @Published var navigationPath = NavigationPath()
+    
+    var allVideosAcrossFolders: [VideoItem] {
+        func getVideos(from folder: Folder) -> [VideoItem] {
+            return folder.videos + folder.subfolders.flatMap { getVideos(from: $0) }
+        }
+        return folders.flatMap { getVideos(from: $0) }
+    }
+    
+    var allLocalSearchableVideos: [VideoItem] {
+        return (importedVideos + allVideosAcrossFolders).sorted { $0.creationDate > $1.creationDate }
+    }
+    
+    var allGallerySearchableVideos: [VideoItem] {
+        return allGalleryVideos.sorted { $0.creationDate > $1.creationDate }
+    }
     
     enum NavigationDestination: Hashable {
         case allFolders
@@ -173,13 +207,6 @@ class DashboardViewModel: ObservableObject {
     
     func shareSelectedVideos() {
         shareVideos(ids: selectedVideoIds)
-    }
-    
-    var allVideosAcrossFolders: [VideoItem] {
-        func getVideos(from folder: Folder) -> [VideoItem] {
-            return folder.videos + folder.subfolders.flatMap { getVideos(from: $0) }
-        }
-        return folders.flatMap { getVideos(from: $0) }
     }
     
     var sortedFolders: [Folder] {
@@ -741,7 +768,7 @@ class DashboardViewModel: ObservableObject {
         return UUID(uuidString: uuidString) ?? UUID()
     }
     
-    func pasteVideosToGallery(album: PHAssetCollection? = nil) {
+    func pasteVideosToGallery(album: PHAssetCollection? = nil) async {
         let allPossibleVideos = importedVideos + allGalleryVideos + folders.flatMap { $0.videos }
         let videosToPaste = allPossibleVideos.filter { copiedVideoIds.contains($0.id) }
         
@@ -804,7 +831,7 @@ class DashboardViewModel: ObservableObject {
                     }
                     return
                 }
-
+                
                 if !assetsToAdd.isEmpty && assetsToAdd.count < galleryVideos.count {
                     // Partial duplicates
                     await MainActor.run {
@@ -812,7 +839,7 @@ class DashboardViewModel: ObservableObject {
                         self.showAlert = true
                     }
                 }
-
+                
                 do {
                     try await PHPhotoLibrary.shared().performChanges {
                         let request = PHAssetCollectionChangeRequest(for: album)
@@ -875,37 +902,38 @@ class DashboardViewModel: ObservableObject {
                     for video in localVideos {
                         self.deleteVideo(video)
                     }
-                    // Refresh local storage views
-                    self.loadImportedVideos()
-                    self.loadUserFolders()
                 }
-            }
-            
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s delay for indexing
-            
-            await MainActor.run {
-                self.isImporting = false
-                print("✅ Copied/Moved to Gallery Complete")
-                
-                // Always clear clipboard
-                self.copiedVideoIds.removeAll()
-                self.isCutMode = false
-                self.sourceAlbumIdentifier = nil
-                self.sourceURL = nil
-                self.videosToMove = []
-                
-                // Refresh everything
-                self.fetchAssets()
-                self.fetchAlbums()
+                // Refresh local storage views
                 self.loadImportedVideos()
                 self.loadUserFolders()
-                
-                // Clear selection mode now that operation is complete
-                self.isSelectionMode = false
-                self.selectedVideoIds.removeAll()
             }
+        } // This closes the Task block.
+        
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s delay for indexing
+        
+        await MainActor.run {
+            self.isImporting = false
+            print("✅ Copied/Moved to Gallery Complete")
+            
+            // Always clear clipboard
+            self.copiedVideoIds.removeAll()
+            self.isCutMode = false
+            self.sourceAlbumIdentifier = nil
+            self.sourceURL = nil
+            self.videosToMove = []
+            
+            // Refresh everything
+            self.fetchAssets()
+            self.fetchAlbums()
+            self.loadImportedVideos()
+            self.loadUserFolders()
+            
+            // Clear selection mode now that operation is complete
+            self.isSelectionMode = false
+            self.selectedVideoIds.removeAll()
         }
     }
+    
 
     func renameVideo(_ video: VideoItem, to newName: String) {
         // Only rename local imported videos
@@ -1036,7 +1064,6 @@ class DashboardViewModel: ObservableObject {
                         }
                     }
                 }
-                
                 self.copiedVideoIds.removeAll()
                 self.isCutMode = false
                 self.sourceURL = nil
