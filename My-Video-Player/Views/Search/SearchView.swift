@@ -13,28 +13,32 @@ struct SearchView: View {
         ZStack {
             Color.homeBackground.ignoresSafeArea()
             
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    if viewModel.searchText.isEmpty {
-                        // History Section
-                        if !viewModel.searchHistoryKeywords.isEmpty {
-                            historySection
+            VStack(spacing: 0) {
+                // Custom Header
+                customHeader
+                
+                // Custom Search Bar
+                customSearchBar
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        if viewModel.searchText.isEmpty {
+                            // History Section
+                            if !viewModel.searchHistoryKeywords.isEmpty {
+                                historySection
+                            }
+                        } else {
+                            // Results Section
+                            resultsSection
                         }
-                    } else {
-                        // Results Section
-                        resultsSection
                     }
+                    .padding(.top, 10)
                 }
-                .padding(.top, 20)
             }
         }
-        .navigationTitle("Search in \(contextTitle.isEmpty ? viewModel.lastActiveDataTab.rawValue : contextTitle)")
-        .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always))
-            .onSubmit(of: .search) {
-                if !viewModel.searchText.isEmpty {
-                    viewModel.persistSearchKeyword(viewModel.searchText)
-                }
-            }
+        .navigationBarHidden(true)
         .onAppear {
             if viewModel.selectedTab == .search {
                 viewModel.isTabBarHidden = false
@@ -54,6 +58,73 @@ struct SearchView: View {
                 viewModel.persistSearchKeyword(trimmedText)
             }
         }
+    }
+    
+    // MARK: - Custom Header & Search
+    
+    private var customHeader: some View {
+        HStack {
+            Button(action: {
+                if !viewModel.navigationPath.isEmpty {
+                    viewModel.navigationPath.removeLast()
+                } else {
+                    presentationMode.wrappedValue.dismiss()
+                }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.premiumCircleBackground)
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                }
+            }
+            
+            Text("Search in \(contextTitle.isEmpty ? viewModel.lastActiveDataTab.rawValue : contextTitle)")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+            
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 10)
+        .background(Color.clear)
+    }
+    
+    private var customSearchBar: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.white.opacity(0.5))
+            
+            TextField("Search", text: $viewModel.searchText)
+                .foregroundColor(.white)
+                .focused($isSearchFocused)
+                .submitLabel(.search)
+                .onSubmit {
+                    if !viewModel.searchText.isEmpty {
+                        viewModel.persistSearchKeyword(viewModel.searchText)
+                    }
+                }
+            
+            if !viewModel.searchText.isEmpty {
+                Button(action: {
+                    viewModel.searchText = ""
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.white.opacity(0.5))
+                }
+            }
+        }
+        .padding(12)
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        )
     }
     
     private var historySection: some View {
