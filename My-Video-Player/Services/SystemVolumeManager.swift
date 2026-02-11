@@ -78,9 +78,14 @@ class SystemVolumeManager: NSObject, ObservableObject {
     }
     
     private var hideWorkItem: DispatchWorkItem?
+    private var resetVolumeFlagWorkItem: DispatchWorkItem?
     
     private func handleVolumeChange(_ newVolume: Float) {
         DispatchQueue.main.async {
+            // If we are actively setting volume via gesture, ignore system updates
+            // to prevent UI flickering (fighting between gesture value and system value)
+            if self.isSettingVolumeProgrammatically { return }
+            
             // Avoid loops if we set it ourselves
             if abs(self.currentVolume - newVolume) > 0.001 {
                 self.currentVolume = newVolume
@@ -93,6 +98,9 @@ class SystemVolumeManager: NSObject, ObservableObject {
     }
     
     func setVolume(_ volume: Float) {
+        // Cancel any pending reset to keep the flag true while dragging continuously
+        resetVolumeFlagWorkItem?.cancel()
+        
         isSettingVolumeProgrammatically = true
         let clamped = min(max(volume, 0.0), 1.0)
         
@@ -103,10 +111,13 @@ class SystemVolumeManager: NSObject, ObservableObject {
         // Trigger UI for consistency during gesture
         triggerVolumeUI()
         
-        // Reset flag after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.isSettingVolumeProgrammatically = false
+        // Schedule reset with a debounce delay
+        // This ensures the flag stays true while user is dragging "Dhire Dhire"
+        let task = DispatchWorkItem { [weak self] in
+            self?.isSettingVolumeProgrammatically = false
         }
+        resetVolumeFlagWorkItem = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: task)
     }
     
     func triggerVolumeUI() {
@@ -135,6 +146,7 @@ class SystemVolumeManager: NSObject, ObservableObject {
     
     deinit {
         hideWorkItem?.cancel()
+        resetVolumeFlagWorkItem?.cancel()
         volumeView?.removeFromSuperview()
         AVAudioSession.sharedInstance().removeObserver(self, forKeyPath: "outputVolume")
         NotificationCenter.default.removeObserver(self)

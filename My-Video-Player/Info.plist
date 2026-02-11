@@ -10,6 +10,8 @@
 	<true/>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app needs to discover casting devices like Chromecast and AirPlay on your local network to play videos on your TV.</string>
+	<key>UIDesignRequiresCompatibility</key>
+	<false/>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_googlecast._tcp</string>
