@@ -61,6 +61,30 @@ struct VideoItem: Identifiable, Hashable {
         formatter.zeroFormattingBehavior = .pad
         return formatter.string(from: duration) ?? "00:00"
     }
+    
+    var truncatedTitle: String {
+        let name = title
+        let ext = url?.pathExtension ?? ""
+        
+        // If extension is empty or title is short, just return title
+        if ext.isEmpty || name.count <= 12 {
+            return name
+        }
+        
+        // Truncate name and append extension nicely
+        let prefix = String(name.prefix(6))
+        return "\(prefix)...\(ext)"
+    }
+}
+
+extension String {
+    func truncated(ext: String) -> String {
+        if ext.isEmpty || self.count <= 12 {
+            return self
+        }
+        let prefix = String(self.prefix(6))
+        return "\(prefix)...\(ext)"
+    }
 }
 
 // Global Helper for VLC Thumbnails

@@ -64,7 +64,7 @@ struct VideoRowView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(resolvedTitle ?? video.title)
+                Text(resolvedTitle?.truncated(ext: video.url?.pathExtension ?? "") ?? video.truncatedTitle)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.homeTextPrimary)
                     .lineLimit(1)

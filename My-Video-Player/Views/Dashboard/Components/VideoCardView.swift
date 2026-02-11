@@ -92,7 +92,7 @@ struct VideoCardView: View {
             // 2. Info Section
             HStack(alignment: .center, spacing: 0) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(resolvedTitle ?? video.title)
+                    Text(resolvedTitle?.truncated(ext: video.url?.pathExtension ?? "") ?? video.truncatedTitle)
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.homeTextPrimary)
                         .lineLimit(1)
