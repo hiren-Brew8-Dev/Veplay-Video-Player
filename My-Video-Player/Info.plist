@@ -29,7 +29,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSHandlerRank</key>
-			<string>Default</string>
+			<string>Owner</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>public.movie</string>
@@ -38,6 +38,7 @@
 				<string>public.mpeg-4</string>
 				<string>public.avi</string>
 				<string>public.matroska</string>
+				<string>org.matroska.mkv</string>
 				<string>com.microsoft.advanced-systems-format</string>
 				<string>public.3gp</string>
 				<string>public.mpeg</string>
@@ -57,6 +58,9 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>VOB Video</string>
@@ -74,6 +78,9 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>OGG Video</string>
@@ -93,6 +100,9 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>WebM Video</string>
@@ -110,6 +120,9 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>Flash Video</string>
@@ -127,6 +140,9 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>RealMedia Video</string>
@@ -145,6 +161,9 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>MPEG Transport Stream</string>
@@ -164,6 +183,9 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>Matroska Video</string>
@@ -181,6 +203,29 @@
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Matroska Video (Alternate)</string>
+			<key>UTTypeIdentifier</key>
+			<string>org.matroska.mkv</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mkv</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.movie</string>
+				<string>public.data</string>
+				<string>public.item</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>Audio Video Interleave</string>
