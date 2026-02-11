@@ -46,6 +46,7 @@ struct DashboardView: View {
                         }
                         .background(Color.homeBackground)
                         .navigationBarHidden(true)
+                        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                         .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
                             destinationView(for: destination)
                                 .toolbar(.hidden, for: .tabBar)
@@ -71,6 +72,7 @@ struct DashboardView: View {
                         }
                         .background(Color.homeBackground)
                         .navigationBarHidden(true)
+                        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                         .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
                             destinationView(for: destination)
                                 .toolbar(.hidden, for: .tabBar)
@@ -89,11 +91,12 @@ struct DashboardView: View {
                 Tab(value: .search, role: .search) {
                     NavigationStack {
                         SearchView(viewModel: viewModel)
+                            .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                     }
                 }
             }
             .accentColor(.homeAccent)
-            .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+            // .toolbar modifier removed from here
             
             if showTabBar && viewModel.selectedTab == .home {
                 PlusButtonOverlay(viewModel: viewModel)
