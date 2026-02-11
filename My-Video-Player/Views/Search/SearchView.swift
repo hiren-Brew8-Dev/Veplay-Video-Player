@@ -65,10 +65,16 @@ struct SearchView: View {
     private var customHeader: some View {
         HStack {
             Button(action: {
-                if !viewModel.navigationPath.isEmpty {
-                    viewModel.navigationPath.removeLast()
+                if viewModel.selectedTab == .search {
+                    // If in Search Tab, switch back to the previous tab
+                    viewModel.selectedTab = viewModel.lastActiveDataTab
                 } else {
-                    presentationMode.wrappedValue.dismiss()
+                    // If pushed via Navigation, pop
+                    if !viewModel.navigationPath.isEmpty {
+                        viewModel.navigationPath.removeLast()
+                    } else {
+                        presentationMode.wrappedValue.dismiss()
+                    }
                 }
             }) {
                 ZStack {
