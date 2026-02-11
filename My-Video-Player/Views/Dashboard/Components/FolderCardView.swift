@@ -4,9 +4,9 @@ struct FolderCardView: View {
     let folder: Folder
     let viewModel: DashboardViewModel?
     var onMenuAction: (() -> Void)? = nil
+    var size: CGFloat = GridLayout.itemSize
     
     var body: some View {
-        let size = GridLayout.itemSize
         let padding: CGFloat = 8 // Internal padding to match VideoCardView logic
         let thumbnailSize = size // Fill the calculated grid item size
         
@@ -59,6 +59,7 @@ struct FolderCardView: View {
             .padding(.trailing, 0)
             .padding(.bottom, 8)
         }
+        .frame(width: size)
         .background(
             ZStack {
                 Color.premiumCardBackground

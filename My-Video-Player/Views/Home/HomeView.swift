@@ -4,7 +4,7 @@ struct HomeView: View {
     @ObservedObject var viewModel: DashboardViewModel
     @Binding var paddingBottom: CGFloat
     
-    let tabs = ["Video", "Gallery", "Folder"]
+    let tabs = ["Video", "Gallery"]
     @AppStorage("isGridView") private var isGridView: Bool = true
     @State private var showSortSheet: Bool = false
     @State private var showSearch: Bool = false
@@ -15,33 +15,28 @@ struct HomeView: View {
     }
     
     var body: some View {
-        ZStack {
-            VStack(spacing: 0) {
-                // Top Tab Bar
-                if !viewModel.isSelectionMode {
-                    topTabBar
-                }
-                
-                // Content
-                // Content using stable TabView
-                TabView(selection: $viewModel.homeSelectedTab) {
-                    VideoSectionView(viewModel: viewModel, paddingBottom: $paddingBottom)
-                        .tag("Video")
-                    
-                    AlbumSectionView(viewModel: viewModel)
-                        .tag("Gallery")
-                    
-                    FolderSectionView(viewModel: viewModel)
-                        .tag("Folder")
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                // Block swipes in selection mode
-                .allowsHitTesting(true) 
-                .gesture(viewModel.isSelectionMode ? DragGesture() : nil)
-                .ignoresSafeArea(edges: .bottom)
+        VStack(spacing: 0) {
+            // Top Header
+            if !viewModel.isSelectionMode {
+                topTabBar
+                    .background(Color.homeBackground)
             }
+            
+            // Content using stable TabView
+            TabView(selection: $viewModel.homeSelectedTab) {
+                VideoSectionView(viewModel: viewModel, paddingBottom: $paddingBottom)
+                    .tag("Video")
+                
+                AlbumSectionView(viewModel: viewModel)
+                    .tag("Gallery")
+                
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .allowsHitTesting(true) 
+            .gesture(viewModel.isSelectionMode ? DragGesture() : nil)
         }
-        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.homeBackground.ignoresSafeArea())
         .navigationBarHidden(true)
         .onAppear {
             // Ensure tab bar is visible when home view appears
@@ -53,8 +48,9 @@ struct HomeView: View {
         }
     }
     
-    private var headerView: some View {
-        HStack {
+    private var topTabBar: some View {
+        HStack(spacing: 0) {
+            // Logo & Title Leading
             HStack(spacing: AppDesign.Icons.internalSpacing) {
                 Image(systemName: "play.circle.fill")
                     .appIconStyle(size: AppDesign.Icons.headerSize)
@@ -62,74 +58,13 @@ struct HomeView: View {
                     .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
                     .foregroundColor(.homeTextPrimary)
             }
+            .padding(.leading, 16)
             
             Spacer()
             
-            HStack(spacing: 12) {
-                Button(action: { /* Premium Action */  }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "crown.fill")
-                            .foregroundColor(.yellow)
-                        Text("Premium")
-                            .fontWeight(.semibold)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.homeTint)
-                    .foregroundColor(.homeTextPrimary)
-                    .cornerRadius(20)
-                }
-            }
-        }
-        .padding(.horizontal)
-        .padding(.top, 10)
-        .padding(.bottom, 10)
-    }
-    
-    private var topTabBar: some View {
-        HStack(spacing: 0) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 30) {
-                    ForEach(tabs, id: \.self) { tab in
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                viewModel.homeSelectedTab = tab
-                            }
-                        }) {
-                            VStack(spacing: 8) {
-                                Text(tab)
-                                    .font(.system(size: 16, weight: viewModel.homeSelectedTab == tab ? .bold : .semibold))
-                                    .foregroundColor(viewModel.homeSelectedTab == tab ? .orange : .white.opacity(0.5))
-                                
-                                // Modern Indicator
-                                RoundedRectangle(cornerRadius: 1.5)
-                                    .fill(viewModel.homeSelectedTab == tab ? Color.orange : Color.clear)
-                                    .frame(width: 24, height: 3)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 22)
-            }
-            
-            // Only show Search and Menu for Video tab if there are videos
-            if viewModel.homeSelectedTab == "Video" && !viewModel.importedVideos.isEmpty {
+            // Show Search and Menu for Video tab
+            if viewModel.homeSelectedTab == "Video" && !viewModel.importedVideos.isEmpty  {
                 HStack(spacing: 12) {
-                    Button(action: { showSearch = true }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.premiumCircleBackground)
-                                .frame(width: 40, height: 40)
-                            
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                    .navigationDestination(isPresented: $showSearch) {
-                        SearchView(viewModel: viewModel, contextTitle: "Videos", initialVideos: viewModel.importedVideos)
-                    }
                     
                     Menu {
                         Button(action: { 

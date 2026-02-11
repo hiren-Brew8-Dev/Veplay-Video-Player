@@ -29,17 +29,23 @@ struct VideoSectionView: View {
                     selectionHeader
                 }
                 
-                if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
+                if viewModel.importedVideos.isEmpty && viewModel.folders.isEmpty && !viewModel.isImporting {
                     emptyStateView
                 } else {
                     ScrollViewReader { proxy in
                         ScrollView {
-                            VStack(spacing: 20) {
-                                if isGridView {
-                                    contentView
-                                } else {
-                                    listView
+                            VStack(spacing: 24) {
+                                // Folders Section
+                                if !viewModel.isSelectionMode {
+                                    foldersSection
+                                        .transition(.asymmetric(
+                                            insertion: .move(edge: .top).combined(with: .opacity),
+                                            removal: .move(edge: .top).combined(with: .opacity)
+                                        ))
                                 }
+                                
+                                // Imported Videos Section
+                                videosSection
                             }
                             .padding(.bottom, 90)
                         }
@@ -105,6 +111,111 @@ struct VideoSectionView: View {
     }
     
     // MARK: - Headers
+    
+    private var foldersSection: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            HStack {
+                Text("Folders")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                NavigationLink(destination: FolderSectionView(viewModel: viewModel).navigationBarHidden(true)) {
+                    HStack(spacing: 4) {
+                        Text("View All")
+                        Image(systemName: "chevron.right")
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.homeAccent)
+                }
+            }
+            .padding(.horizontal, 16)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    // Sticky Add Folder Card
+                    AddFolderCardView(action: {
+                        viewModel.showCreateFolderAlert = true
+                    }, size: 150)
+                    .padding(.leading, 16)
+                    
+                    // Folder Cards
+                    ForEach(viewModel.sortedFolders) { folder in
+                        NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
+                            FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
+                                triggerFolderActionSheet(for: folder)
+                            }, size: 150)
+                        }
+                    }
+                }
+            }
+        }
+        .alert("Rename Folder", isPresented: $viewModel.showRenameFolderAlert) {
+            TextField("New Name", text: $viewModel.renameFolderName)
+            Button("Cancel", role: .cancel) {
+                viewModel.folderToRename = nil
+            }
+            Button("Rename") {
+                if let folder = viewModel.folderToRename {
+                    viewModel.renameFolder(folder, to: viewModel.renameFolderName)
+                }
+                viewModel.folderToRename = nil
+            }
+        } message: {
+            Text("Enter a new name for this folder")
+        }
+        .alert("Delete Folder", isPresented: $viewModel.showDeleteFolderAlert) {
+            Button("Cancel", role: .cancel) {
+                viewModel.folderToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let folder = viewModel.folderToDelete {
+                    viewModel.deleteFolder(folder)
+                }
+                viewModel.folderToDelete = nil
+            }
+        } message: {
+            if let folder = viewModel.folderToDelete {
+                Text("Are you sure you want to delete '\(folder.name)'? All videos inside will be removed.")
+            } else {
+                Text("Are you sure you want to delete this folder?")
+            }
+        }
+    }
+    
+    private var videosSection: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text("Imported Videos")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+            
+            if isGridView {
+                contentView
+            } else {
+                listView
+            }
+        }
+    }
+    
+    private func triggerFolderActionSheet(for folder: Folder) {
+        viewModel.actionSheetTarget = .folder(folder)
+        viewModel.actionSheetItems = [
+            CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
+                viewModel.folderToRename = folder
+                viewModel.renameFolderName = folder.name
+                viewModel.showRenameFolderAlert = true
+            }),
+            CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
+                viewModel.folderToDelete = folder
+                viewModel.showDeleteFolderAlert = true
+            })
+        ]
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            viewModel.showActionSheet = true
+        }
+    }
     
     private var expandedHeader: some View {
         HStack {

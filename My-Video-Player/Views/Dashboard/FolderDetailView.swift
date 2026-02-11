@@ -186,6 +186,7 @@ struct FolderDetailView: View {
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
             viewModel.isTabBarHidden = true
+            viewModel.markFolderAsAccessed(folder)
         }
         .task {
             await fetchAlbumVideos()

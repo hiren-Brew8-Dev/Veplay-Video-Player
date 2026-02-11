@@ -13,6 +13,17 @@ struct VideoSection: Identifiable {
 }
 
 class DashboardViewModel: ObservableObject {
+    // Access Tracking
+    private var folderAccessTimes: [String: Date] {
+        get {
+            let dict = UserDefaults.standard.dictionary(forKey: "folderAccessTimes") as? [String: Date] ?? [:]
+            return dict
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "folderAccessTimes")
+        }
+    }
+    
     // Navigation
     @Published var selectedTab: Int = 0
     @Published var isHeaderExpanded: Bool = false
@@ -63,6 +74,11 @@ class DashboardViewModel: ObservableObject {
     @Published var isSharing: Bool = false
     @Published var showFileImporter = false
     @Published var newFolderName = ""
+    @Published var showRenameFolderAlert = false
+    @Published var folderToRename: Folder? = nil
+    @Published var renameFolderName = ""
+    @Published var showDeleteFolderAlert = false
+    @Published var folderToDelete: Folder? = nil
     @Published var highlightVideoId: UUID? = nil
     @Published var activeImportFolderURL: URL? = nil
     
@@ -143,6 +159,28 @@ class DashboardViewModel: ObservableObject {
             return folder.videos + folder.subfolders.flatMap { getVideos(from: $0) }
         }
         return folders.flatMap { getVideos(from: $0) }
+    }
+    
+    var sortedFolders: [Folder] {
+        return folders.sorted { f1, f2 in
+            let date1 = f1.lastAccessedDate ?? f1.creationDate
+            let date2 = f2.lastAccessedDate ?? f2.creationDate
+            return date1 > date2
+        }
+    }
+    
+    func markFolderAsAccessed(_ folder: Folder) {
+        var times = folderAccessTimes
+        let now = Date()
+        if let path = folder.url?.path {
+            times[path] = now
+            folderAccessTimes = times
+            
+            // Update the local folder object to trigger UI refresh if needed
+            if let index = folders.firstIndex(where: { $0.id == folder.id }) {
+                folders[index].lastAccessedDate = now
+            }
+        }
     }
     
     func shareVideos(ids: Set<UUID>) {
@@ -492,8 +530,11 @@ class DashboardViewModel: ObservableObject {
         let name = resourceValues.name ?? url.lastPathComponent
         
         // Scan for contents inside
+        let creationDate = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date()
+        let lastAccessed = folderAccessTimes[url.path]
+        
         guard let fileURLs = try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: resourceKeys, options: .skipsHiddenFiles) else {
-            return Folder(id: UUID(), name: name, videoCount: 0, videos: [], url: url, subfolders: [])
+            return Folder(id: UUID(), name: name, videoCount: 0, videos: [], url: url, subfolders: [], creationDate: creationDate, lastAccessedDate: lastAccessed)
         }
         
         var videos: [VideoItem] = []
@@ -519,7 +560,9 @@ class DashboardViewModel: ObservableObject {
             videoCount: videos.count,
             videos: videos,
             url: url,
-            subfolders: subfolders
+            subfolders: subfolders,
+            creationDate: creationDate,
+            lastAccessedDate: lastAccessed
         )
     }
     
@@ -1012,13 +1055,6 @@ class DashboardViewModel: ObservableObject {
         do {
             try FileManager.default.moveItem(at: oldURL, to: newURL)
             loadUserFolders()
-            
-            // Highlight the renamed folder
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
-                if let renamed = self?.folders.first(where: { $0.url?.path == newURL.path }) {
-                    self?.highlightFolderWithTimeout(renamed.id)
-                }
-            }
         } catch {
             alertMessage = "Failed to rename folder: \(error.localizedDescription)"
             showAlert = true
