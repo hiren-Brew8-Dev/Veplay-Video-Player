@@ -442,14 +442,31 @@ struct PlusButtonOverlay: View {
                     }
                 } label: {
                     ZStack {
+                        // Glass Effect
                         Circle()
-                            .fill(Color.premiumCircleBackground)
-                            .frame(width: 50, height: 50)
+                            .fill(.ultraThinMaterial)
+                            .environment(\.colorScheme, .dark)
                         
+                        Circle()
+                            .fill(Color.white.opacity(0.05))
+
                         Image(systemName: "plus")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.system(size: 24, weight: .medium))
                             .foregroundColor(.white)
                     }
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        Circle()
+                            .stroke(
+                                LinearGradient(
+                                    colors: [.white.opacity(0.5), .white.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: 5)
                 }
             }
             .padding(.trailing, 24)
