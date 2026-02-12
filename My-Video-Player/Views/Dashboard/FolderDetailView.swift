@@ -215,17 +215,18 @@ struct FolderDetailView: View {
                 ZStack {
                     Circle()
                         .fill(Color.premiumCircleBackground)
-                        .frame(width: 40, height: 40)
+                        .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
                     
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: isIpad ? 22 : 16, weight: .bold))
                         .foregroundColor(.white)
                 }
             }
             
             Text(folder.name)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: isIpad ? 24 : 18, weight: .bold))
                 .foregroundColor(.white)
+                .padding(.leading, 8)
             
             Spacer()
             
@@ -238,10 +239,10 @@ struct FolderDetailView: View {
                         ZStack {
                             Circle()
                                 .fill(Color.premiumCircleBackground)
-                                .frame(width: 40, height: 40)
+                                .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
                             
                             Image(systemName: "magnifyingglass")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: isIpad ? 22 : 16, weight: .bold))
                                 .foregroundColor(.white)
                         }
                     }
@@ -265,19 +266,21 @@ struct FolderDetailView: View {
                         ZStack {
                             Circle()
                                 .fill(Color.premiumCircleBackground)
-                                .frame(width: 40, height: 40)
+                                .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
                             
                             Image(systemName: "ellipsis")
                                 .rotationEffect(.degrees(90))
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: isIpad ? 22 : 16, weight: .bold))
                                 .foregroundColor(.white)
                         }
                     }
                 }
             }
         }
-        .padding(.horizontal)
-        .padding(.bottom, 10)
+        
+        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+        .padding(.bottom, isIpad ? 20 : 10)
+        .padding(.top, isIpad ? 20 : 0)
         .background(Color.clear)
     
     }
@@ -311,7 +314,7 @@ struct FolderDetailView: View {
             Spacer()
             
             Text("Selected (\(selectedVideoIds.count)/\(displayVideos.count))")
-                .font(.system(size: 17, weight: .bold))
+                .font(.system(size: isIpad ? 24 : 17, weight: .bold))
                 .foregroundColor(.white)
             
             Spacer()
@@ -320,9 +323,9 @@ struct FolderDetailView: View {
                 viewModel.isSelectionMode = false
                 selectedVideoIds.removeAll()
             }
-            .font(.system(size: 15, weight: .bold))
+            .font(.system(size: isIpad ? 20 : 15, weight: .bold))
             .foregroundColor(.orange)
-            .padding(.trailing, 10)
+            .padding(.trailing, AppDesign.Icons.horizontalPadding)
         }
         .padding(.horizontal, 8)
         .padding(.bottom, 10)
@@ -580,15 +583,15 @@ struct FolderDetailView: View {
                 ZStack {
                     Circle()
                         .fill(selectedVideoIds.isEmpty ? Color.white.opacity(0.05) : Color.orange.opacity(0.1))
-                        .frame(width: 44, height: 44)
+                        .frame(width: isIpad ? 64 : 44, height: isIpad ? 64 : 44)
                     
                     Image(systemName: icon)
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: isIpad ? 28 : 20, weight: .semibold))
                         .foregroundColor(selectedVideoIds.isEmpty ? .white.opacity(0.3) : .orange)
                 }
                 
                 Text(title)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: isIpad ? 16 : 11, weight: .bold))
                     .foregroundColor(selectedVideoIds.isEmpty ? .white.opacity(0.3) : .white)
             }
             .frame(maxWidth: .infinity)

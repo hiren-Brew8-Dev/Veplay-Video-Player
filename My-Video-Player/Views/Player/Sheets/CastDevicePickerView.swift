@@ -19,7 +19,7 @@ struct CastDevicePickerView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Drag Handle
-            if !isLandscape {
+            if !isLandscape && !isIpad {
                 Capsule()
                     .fill(Color.white.opacity(0.3))
                     .frame(width: 40, height: 5)
@@ -51,7 +51,7 @@ struct CastDevicePickerView: View {
                     .frame(width: 44, height: 44)
             }
             .padding(.horizontal, 20)
-            .padding(.top, isLandscape ? 16 : 0)
+            .padding(.top, (isLandscape || isIpad) ? 16 : 0)
             .padding(.bottom, 20)
             
             // Content
@@ -63,10 +63,9 @@ struct CastDevicePickerView: View {
                 discoveryContent
             }
         }
-        
         .padding(.bottom, 0)
-        .applyIf(isLandscape) { $0.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top) }
-        .applyIf(!isLandscape) { $0.padding(.bottom, 20) }
+        .applyIf(isLandscape && !isIpad) { $0.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top) }
+        .applyIf(!isLandscape && !isIpad) { $0.padding(.bottom, 20) }
         .background(
             LinearGradient(
                 colors: [.premiumGradientTop, .premiumGradientBottom],
@@ -74,13 +73,14 @@ struct CastDevicePickerView: View {
                 endPoint: .bottom
             )
         )
-        .applyIf(isLandscape) { view in
+        .applyIf(isIpad) { $0.cornerRadius(28) }
+        .applyIf(isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(24, corners: [.topLeft, .bottomLeft])
         }
-        .applyIf(!isLandscape) { view in
+        .applyIf(!isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(24, corners: [.topLeft, .topRight])
         }
-        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: isLandscape ? 0 : -10)
+        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: (isLandscape || isIpad) ? 10 : -10)
         .onAppear {
             castManager.startDiscovery()
             if hasShownPermissionPrompt {

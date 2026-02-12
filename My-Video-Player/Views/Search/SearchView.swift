@@ -19,8 +19,8 @@ struct SearchView: View {
                 
                 // Custom Search Bar
                 customSearchBar
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
+                    .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                    .padding(.bottom, isIpad ? 24 : 16)
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
@@ -80,23 +80,24 @@ struct SearchView: View {
                 ZStack {
                     Circle()
                         .fill(Color.premiumCircleBackground)
-                        .frame(width: 40, height: 40)
+                        .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
                     
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: isIpad ? 22 : 16, weight: .bold))
                         .foregroundColor(.white)
                 }
             }
             
             Text("Search in \(contextTitle.isEmpty ? viewModel.lastActiveDataTab.rawValue : contextTitle)")
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: isIpad ? 24 : 18, weight: .bold))
                 .foregroundColor(.white)
                 .lineLimit(1)
+                .padding(.leading, 8)
             
             Spacer()
         }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
+        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+        .padding(.vertical, isIpad ? 20 : 10)
         .background(Color.clear)
     }
     
@@ -106,6 +107,7 @@ struct SearchView: View {
                 .foregroundColor(.white.opacity(0.5))
             
             TextField("Search", text: $viewModel.searchText)
+                .font(.system(size: isIpad ? 20 : 16))
                 .foregroundColor(.white)
                 .focused($isSearchFocused)
                 .submitLabel(.search)
@@ -137,7 +139,7 @@ struct SearchView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("History")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: isIpad ? 24 : 18, weight: .bold))
                     .foregroundColor(.homeTextPrimary)
                 
                 Spacer()

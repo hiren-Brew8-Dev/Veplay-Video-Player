@@ -73,19 +73,20 @@ struct PlayerBottomBar: View {
                 
                 HStack {
                     Text(formatTime(displayTime))
-                        .font(.system(size: 11, weight: .semibold)) // Smalled font
+                        .font(.system(size: isIpad ? 16 : 11, weight: .semibold)) // Smalled font
                         .foregroundColor(.white)
                         .monospacedDigit()
                     
                     Spacer()
                     
                     Text(formatTime(duration))
-                        .font(.system(size: 11, weight: .semibold)) // Smalled font
+                        .font(.system(size: isIpad ? 16 : 11, weight: .semibold)) // Smalled font
                         .foregroundColor(.white)
                         .monospacedDigit()
                 }
             }
-            .padding(.horizontal, isLandscape ? 50 : 20)
+            }
+            .padding(.horizontal, isLandscape ? (isIpad ? 80 : 50) : (isIpad ? 30 : 20))
             
             // 2. Control Buttons Row
             ZStack {
@@ -94,17 +95,17 @@ struct PlayerBottomBar: View {
                     Button(action: onAudioCaptions) {
                         HStack(spacing: 6) {
                             Image(systemName: "captions.bubble.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: isIpad ? 24 : 14))
                             Text(isLandscape ? "Audio & CC" : "Audio & CC")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: isIpad ? 17 : 13, weight: .medium))
                                 .fixedSize(horizontal: true, vertical: false)
                         }
                         .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, isIpad ? 20 : 12)
+                        .padding(.vertical, isIpad ? 12 : 6)
                         .background(Color.white.opacity(0.15))
                         .clipShape(Capsule())
-                        .frame(height: 32)
+                        .frame(height: isIpad ? 48 : 32)
                     }
                     .transition(.opacity.combined(with: .scale(scale: 0.8)))
                     
@@ -119,17 +120,17 @@ struct PlayerBottomBar: View {
                         }) {
                             HStack(spacing: 6) {
                                 Image(systemName: "aspectratio")
-                                    .font(.system(size: 14))
+                                    .font(.system(size: isIpad ? 24 : 14))
                                 Text(currentAspectRatio.shortLabel)
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(.system(size: isIpad ? 17 : 13, weight: .medium))
                                     .fixedSize(horizontal: true, vertical: false)
                             }
                             .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, isIpad ? 16 : 10)
+                            .padding(.vertical, isIpad ? 12 : 6)
                             .background(Color.white.opacity(0.15))
                             .clipShape(Capsule())
-                            .frame(height: 32)
+                            .frame(height: isIpad ? 48 : 32)
                         }
                         .matchedGeometryEffect(id: "aspectRatio", in: animation)
                         
@@ -147,24 +148,24 @@ struct PlayerBottomBar: View {
                                 let speedStr = String(format: "%gx", playbackSpeed)
                                 let formattedSpeed = speedStr.contains(".") ? speedStr : speedStr.replacingOccurrences(of: "x", with: ".0x")
                                 Text(formattedSpeed)
-                                    .font(.system(size: 13, weight: .bold))
+                                    .font(.system(size: isIpad ? 20 : 13, weight: .bold))
                                     .fixedSize(horizontal: true, vertical: false)
                                     .foregroundColor(.white)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, isIpad ? 16 : 10)
+                                    .padding(.vertical, isIpad ? 12 : 6)
                                     .background(Color.white.opacity(0.15))
                                     .clipShape(Capsule())
-                                    .frame(height: 32)
+                                    .frame(height: isIpad ? 48 : 32)
                             }
                             .matchedGeometryEffect(id: "playbackSpeed", in: animation)
                             
                             // Rotate button
                             Button(action: onRotate) {
                                 Image(systemName: "viewfinder")
-                                    .font(.system(size: 18))
+                                    .font(.system(size: isIpad ? 24 : 18))
                                     .foregroundColor(.white)
                             }
-                            .frame(width: 32, height: 32)
+                            .frame(width: isIpad ? 44 : 32, height: isIpad ? 44 : 32)
                             .transition(.opacity)
                         }
                     }
@@ -197,8 +198,8 @@ struct PlayerBottomBar: View {
                     }
                 }
             }
-            .padding(.horizontal, isLandscape ? 50 : 16)
-        }
+            .padding(.horizontal, isLandscape ? (isIpad ? 100 : 50) : (isIpad ? 40 : 16))
+        
         .padding(.bottom, isLandscape ? 15 : 30) // Adjusted for safe area balance
         .background(
             LinearGradient(

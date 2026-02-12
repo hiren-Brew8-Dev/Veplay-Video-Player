@@ -21,22 +21,23 @@ struct SettingsView: View {
                     ZStack {
                         Circle()
                             .fill(Color.premiumCircleBackground)
-                            .frame(width: 40, height: 40)
+                            .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
                         
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: isIpad ? 22 : 16, weight: .bold))
                             .foregroundColor(.white)
                     }
                 }
                 
                 Text("Settings")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: isIpad ? 32 : 18, weight: .bold))
                     .foregroundColor(.homeTextPrimary)
+                    .padding(.leading, 8)
                 
                 Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+            .padding(.vertical, isIpad ? 24 : 8)
             .background(Color.homeBackground)
 
             ScrollView {
@@ -103,9 +104,11 @@ struct SettingsView: View {
                         .padding(16)
                     }
                 }
-                .padding(.horizontal, 10)
+                .iPad { $0.frame(maxWidth: 600).padding(.top, 40) }
+                .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                 .padding(.bottom, 100) // Space for tab bar
             }
+            .iPad { $0.frame(maxWidth: .infinity, alignment: .center) }
             
         }
         .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
@@ -172,9 +175,9 @@ struct SettingsView: View {
     // MARK: - Components
 
     private func settingsSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: isIpad ? 16 : 12) {
             Text(title.uppercased())
-                .font(.system(size: 13, weight: .bold))
+                .font(.system(size: isIpad ? 16 : 13, weight: .bold))
                 .foregroundColor(.homeTextSecondary)
                 .padding(.horizontal, 4)
             
@@ -204,16 +207,16 @@ struct SettingsView: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: isIpad ? 20 : 16, weight: .semibold))
                         .foregroundColor(.homeTextPrimary)
                     Text(subtitle)
-                        .font(.system(size: 12))
+                        .font(.system(size: isIpad ? 16 : 12))
                         .foregroundColor(.homeTextSecondary)
                 }
             }
         }
         .toggleStyle(SwitchToggleStyle(tint: .homeAccent))
-        .padding(16)
+        .padding(isIpad ? 20 : 16)
     }
 
     private func settingsLinkRow(icon: String, title: String, url: String, iconColor: Color) -> some View {

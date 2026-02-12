@@ -7,20 +7,24 @@ struct AppDesign {
         static let secondaryWeight: Font.Weight = .medium
         static let boldWeight: Font.Weight = .bold
         
-        // Standard Sizes
-        static let headerSize: CGFloat = 22
-        static let toolbarSize: CGFloat = 20
-        static let rowIconSize: CGFloat = 18
-        static let cardIconSize: CGFloat = 16
-        static let largeIconSize: CGFloat = 40
-        static let selectionIconSize: CGFloat = 24
-        static let actionSheetIconSize: CGFloat = 20
+        // Standard Sizes (scaled for iPad)
+        static var headerSize: CGFloat { isIpad ? 32 : 22 }
+        static var toolbarSize: CGFloat { isIpad ? 28 : 20 }
+        static var rowIconSize: CGFloat { isIpad ? 24 : 18 }
+        static var cardIconSize: CGFloat { isIpad ? 20 : 16 }
+        static var largeIconSize: CGFloat { isIpad ? 60 : 40 }
+        static var selectionIconSize: CGFloat { isIpad ? 32 : 24 }
+        static var actionSheetIconSize: CGFloat { isIpad ? 26 : 20 }
         
-        // Standard Spacing
-        static let horizontalPadding: CGFloat = 16
-        static let verticalPadding: CGFloat = 12
-        static let internalSpacing: CGFloat = 10
-        static let itemSpacing: CGFloat = 12
+        // Standard Spacing (scaled for iPad)
+        static var horizontalPadding: CGFloat { isIpad ? 32 : 16 }
+        static var verticalPadding: CGFloat { isIpad ? 20 : 12 }
+        static var internalSpacing: CGFloat { isIpad ? 16 : 10 }
+        static var itemSpacing: CGFloat { isIpad ? 20 : 12 }
+        
+        // iPad Specific Sizes
+        static var circleButtonSize: CGFloat { isIpad ? 56 : 40 }
+        static var headerHeight: CGFloat { isIpad ? 80 : 44 }
     }
 }
 
@@ -51,7 +55,7 @@ extension View {
 /// A standard circular icon button used for navigation (Back, Close)
 struct StandardIconButton: View {
     let icon: String // System name
-    var size: CGFloat = 20
+    var size: CGFloat { isIpad ? 24 : 20 }
     var weight: Font.Weight = .bold
     var color: Color = .homeTextPrimary
     var bg: Color = .homeCardBackground
@@ -62,7 +66,7 @@ struct StandardIconButton: View {
             Image(systemName: icon)
                 .font(.system(size: size, weight: weight))
                 .foregroundColor(color)
-                .padding(10)
+                .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
                 .background(bg)
                 .clipShape(Circle())
         }

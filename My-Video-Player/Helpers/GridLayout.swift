@@ -6,9 +6,9 @@ struct GridLayout {
     // MARK: - Global Configuration
     // Change these values in ONE place to update ALL grids app-wide
     
-    static let columns: Int = 2
-    static let spacing: CGFloat = 15
-    static let horizontalPadding: CGFloat = 15
+    static var columns: Int { isIpad ? 4 : 2 }
+    static var spacing: CGFloat { isIpad ? 24 : 15 }
+    static var horizontalPadding: CGFloat { AppDesign.Icons.horizontalPadding }
     
     // MARK: - Computed Properties
     

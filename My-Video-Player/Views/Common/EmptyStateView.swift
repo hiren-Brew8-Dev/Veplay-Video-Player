@@ -7,9 +7,9 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: icon)
-                .appSecondaryIconStyle(size: 50, color: .homeTextSecondary)
+                .appSecondaryIconStyle(size: isIpad ? 80 : 50, color: .homeTextSecondary)
             Text(message)
-                .font(.headline)
+                .font(.system(size: isIpad ? 24 : 17, weight: .semibold))
                 .foregroundColor(.homeTextSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

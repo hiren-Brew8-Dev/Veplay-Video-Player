@@ -200,11 +200,11 @@ struct DashboardView: View {
                     .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
                     .foregroundColor(.homeTextPrimary)
             }
-            .padding(.leading, 16)
+            .padding(.leading, AppDesign.Icons.horizontalPadding)
             
             Spacer()
             
-            HStack(spacing: 12) {
+            HStack(spacing: isIpad ? 20 : 12) {
                 // Settings Button (Trailing, before 3-dots)
                 Button(action: {
                     viewModel.navigationPath.append("Settings")
@@ -212,10 +212,10 @@ struct DashboardView: View {
                     ZStack {
                         Circle()
                             .fill(Color.premiumCircleBackground)
-                            .frame(width: 40, height: 40)
+                            .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
                         
                         Image(systemName: "gearshape")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: isIpad ? 22 : 16, weight: .bold))
                             .foregroundColor(.white)
                     }
                 }
@@ -253,19 +253,19 @@ struct DashboardView: View {
                         ZStack {
                             Circle()
                                 .fill(Color.premiumCircleBackground)
-                                .frame(width: 40, height: 40)
+                                .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
                             
                             Image(systemName: "ellipsis")
                                 .rotationEffect(.degrees(90))
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: isIpad ? 22 : 16, weight: .bold))
                                 .foregroundColor(.white)
                         }
                     }
                 }
             }
-            .padding(.trailing, 16)
+            .padding(.trailing, AppDesign.Icons.horizontalPadding)
         }
-        .frame(height: 44)
+        .frame(height: AppDesign.Icons.headerHeight)
         .padding(.vertical, 8)
         .background(Color.homeBackground.ignoresSafeArea())
     }
@@ -286,7 +286,12 @@ struct DashboardView: View {
                 items: viewModel.actionSheetItems,
                 isPresented: $viewModel.showActionSheet
             )
-            .transition(.move(edge: .bottom))
+            .iPad { view in
+                view.frame(maxWidth: 400)
+                    .clipShape(RoundedRectangle(cornerRadius: 28))
+                    .shadow(radius: 20)
+            }
+            .transition(isIpad ? .scale.combined(with: .opacity) : .move(edge: .bottom))
         }
         .zIndex(200)
     }
@@ -446,7 +451,7 @@ struct PlusButtonOverlay: View {
                         Circle()
                             .fill(Color.white.opacity(0.05))
                     }
-                    .frame(width: 56, height: 56)
+                    .frame(width: isIpad ? 80 : 56, height: isIpad ? 80 : 56)
                     .overlay(
                         Circle()
                             .stroke(
@@ -458,7 +463,7 @@ struct PlusButtonOverlay: View {
                                 lineWidth: 1
                             )
                     )
-                    .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: 5)
+                    .shadow(color: Color.black.opacity(0.4), radius: isIpad ? 15 : 10, x: 0, y: 5)
                     
                     // Interactive Menu (Overlay)
                     Menu {
@@ -478,15 +483,15 @@ struct PlusButtonOverlay: View {
                                 .contentShape(Circle())
                             
                             Image(systemName: "plus")
-                                .font(.system(size: 24, weight: .medium))
+                                .font(.system(size: isIpad ? 36 : 24, weight: .medium))
                                 .foregroundColor(.white)
                         }
-                        .frame(width: 56, height: 56)
+                        .frame(width: isIpad ? 80 : 56, height: isIpad ? 80 : 56)
                     }
                 }
             }
-            .padding(.trailing, 24)
-            .padding(.bottom, (UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0) + 60)
+            .padding(.trailing, AppDesign.Icons.horizontalPadding + (isIpad ? 16 : 0))
+            .padding(.bottom, (UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0) + (isIpad ? 100 : 60))
             .ignoresSafeArea(.keyboard)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }

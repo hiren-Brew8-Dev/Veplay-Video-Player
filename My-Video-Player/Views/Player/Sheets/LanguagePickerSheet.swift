@@ -77,6 +77,8 @@ struct LanguagePickerSheet: View {
                 }
             }
         }
-        .background(Color.sheetBackground.edgesIgnoringSafeArea(.all))
+        .background(Color.sheetBackground)
+        .applyIf(isIpad) { $0.cornerRadius(28) }
+        .shadow(color: isIpad ? Color.black.opacity(0.5) : .clear, radius: isIpad ? 20 : 0)
     }
 }

@@ -43,11 +43,13 @@ struct CustomSortingView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Drag Handle
-            Capsule()
-                .fill(Color.white.opacity(0.3))
-                .frame(width: 40, height: 5)
-                .padding(.top, 12)
-                .padding(.bottom, 20)
+            if !isIpad {
+                Capsule()
+                    .fill(Color.white.opacity(0.3))
+                    .frame(width: 40, height: 5)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
+            }
             
             // Header
             HStack {
@@ -130,8 +132,11 @@ struct CustomSortingView: View {
                 endPoint: .bottom
             )
         )
-        .cornerRadiusLocal(28, corners: [.topLeft, .topRight])
-        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: -10)
+        .applyIf(isIpad) { $0.cornerRadius(28) }
+        .applyIf(!isIpad) { view in
+            view.cornerRadiusLocal(28, corners: [.topLeft, .topRight])
+        }
+        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: isIpad ? 10 : -10)
         .onAppear {
             mapCurrentState()
         }

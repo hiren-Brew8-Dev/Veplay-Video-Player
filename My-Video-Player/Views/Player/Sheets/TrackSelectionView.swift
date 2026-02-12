@@ -24,7 +24,7 @@ struct AudioTrackSettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Drag Handle (Only visible in portrait)
-            if !isLandscape {
+            if !isLandscape && !isIpad {
                 Capsule()
                     .fill(Color.homeTextSecondary.opacity(0.4))
                     .frame(width: 36, height: 5)
@@ -82,7 +82,7 @@ struct AudioTrackSettingsView: View {
                         ForEach(Array(viewModel.availableAudioTracks.enumerated()), id: \.offset) { index, trackName in
                             trackRow(
                                 title: trackName,
-                                isSelected: viewModel.selectedAudioTrackIndex == index,
+                               isSelected: viewModel.selectedAudioTrackIndex == index,
                                 action: { viewModel.selectAudioTrack(at: index) }
                             )
                             
@@ -93,7 +93,7 @@ struct AudioTrackSettingsView: View {
                     }
                 }
             }
-            .frame(maxHeight: isLandscape ? .infinity : 250) // Allow full height in landscape
+            .frame(maxHeight: (isLandscape || isIpad) ? .infinity : 250) // Allow full height in landscape/iPad
             
             Divider()
                 .background(Color.gray.opacity(0.3))
@@ -130,18 +130,20 @@ struct AudioTrackSettingsView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
-            .padding(.bottom, isLandscape ? 20 : 40)
+            .padding(.bottom, (isLandscape || isIpad) ? 20 : 40)
             .background(Color.sheetBackground)
             .opacity(viewModel.selectedAudioTrackIndex == -1 ? 0.5 : 1.0)
             .allowsHitTesting(viewModel.selectedAudioTrackIndex != -1)
         }
         .background(Color.sheetBackground)
-        .applyIf(isLandscape) { view in
+        .applyIf(isIpad) { $0.cornerRadius(28) }
+        .applyIf(isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .applyIf(!isLandscape) { view in
+        .applyIf(!isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
+        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: (isLandscape || isIpad) ? 10 : -10)
     }
     
     func trackRow(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {

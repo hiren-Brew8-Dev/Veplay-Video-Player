@@ -39,13 +39,14 @@ struct PlayerTopBar: View {
                 if !viewModel.isLocked {
                     StandardIconButton(icon: "chevron.left", color: .white, bg: Color.black.opacity(0.5), action: onBack)
                     
-                    // Title - Truncated after 15 characters
-                    Text(title.count > 15 ? String(title.prefix(15)) + "..." : title)
-                        .font(.system(size: 17, weight: .semibold))
+                    // Title - Truncated based on device
+                    let prefixLimit = isIpad ? 40 : 15
+                    Text(title.count > prefixLimit ? String(title.prefix(prefixLimit)) + "..." : title)
+                        .font(.system(size: isIpad ? 24 : 17, weight: .semibold))
                         .foregroundColor(.white)
-                        .frame(height: 24)
+                        .frame(height: isIpad ? 32 : 24)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.leading, 8)
+                        .padding(.leading, isIpad ? 16 : 8)
                         .lineLimit(1)
                 } else {
                     Spacer()
@@ -57,10 +58,10 @@ struct PlayerTopBar: View {
                     if viewModel.isSleepTimerActive {
                         Button(action: onTimer) {
                             Image(systemName: "timer")
-                                .font(.system(size: 20))
+                                .font(.system(size: isIpad ? 24 : 20))
                                 .foregroundColor(.orange)
                         }
-                        .frame(width: 40, height: 44)
+                        .frame(width: isIpad ? 60 : 40, height: isIpad ? 60 : 44)
                     }
                     
                     CastButton(viewModel: viewModel, action: onCast)
@@ -71,13 +72,13 @@ struct PlayerTopBar: View {
                     
                     Button(action: onMenu) {
                         Image(systemName: "gearshape")
-                            .font(.system(size: 20))
+                            .font(.system(size: isIpad ? 24 : 20))
                             .foregroundColor(.white)
                     }
-                    .frame(width: 40, height: 44)
+                    .frame(width: isIpad ? 60 : 40, height: isIpad ? 60 : 44)
                 }
             }
-            .padding(.horizontal, isLandscape ? 50 : 8)
+            .padding(.horizontal, isLandscape ? (isIpad ? 80 : 50) : (isIpad ? 30 : 8))
         }
         .padding(.top, isLandscape ? 20 : 40)
         .padding(.bottom, 10)

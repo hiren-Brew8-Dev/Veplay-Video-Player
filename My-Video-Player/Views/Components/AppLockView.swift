@@ -15,15 +15,15 @@ struct AppLockView: View {
                 ZStack {
                     Circle()
                         .fill(Color.homeAccent.opacity(0.1))
-                        .frame(width: 300, height: 300)
-                        .blur(radius: 60)
-                        .offset(x: -100, y: -150)
+                        .frame(width: isIpad ? 500 : 300, height: isIpad ? 500 : 300)
+                        .blur(radius: isIpad ? 100 : 60)
+                        .offset(x: isIpad ? -150 : -100, y: isIpad ? -200 : -150)
                     
                     Circle()
                         .fill(Color.blue.opacity(0.1))
-                        .frame(width: 250, height: 250)
-                        .blur(radius: 50)
-                        .offset(x: 120, y: 100)
+                        .frame(width: isIpad ? 400 : 250, height: isIpad ? 400 : 250)
+                        .blur(radius: isIpad ? 80 : 50)
+                        .offset(x: isIpad ? 200 : 120, y: isIpad ? 150 : 100)
                 }
                 Spacer()
             }
@@ -35,16 +35,16 @@ struct AppLockView: View {
                 ZStack {
                     Circle()
                         .fill(Color.homeAccent.opacity(0.15))
-                        .frame(width: 120, height: 120)
+                        .frame(width: isIpad ? 200 : 120, height: isIpad ? 200 : 120)
                         .scaleEffect(isAnimating ? 1.2 : 1.0)
                         .opacity(isAnimating ? 0.3 : 0.7)
                     
                     Circle()
                         .fill(Color.homeAccent.opacity(0.2))
-                        .frame(width: 100, height: 100)
+                        .frame(width: isIpad ? 160 : 100, height: isIpad ? 160 : 100)
                     
                     Image(systemName: "faceid")
-                        .font(.system(size: 48, weight: .semibold))
+                        .font(.system(size: isIpad ? 72 : 48, weight: .semibold))
                         .foregroundColor(.homeAccent)
                 }
                 .onTapGesture {
@@ -61,16 +61,16 @@ struct AppLockView: View {
                     }
                 }
                 
-                VStack(spacing: 12) {
+                VStack(spacing: isIpad ? 20 : 12) {
                     Text("App Locked")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.system(size: isIpad ? 44 : 28, weight: .bold))
                         .foregroundColor(.homeTextPrimary)
                     
                     Text("Please authenticate to access your videos")
-                        .font(.system(size: 16))
+                        .font(.system(size: isIpad ? 22 : 16))
                         .foregroundColor(.homeTextSecondary)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
+                        .padding(.horizontal, isIpad ? 100 : 40)
                 }
                 
                 Spacer()

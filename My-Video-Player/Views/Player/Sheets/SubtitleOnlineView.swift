@@ -18,7 +18,7 @@ struct SubtitleOnlineView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Drag Handle (Portrait)
-            if !isLandscape {
+            if !isLandscape && !isIpad {
                 Capsule()
                     .fill(Color.gray.opacity(0.4))
                     .frame(width: 36, height: 5)
@@ -46,6 +46,7 @@ struct SubtitleOnlineView: View {
                 StandardIconButton(icon: "chevron.left", color: .clear, bg: .clear, action: {})
             }
             .padding(.horizontal)
+            .padding(.top, isIpad ? 16 : 0)
             
             Divider()
                 .background(Color.gray.opacity(0.3))
@@ -53,12 +54,13 @@ struct SubtitleOnlineView: View {
             
             onlineSearchView
         }
-        .padding(.trailing, isLandscape ? 30 : 0)
+        .padding(.trailing, (isLandscape && !isIpad) ? 30 : 0)
         .background(Color(UIColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)))
-        .applyIf(isLandscape) { view in
+        .applyIf(isIpad) { $0.cornerRadius(28) }
+        .applyIf(isLandscape && !isIpad) { view in
              view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
         }
-        .applyIf(!isLandscape) { view in
+        .applyIf(!isLandscape && !isIpad) { view in
              view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
         }
         .sheet(isPresented: $showLanguagePicker) {

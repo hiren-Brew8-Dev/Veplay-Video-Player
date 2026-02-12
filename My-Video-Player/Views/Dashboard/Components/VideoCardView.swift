@@ -37,7 +37,7 @@ struct VideoCardView: View {
                     ZStack {
                         Color.white.opacity(0.05)
                         Image(systemName: "video.fill")
-                            .font(.system(size: 30))
+                            .font(.system(size: isIpad ? 50 : 30))
                             .foregroundColor(.white.opacity(0.2))
                     }
                     .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
@@ -51,7 +51,7 @@ struct VideoCardView: View {
                 
                 // Duration Overlay
                 Text(formatDuration(video.duration))
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: isIpad ? 14 : 10, weight: .bold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
@@ -71,7 +71,7 @@ struct VideoCardView: View {
                                 
                                 if isSelected {
                                     Image(systemName: "checkmark")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.system(size: isIpad ? 16 : 12, weight: .bold))
                                     .foregroundColor(.homeTextPrimary)
                                 } else {
                                     Circle()
@@ -93,7 +93,7 @@ struct VideoCardView: View {
             HStack(alignment: .center, spacing: 0) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(resolvedTitle?.truncated(ext: video.url?.pathExtension ?? "") ?? video.truncatedTitle)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: isIpad ? 20 : 14, weight: .bold))
                         .foregroundColor(.homeTextPrimary)
                         .lineLimit(1)
                     
@@ -106,7 +106,7 @@ struct VideoCardView: View {
                             Text(formatBytes(video.fileSizeBytes))
                         }
                     }
-                    .font(.system(size: 10, weight: .medium)) // Slightly smaller to fit time
+                    .font(.system(size: isIpad ? 14 : 10, weight: .medium)) // Slightly smaller to fit time
                     .foregroundColor(.homeTextSecondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -118,7 +118,7 @@ struct VideoCardView: View {
                     Button(action: { onMenuAction?() }) {
                         Image(systemName: "ellipsis")
                             .rotationEffect(.degrees(90))
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.system(size: isIpad ? 20 : 14, weight: .bold))
                             .foregroundColor(.homeTextPrimary)
                             .padding(8)
                             .contentShape(Circle())

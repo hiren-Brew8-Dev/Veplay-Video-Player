@@ -29,31 +29,42 @@ struct VideoSectionView: View {
                     selectionHeader
                 }
                 
-                if viewModel.importedVideos.isEmpty && viewModel.folders.isEmpty && !viewModel.isImporting {
-                    emptyStateView
-                } else {
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            VStack(spacing: 24) {
-                                // Folders Section
-                                if !viewModel.isSelectionMode {
-                                    foldersSection
-                                        .transition(.asymmetric(
-                                            insertion: .move(edge: .top).combined(with: .opacity),
-                                            removal: .move(edge: .top).combined(with: .opacity)
-                                        ))
-                                }
-                                
-                                // Imported Videos Section
-                                videosSection
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            // Folders Section
+                            if !viewModel.isSelectionMode {
+                                foldersSection
+                                    .transition(.asymmetric(
+                                        insertion: .move(edge: .top).combined(with: .opacity),
+                                        removal: .move(edge: .top).combined(with: .opacity)
+                                    ))
                             }
-                            .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
-                        }
-                        .onChange(of: viewModel.highlightVideoId) { oldId, newId in
-                            if let id = newId {
-                                withAnimation(.spring()) {
-                                    proxy.scrollTo(id, anchor: .center)
+                            
+                            // Imported Videos Section
+                            VStack(alignment: .leading, spacing: 15) {
+                                Text("Imported Videos")
+                                    .font(.system(size: isIpad ? 24 : 18, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                                
+                                if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
+                                    emptyStateView
+                                } else {
+                                    if isGridView {
+                                        contentView
+                                    } else {
+                                        listView
+                                    }
                                 }
+                            }
+                        }
+                        .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
+                    }
+                    .onChange(of: viewModel.highlightVideoId) { oldId, newId in
+                        if let id = newId {
+                            withAnimation(.spring()) {
+                                proxy.scrollTo(id, anchor: .center)
                             }
                         }
                     }
@@ -138,8 +149,8 @@ struct VideoSectionView: View {
                     // Sticky Add Folder Card
                     AddFolderCardView(action: {
                         viewModel.showCreateFolderAlert = true
-                    }, size: 150)
-                    .padding(.leading, 16)
+                    }, size: isIpad ? 220 : 150)
+                    .padding(.leading, AppDesign.Icons.horizontalPadding)
                     
                     // Folder Cards
                     ForEach(viewModel.sortedFolders) { folder in
@@ -148,7 +159,7 @@ struct VideoSectionView: View {
                         }) {
                             FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
                                 triggerFolderActionSheet(for: folder)
-                            }, size: 150)
+                            }, size: isIpad ? 220 : 150)
                         }
                     }
                 }
@@ -190,9 +201,9 @@ struct VideoSectionView: View {
     private var videosSection: some View {
         VStack(alignment: .leading, spacing: 15) {
             Text("Imported Videos")
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: isIpad ? 24 : 18, weight: .bold))
                 .foregroundColor(.white)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppDesign.Icons.horizontalPadding)
             
             if isGridView {
                 contentView
@@ -322,10 +333,10 @@ struct VideoSectionView: View {
             }
             .font(.system(size: 15, weight: .bold))
             .foregroundColor(.orange)
-            .padding(.trailing, 10)
+            .padding(.trailing, 10 + (isIpad ? 10 : 0))
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
+        .padding(.horizontal, AppDesign.Icons.horizontalPadding / 2)
+        .padding(.vertical, isIpad ? 16 : 8)
         .background(Color.clear)
     
     }
@@ -348,8 +359,9 @@ struct VideoSectionView: View {
 
                 selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareSelectedVideos() })
             }
-            .padding(.top, 16)
-            .padding(.bottom, 34) // Explicit safe area space
+            
+            .padding(.top, isIpad ? 24 : 16)
+            .padding(.bottom, (UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0) + (isIpad ? 40 : 34)) // Explicit safe area space
             .background(
                 LinearGradient(
                     colors: [.premiumGradientTop, .premiumGradientBottom],
@@ -378,15 +390,15 @@ struct VideoSectionView: View {
                 ZStack {
                     Circle()
                         .fill(viewModel.selectedVideoIds.isEmpty ? Color.white.opacity(0.05) : Color.orange.opacity(0.1))
-                        .frame(width: 44, height: 44)
+                        .frame(width: isIpad ? 60 : 44, height: isIpad ? 60 : 44)
                     
                     Image(systemName: icon)
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: isIpad ? 28 : 20, weight: .semibold))
                         .foregroundColor(viewModel.selectedVideoIds.isEmpty ? .white.opacity(0.3) : .orange)
                 }
                 
                 Text(title)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: isIpad ? 14 : 11, weight: .bold))
                     .foregroundColor(viewModel.selectedVideoIds.isEmpty ? .white.opacity(0.3) : .white)
             }
             .frame(maxWidth: .infinity)
@@ -399,34 +411,33 @@ struct VideoSectionView: View {
     // MARK: - Subviews
     
     private var emptyStateView: some View {
-        VStack(spacing: 0) {
-            Spacer()
-                .frame(height: 80)
+        VStack(spacing: 24) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.05))
+                    .frame(width: 100, height: 100)
+                
+                Image(systemName: "video.slash")
+                    .font(.system(size: 44))
+                    .foregroundColor(.white.opacity(0.2))
+            }
             
-            VStack(spacing: 24) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.05))
-                        .frame(width: 100, height: 100)
-                    
-                    Image(systemName: "video.slash")
-                        .font(.system(size: 40))
-                        .foregroundColor(.white.opacity(0.2))
-                }
+            VStack(spacing: 12) {
+                Text(viewModel.importedVideos.isEmpty ? "No Videos Imported" : "No Content Found")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
                 
-                VStack(spacing: 8) {
-                    Text("No Videos Imported")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Text("Start by importing videos from your photos\nor files to build your local library.")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.5))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                }
-                .padding(.horizontal, 40)
-                
+                Text(viewModel.importedVideos.isEmpty ? 
+                     "Start by importing videos from your photos\nor files to build your local library." :
+                     "Your folders and videos will appear here.")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.5))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+            }
+            .padding(.horizontal, 40)
+            
+            if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
                 Menu {
                     Button(action: {
                         viewModel.showPhotoPicker = true
@@ -461,10 +472,9 @@ struct VideoSectionView: View {
                 }
                 .padding(.top, 8)
             }
-            
-            Spacer()
         }
         .frame(maxWidth: .infinity)
+        .padding(.top, 20)
     }
     
     private var contentView: some View {

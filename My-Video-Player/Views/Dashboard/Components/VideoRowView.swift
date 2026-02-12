@@ -22,12 +22,12 @@ struct VideoRowView: View {
                     
                     if isSelected {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: isIpad ? 14 : 10, weight: .bold))
                             .foregroundColor(.homeTextPrimary)
                     } else {
                         Circle()
                             .stroke(Color.homeTextSecondary, lineWidth: 1.5)
-                            .frame(width: 22, height: 22)
+                            .frame(width: isIpad ? 30 : 22, height: isIpad ? 30 : 22)
                     }
                 }
             }
@@ -37,25 +37,25 @@ struct VideoRowView: View {
                     Image(uiImage: thumb)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 96, height: 72)
+                        .frame(width: isIpad ? 140 : 96, height: isIpad ? 100 : 72)
                         .clipped()
-                        .cornerRadius(10)
+                        .cornerRadius(12)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10)
+                            RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.white.opacity(0.1), lineWidth: 1)
                         )
                 } else {
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: 12)
                         .fill(Color.white.opacity(0.05))
-                        .frame(width: 96, height: 72)
+                        .frame(width: isIpad ? 140 : 96, height: isIpad ? 100 : 72)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10)
+                            RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.white.opacity(0.1), lineWidth: 1)
                         )
                 }
 
                 Text(video.formattedDuration)
-                    .font(.caption2)
+                    .font(isIpad ? .caption : .caption2)
                     .foregroundColor(.homeTextPrimary)
                     .padding(2)
                     .background(Color.homeBackground.opacity(0.7))
@@ -63,17 +63,16 @@ struct VideoRowView: View {
                     .padding(2)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: isIpad ? 8 : 4) {
                 Text(resolvedTitle?.truncated(ext: video.url?.pathExtension ?? "") ?? video.truncatedTitle)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: isIpad ? 22 : 16, weight: .semibold))
                     .foregroundColor(.homeTextPrimary)
                     .lineLimit(1)
-
+                
                 HStack(spacing: 8) {
-                 
                     Text(formattedDate(video.creationDate))
                 }
-                .font(.system(size: 12))
+                .font(.system(size: isIpad ? 16 : 12))
                 .foregroundColor(.homeTextSecondary)
             }
 
@@ -81,7 +80,7 @@ struct VideoRowView: View {
 
             if video.url != nil {
                 Text(formatBytes(video.fileSizeBytes)) // The "size"
-                    .font(.system(size: 12))
+                    .font(.system(size: isIpad ? 16 : 12))
                     .foregroundColor(.homeTextSecondary)
                     .padding(.trailing, 2) // Close to the dots
             }
@@ -89,15 +88,15 @@ struct VideoRowView: View {
                 Button(action: { onMenuAction?() }) {
                     Image(systemName: "ellipsis")
                         .rotationEffect(.degrees(90))
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: isIpad ? 20 : 14, weight: .bold))
                         .foregroundColor(.homeTint)
-                        .padding(8)
+                        .padding(isIpad ? 12 : 8)
                         .contentShape(Circle())
                 }
                 .buttonStyle(.scalable)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
         .padding(.vertical, 10)
         .contentShape(Rectangle())
         .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.02 : 1.0)

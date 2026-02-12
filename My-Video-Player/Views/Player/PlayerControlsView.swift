@@ -357,18 +357,18 @@ struct PlayerControlsView: View {
     }
     
     private var centerControls: some View {
-        HStack(spacing: isLandscape ? 50 : 30) {
+        HStack(spacing: isLandscape ? (isIpad ? 100 : 50) : (isIpad ? 60 : 30)) {
             // Skip Backward 10s
             Button(action: {
                 viewModel.performDoubleTapSeek(forward: false)
                 showDoubleTapFeedback = false
                 resetTimer()
             }) {
-                Image(systemName: "gobackward.10")
-                    .font(.system(size: 30, weight: .regular))
-                    .foregroundColor(.white)
-                    .frame(width: 54, height: 54)
-                    .contentShape(Rectangle())
+                    Image(systemName: "gobackward.10")
+                        .font(.system(size: isIpad ? 54 : 30, weight: .regular))
+                        .foregroundColor(.white)
+                        .frame(width: isIpad ? 90 : 54, height: isIpad ? 90 : 54)
+                        .contentShape(Rectangle())
             }
             
             // Play/Pause
@@ -379,10 +379,10 @@ struct PlayerControlsView: View {
                 ZStack {
                     Circle()
                         .fill(Color.white)
-                        .frame(width: 74, height: 74)
+                        .frame(width: isIpad ? 120 : 74, height: isIpad ? 120 : 74)
                     
                     Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 34))
+                        .font(.system(size: isIpad ? 54 : 34))
                         .foregroundColor(.black)
                 }
             }
@@ -393,11 +393,11 @@ struct PlayerControlsView: View {
                 showDoubleTapFeedback = true
                 resetTimer()
             }) {
-                Image(systemName: "goforward.10")
-                    .font(.system(size: 30, weight: .regular))
-                    .foregroundColor(.white)
-                    .frame(width: 54, height: 54)
-                    .contentShape(Rectangle())
+                    Image(systemName: "goforward.10")
+                        .font(.system(size: isIpad ? 54 : 30, weight: .regular))
+                        .foregroundColor(.white)
+                        .frame(width: isIpad ? 90 : 54, height: isIpad ? 90 : 54)
+                        .contentShape(Rectangle())
             }
         }
     }
@@ -475,7 +475,16 @@ struct PlayerControlsView: View {
                 
                 // Sheet Content
                 if anySheetVisible {
-                    if isLandscape && !viewModel.showAudioCaptionsSheet {
+                    if isIpad {
+                        // Centered Popover for iPad
+                        sheetContent(isLandscape: false)
+                            .frame(maxWidth: 500)
+                            .frame(height: 560)
+                            .clipShape(RoundedRectangle(cornerRadius: 32))
+                            .shadow(color: Color.black.opacity(0.5), radius: 30)
+                            .transition(.scale.combined(with: .opacity))
+                            .zIndex(1)
+                    } else if isLandscape && !viewModel.showAudioCaptionsSheet {
                         // Trailing side sheet for landscape (except AudioCaptions)
                         HStack(spacing: 0) {
                             Spacer()
@@ -638,6 +647,7 @@ struct PlayerControlsView: View {
             selectedMode: $selectedCastingMode,
             isLandscape: isLandscape
         )
+        .applyIf(!isLandscape && !isIpad) { $0.frame(height: 320) }
     }
 
     private func sleepTimerSheet(isLandscape: Bool) -> some View {

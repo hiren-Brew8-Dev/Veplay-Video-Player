@@ -12,7 +12,7 @@ struct AudioCaptionsSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             // Drag Handle
-            if !isLandscape {
+            if !isLandscape && !isIpad {
                 Capsule()
                     .fill(Color.white.opacity(0.3))
                     .frame(width: 40, height: 5)
@@ -48,12 +48,12 @@ struct AudioCaptionsSheet: View {
                     .frame(width: 44, height: 44)
             }
             .padding(.horizontal, 20)
-            .padding(.top, isLandscape ? 16 : 0)
+            .padding(.top, (isLandscape || isIpad) ? 16 : 0)
             .padding(.bottom, 20)
             
             // Content
-            if isLandscape {
-                // Landscape: Side by side layout
+            if isLandscape && !isIpad {
+                // Landscape (iPhone): Side by side layout
                 HStack(alignment: .top, spacing: 20) {
                     // Left Column: Audio Track + Audio Delay
                     VStack(spacing: 20) {
@@ -69,7 +69,7 @@ struct AudioCaptionsSheet: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 30)
             } else {
-                // Portrait: Stacked layout
+                // Portrait (iPhone) OR iPad (Centered): Stacked layout
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
                         // Audio Track Section
@@ -93,8 +93,14 @@ struct AudioCaptionsSheet: View {
                 endPoint: .bottom
             )
         )
-        .cornerRadiusLocal(24, corners: [.topLeft, .topRight])
-        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: -10)
+        .applyIf(isIpad) { $0.cornerRadius(28) }
+        .applyIf(isLandscape && !isIpad) { view in
+            view.cornerRadiusLocal(24, corners: [.topLeft, .topRight])
+        }
+        .applyIf(!isLandscape && !isIpad) { view in
+            view.cornerRadiusLocal(24, corners: [.topLeft, .topRight])
+        }
+        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: (isLandscape || isIpad) ? 10 : -10)
     }
     
     // MARK: - Audio Track Section

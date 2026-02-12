@@ -7,19 +7,20 @@ struct PermissionDeniedView: View {
             
             VStack(spacing: 20) {
                 Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 80))
+                    .font(.system(size: isIpad ? 120 : 80))
                     .foregroundColor(.homeAccent)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, isIpad ? 40 : 20)
                 
                 Text("Permission Required")
-                    .font(.title2)
+                    .font(isIpad ? .title : .title2)
                     .fontWeight(.bold)
                     .foregroundColor(.homeTextPrimary)
                 
                 Text("We need access to your Photo Library to display your videos. Please enable access in Settings.")
+                    .font(isIpad ? .title3 : .body)
                     .multilineTextAlignment(.center)
                     .foregroundColor(.homeTextSecondary)
-                    .padding(.horizontal)
+                    .padding(.horizontal, isIpad ? 80 : 20)
                 
                 Button(action: {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -34,8 +35,9 @@ struct PermissionDeniedView: View {
                         .background(Color.homeTint)
                         .cornerRadius(10)
                 }
-                .padding(.top, 20)
-                .padding(.horizontal, 40)
+                .padding(.top, isIpad ? 40 : 20)
+                .padding(.horizontal, isIpad ? 80 : 40)
+                .iPad { $0.frame(maxWidth: 400) }
             }
         }
     }

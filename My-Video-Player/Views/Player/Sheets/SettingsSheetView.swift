@@ -21,7 +21,7 @@ struct SettingsSheetView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Drag Handle
-            if !isLandscape {
+            if !isLandscape && !isIpad {
                 Capsule()
                     .fill(Color.white.opacity(0.3))
                     .frame(width: 40, height: 5)
@@ -44,13 +44,14 @@ struct SettingsSheetView: View {
                 endPoint: .bottom
             )
         )
-        .applyIf(isLandscape) { view in
+        .applyIf(isIpad) { $0.cornerRadius(28) }
+        .applyIf(isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(24, corners: [.topLeft, .bottomLeft])
         }
-        .applyIf(!isLandscape) { view in
+        .applyIf(!isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(24, corners: [.topLeft, .topRight])
         }
-        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: isLandscape ? 0 : -10)
+        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: (isLandscape || isIpad) ? 10 : -10)
     }
     
     private var settingsHeader: some View {
@@ -113,8 +114,8 @@ struct SettingsSheetView: View {
                 
                 queueList
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 30)
+            .padding(.horizontal, isIpad ? 32 : 20)
+            .padding(.bottom, isIpad ? 40 : 30)
         }
     }
     
@@ -125,8 +126,8 @@ struct SettingsSheetView: View {
                 
                 queueList
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 30)
+            .padding(.horizontal, isIpad ? 32 : 20)
+            .padding(.bottom, isIpad ? 40 : 30)
         }
     }
     

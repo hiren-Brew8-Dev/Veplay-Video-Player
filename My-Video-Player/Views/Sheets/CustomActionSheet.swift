@@ -18,15 +18,16 @@ struct CustomActionSheet: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
-            
-            VStack(spacing: 0) {
+            if !isIpad {
+                Spacer()
+                
                 // Drag Handle
                 Capsule()
                     .fill(Color.white.opacity(0.3))
                     .frame(width: 40, height: 5)
                     .padding(.top, 12)
                     .padding(.bottom, 24)
+            }
                 
                 // Header Section
                 if let target = target {
@@ -51,21 +52,21 @@ struct CustomActionSheet: View {
                                 ZStack {
                                     Circle()
                                         .fill(item.role == .destructive ? Color.red.opacity(0.1) : Color.premiumCircleBackground)
-                                        .frame(width: 36, height: 36)
+                                        .frame(width: isIpad ? 48 : 36, height: isIpad ? 48 : 36)
                                     
                                     Image(systemName: item.icon)
-                                        .font(.system(size: 16, weight: .semibold))
+                                        .font(.system(size: isIpad ? 22 : 16, weight: .semibold))
                                         .foregroundColor(item.role == .destructive ? .red : .white)
                                 }
                                 
                                 Text(item.title)
-                                    .font(.system(size: 16, weight: .medium))
+                                    .font(.system(size: isIpad ? 20 : 16, weight: .medium))
                                     .foregroundColor(item.role == .destructive ? .red : .white)
                                 
                                 Spacer()
                             }
                             .padding(.horizontal, 16)
-                            .frame(height: 56)
+                            .frame(height: isIpad ? 72 : 56)
                             .contentShape(Rectangle())
                         }
                         
@@ -94,10 +95,12 @@ struct CustomActionSheet: View {
                     endPoint: .bottom
                 )
             )
-            .cornerRadiusLocal(28, corners: [.topLeft, .topRight])
-            .shadow(color: Color.black.opacity(0.5), radius: 20, x: 0, y: -10)
-        }
-        .edgesIgnoringSafeArea(.bottom)
+            
+            .applyIf(isIpad) { $0.cornerRadius(28) }
+            .applyIf(!isIpad) { $0.cornerRadiusLocal(28, corners: [.topLeft, .topRight]) }
+            .shadow(color: Color.black.opacity(0.5), radius: 20, x: 0, y: isIpad ? 10 : -10)
+        
+        .applyIf(!isIpad) { $0.edgesIgnoringSafeArea(.bottom) }
     }
     
     @ViewBuilder
@@ -107,7 +110,7 @@ struct CustomActionSheet: View {
             case .video(let video):
                 ZStack(alignment: .bottomTrailing) {
                     ActionSheetThumbnailView(video: video)
-                        .frame(width: 90, height: 56)
+                        .frame(width: isIpad ? 140 : 90, height: isIpad ? 88 : 56)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -126,15 +129,15 @@ struct CustomActionSheet: View {
                 
                 VStack(alignment: .leading, spacing: 4) {
                     ActionSheetHeaderTitleView(video: video)
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.system(size: isIpad ? 22 : 17, weight: .bold))
                     
                     if video.asset != nil {
                          Text("\(formatDate(video.creationDate))")
-                            .font(.system(size: 13))
+                            .font(.system(size: isIpad ? 17 : 13))
                             .foregroundColor(.white.opacity(0.5))
                     } else {
                         Text("\(formatDate(video.creationDate)) • \(formatBytes(video.fileSizeBytes))")
-                            .font(.system(size: 13))
+                            .font(.system(size: isIpad ? 17 : 13))
                             .foregroundColor(.white.opacity(0.5))
                     }
                 }
@@ -143,24 +146,24 @@ struct CustomActionSheet: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color.orange.opacity(0.1))
-                        .frame(width: 90, height: 56)
+                        .frame(width: isIpad ? 140 : 90, height: isIpad ? 88 : 56)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.orange.opacity(0.2), lineWidth: 1)
                         )
                     
                     Image(systemName: "folder.fill")
-                        .font(.system(size: 24))
+                        .font(.system(size: isIpad ? 36 : 24))
                         .foregroundColor(.orange)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(folder.name)
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.system(size: isIpad ? 22 : 17, weight: .bold))
                         .foregroundColor(.white)
                     
                     Text("\(folder.videos.count) Videos")
-                        .font(.system(size: 13))
+                        .font(.system(size: isIpad ? 17 : 13))
                         .foregroundColor(.white.opacity(0.5))
                 }
             }

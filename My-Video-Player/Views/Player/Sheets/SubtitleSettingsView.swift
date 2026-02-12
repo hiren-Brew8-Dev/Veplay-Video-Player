@@ -12,7 +12,7 @@ struct SubtitleSettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Drag Handle
-            if !isLandscape {
+            if !isLandscape && !isIpad {
                 Capsule()
                     .fill(Color.white.opacity(0.3))
                     .frame(width: 40, height: 5)
@@ -38,13 +38,14 @@ struct SubtitleSettingsView: View {
                 endPoint: .bottom
             )
         )
-        .applyIf(isLandscape) { view in
+        .applyIf(isIpad) { $0.cornerRadius(28) }
+        .applyIf(isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(24, corners: [.topLeft, .bottomLeft])
         }
-        .applyIf(!isLandscape) { view in
+        .applyIf(!isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(24, corners: [.topLeft, .topRight])
         }
-        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: isLandscape ? 0 : -10)
+        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: (isLandscape || isIpad) ? 10 : -10)
         .fileImporter(
             isPresented: $showingFileImporter,
             allowedContentTypes: [UTType.plainText, UTType(filenameExtension: "srt")!, UTType.text],

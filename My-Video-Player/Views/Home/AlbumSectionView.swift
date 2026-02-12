@@ -20,17 +20,19 @@ struct AlbumSectionView: View {
                                 .fill(Color.white.opacity(0.05))
                                 .frame(width: 100, height: 100)
                             
-                            Image(systemName: "photo.on.rectangle.angled")
+                            Image(systemName: viewModel.showPermissionDenied ? "photo.on.rectangle.angled" : "video.slash")
                                 .font(.system(size: 44))
                                 .foregroundColor(.white.opacity(0.2))
                         }
                         
-                        VStack(spacing: 8) {
-                            Text("No Gallery Albums Found")
+                        VStack(spacing: 12) {
+                            Text(viewModel.showPermissionDenied ? "No Gallery Access" : "No Video Albums Found")
                                 .font(.system(size: 20, weight: .bold))
                                 .foregroundColor(.white)
                             
-                            Text("Grant photo access in settings to view\nyour device's video albums.")
+                            Text(viewModel.showPermissionDenied ? 
+                                 "Grant photo access in settings to view\nyour device's video albums." :
+                                 "We couldn't find any video albums in your\nPhotos library.")
                                 .font(.system(size: 14))
                                 .foregroundColor(.white.opacity(0.5))
                                 .multilineTextAlignment(.center)
@@ -38,28 +40,30 @@ struct AlbumSectionView: View {
                         }
                         .padding(.horizontal, 40)
                         
-                        Button(action: {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
-                            }
-                        }) {
-                            Text("Open Settings")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 40)
-                                .padding(.vertical, 16)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
+                        if viewModel.showPermissionDenied {
+                            Button(action: {
+                                if let url = URL(string: UIApplication.openSettingsURLString) {
+                                    UIApplication.shared.open(url)
+                                }
+                            }) {
+                                Text("Open Settings")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 40)
+                                    .padding(.vertical, 16)
+                                    .background(
+                                        LinearGradient(
+                                            colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
                                     )
-                                )
-                                .cornerRadius(30)
-                                .shadow(color: Color.homeAccent.opacity(0.4), radius: 15, x: 0, y: 8)
+                                    .cornerRadius(30)
+                                    .shadow(color: Color.homeAccent.opacity(0.4), radius: 15, x: 0, y: 8)
+                            }
+                            .buttonStyle(.scalable)
+                            .padding(.top, 8)
                         }
-                        .buttonStyle(.scalable)
-                        .padding(.top, 8)
                     }
                     
                     Spacer()
