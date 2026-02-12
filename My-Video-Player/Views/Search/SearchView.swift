@@ -10,52 +10,57 @@ struct SearchView: View {
     var initialVideos: [VideoItem]? = nil 
     
     var body: some View {
-        ZStack {
-            Color.homeBackground.ignoresSafeArea()
+        GeometryReader { geometry in
+            let isLandscape = geometry.size.width > geometry.size.height
+            let currentWidth = geometry.size.width
             
-            VStack(spacing: 0) {
-                // Custom Header
-                customHeader
+            ZStack {
+                Color.homeBackground.ignoresSafeArea()
                 
-                // Custom Search Bar
-                customSearchBar
-                    .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-                    .padding(.bottom, isIpad ? 24 : 16)
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        if viewModel.searchText.isEmpty {
-                            // History Section
-                            if !viewModel.searchHistoryKeywords.isEmpty {
-                                historySection
+                VStack(spacing: 0) {
+                    // Custom Header
+                    customHeader
+                    
+                    // Custom Search Bar
+                    customSearchBar
+                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                        .padding(.bottom, isIpad ? 24 : 16)
+                    
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            if viewModel.searchText.isEmpty {
+                                // History Section
+                                if !viewModel.searchHistoryKeywords.isEmpty {
+                                    historySection
+                                }
+                            } else {
+                                // Results Section
+                                resultsSection(isLandscape: isLandscape, currentWidth: currentWidth)
                             }
-                        } else {
-                            // Results Section
-                            resultsSection
                         }
+                        .padding(.top, 10)
                     }
-                    .padding(.top, 10)
                 }
             }
-        }
-        .navigationBarHidden(true)
-        .onAppear {
-            if viewModel.selectedTab == .search {
-                viewModel.isTabBarHidden = false
-            } else {
-                viewModel.isTabBarHidden = true
+            .navigationBarHidden(true)
+            .onAppear {
+                if viewModel.selectedTab == .search {
+                    viewModel.isTabBarHidden = false
+                } else {
+                    viewModel.isTabBarHidden = true
+                }
+                viewModel.searchText = "" // Reset on every open
+                isSearchFocused = true
             }
-            viewModel.searchText = "" // Reset on every open
-            isSearchFocused = true
-        }
-        .onDisappear {
-            if viewModel.selectedTab != .search {
-                viewModel.isTabBarHidden = false
-            }
-            // Auto-save search keyword when navigating back
-            let trimmedText = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmedText.isEmpty {
-                viewModel.persistSearchKeyword(trimmedText)
+            .onDisappear {
+                if viewModel.selectedTab != .search {
+                    viewModel.isTabBarHidden = false
+                }
+                // Auto-save search keyword when navigating back
+                let trimmedText = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedText.isEmpty {
+                    viewModel.persistSearchKeyword(trimmedText)
+                }
             }
         }
     }
@@ -188,11 +193,9 @@ struct SearchView: View {
     }
     
     @ViewBuilder
-    private var resultsSection: some View {
-        GeometryReader { geometry in
-            let isLandscape = geometry.size.width > geometry.size.height
-            let currentWidth = geometry.size.width
-            let baseVideos: [VideoItem] = {
+    private func resultsSection(isLandscape: Bool, currentWidth: CGFloat) -> some View {
+        let baseVideos: [VideoItem] = {
+            let candidates: [VideoItem] = {
                 if let initialVideos = initialVideos {
                     return initialVideos
                 }
@@ -204,31 +207,39 @@ struct SearchView: View {
                 }
             }()
             
-            let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let filtered = baseVideos.filter {
-                query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)
-            }
+            // Filter to only include videos currently in the master lists (handles background deletion)
+            let masterIds = Set(viewModel.allLocalSearchableVideos.map { $0.id })
+                .union(viewModel.allGallerySearchableVideos.map { $0.id })
             
-            VStack(alignment: .leading, spacing: 16) {
-                if filtered.isEmpty {
-                    VStack(spacing: 20) {
-                        Spacer().frame(height: 100)
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.05))
-                                .frame(width: 100, height: 100)
-                            
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 44))
-                                .foregroundColor(.white.opacity(0.2))
-                        }
+            return candidates.filter { masterIds.contains($0.id) }
+        }()
+        
+        let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let filtered = baseVideos.filter {
+            query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)
+        }
+        
+        VStack(alignment: .leading, spacing: 16) {
+            if filtered.isEmpty {
+                VStack(spacing: 20) {
+                    Spacer().frame(height: 100)
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.05))
+                            .frame(width: 100, height: 100)
                         
-                        Text("No results found for \"\(viewModel.searchText)\"")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white.opacity(0.5))
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 44))
+                            .foregroundColor(.white.opacity(0.2))
                     }
-                    .frame(maxWidth: .infinity)
-                } else {
+                    
+                    Text("No results found for \"\(viewModel.searchText)\"")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+                .frame(maxWidth: .infinity)
+            } else {
+                if isIpad {
                     LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
                         ForEach(filtered) { video in
                             Button(action: {
@@ -251,6 +262,42 @@ struct SearchView: View {
                         }
                     }
                     .padding(.horizontal, 15)
+                } else {
+                    LazyVStack(spacing: 0) {
+                        ForEach(filtered.indices, id: \.self) { index in
+                            let video = filtered[index]
+                            Button(action: {
+                                isSearchFocused = false
+                                viewModel.currentPlaylist = filtered
+                                viewModel.playingVideo = video
+                            }) {
+                                VideoRowView(
+                                    video: video,
+                                    viewModel: viewModel,
+                                    onMenuAction: {
+                                        isSearchFocused = false
+                                        viewModel.actionSheetTarget = .video(video)
+                                        viewModel.actionSheetItems = viewModel.videoActions(for: video)
+                                        viewModel.showActionSheet = true
+                                    }
+                                )
+                            }
+                            .buttonStyle(.scalable)
+                            
+                            if index < filtered.count - 1 {
+                                Divider()
+                                    .background(Color.white.opacity(0.1))
+                                    .padding(.leading, 124)
+                            }
+                        }
+                    }
+                    .background(Color.premiumCardBackground)
+                    .cornerRadius(20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.premiumCardBorder, lineWidth: 1)
+                    )
+                    .padding(.horizontal, 10)
                 }
             }
         }

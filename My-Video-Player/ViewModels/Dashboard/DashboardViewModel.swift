@@ -1133,10 +1133,25 @@ class DashboardViewModel: ObservableObject {
     func deleteVideo(_ video: VideoItem) {
         // 1. Immediate UI update for smooth animation
         DispatchQueue.main.async {
-            withAnimation(.spring()) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 self.importedVideos.removeAll { $0.id == video.id }
                 self.allGalleryVideos.removeAll { $0.id == video.id }
-                // Also update grouping if needed, though loadImportedVideos will fix it
+                
+                // Update master lists silently
+                self.videos.removeAll { $0.id == video.id }
+                
+                // Update folders without full reload
+                for i in 0..<self.folders.count {
+                    self.folders[i].videos.removeAll { $0.id == video.id }
+                }
+                
+                // If it was the playing video, stop it
+                if self.playingVideo?.id == video.id {
+                    self.playingVideo = nil
+                }
+                
+                // Update grouping for Imported section manually for smoothness
+                self.updateGroupedVideos()
             }
         }
         
@@ -1146,12 +1161,13 @@ class DashboardViewModel: ObservableObject {
                 do {
                     try FileManager.default.removeItem(at: url)
                     print("✅ Deleted video file: \(url.lastPathComponent)")
-                    DispatchQueue.main.async {
-                        self.loadImportedVideos()
-                        self.loadUserFolders()
-                    }
+                    // Removed full reload calls here to prevent flicker
                 } catch {
                     print("❌ Failed to delete file: \(error.localizedDescription)")
+                    // Only reload if something went wrong to restore state
+                    DispatchQueue.main.async {
+                        self.loadImportedVideos()
+                    }
                 }
             }
         }
@@ -1161,19 +1177,11 @@ class DashboardViewModel: ObservableObject {
             PHPhotoLibrary.shared().performChanges({
                 PHAssetChangeRequest.deleteAssets([asset] as NSArray)
             }) { success, error in
-                DispatchQueue.main.async {
-                    if success {
-                        print("✅ Deleted photo library asset")
-                        withAnimation {
-                            self.fetchAssets()
-                            self.fetchAlbums()
-                        }
-                    } else {
-                        print("❌ Failed to delete asset: \(error?.localizedDescription ?? "unknown")")
-                        // Optional: Rollback UI if deletion failed
-                        self.loadImportedVideos()
+                if !success {
+                    print("❌ Failed to delete asset: \(error?.localizedDescription ?? "unknown")")
+                    // Rollback UI only on failure
+                    DispatchQueue.main.async {
                         self.fetchAssets()
-                        self.fetchAlbums()
                     }
                 }
             }
@@ -1189,12 +1197,15 @@ class DashboardViewModel: ObservableObject {
         
         items.append(CustomActionItem(title: "Copy", icon: "doc.on.doc", role: nil, action: {
             self.copyVideos(ids: Set([video.id]), isCut: false)
+            // Sheet is opened after a short delay to allow background state to settle
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.showMovePicker = true
+            }
         }))
         
         items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
             self.copyVideos(ids: Set([video.id]), isCut: true)
-            self.videosToMove = [video]
-            // Extra safety delay to ensure sheet doesn't conflict with dismissing action sheet
+            // Sheet is opened after a short delay to allow background state to settle
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.showMovePicker = true
             }
