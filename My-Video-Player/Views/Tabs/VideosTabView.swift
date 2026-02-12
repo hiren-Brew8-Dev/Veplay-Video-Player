@@ -55,11 +55,11 @@ struct VideosTabView: View {
                                             .font(.headline)
                                             .foregroundColor(.homeTextPrimary)
                                         Spacer()
-                                        NavigationLink(destination: HistoryView(historyItems: viewModel.historyItems)) {
-                                            Text("View All")
-                                                .font(.subheadline)
-                                                .foregroundColor(.homeTextSecondary)
-                                        }
+//                                        NavigationLink(destination: HistoryView(historyItems: viewModel.historyItems)) {
+//                                            Text("View All")
+//                                                .font(.subheadline)
+//                                                .foregroundColor(.homeTextSecondary)
+//                                        }
                                     }
                                     .padding(.horizontal)
                                     

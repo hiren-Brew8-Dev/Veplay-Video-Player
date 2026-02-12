@@ -17,9 +17,7 @@ struct LibraryView: View {
                     
                     List {
                         Section {
-                            NavigationLink(destination: HistoryView(historyItems: viewModel.historyItems)) {
-                                Label("Recent Played", systemImage: "clock.arrow.circlepath")
-                            }
+                           
                             
                             NavigationLink(destination: FavoritesView(viewModel: viewModel)) {
                                 Label("Favorites", systemImage: "heart.fill")

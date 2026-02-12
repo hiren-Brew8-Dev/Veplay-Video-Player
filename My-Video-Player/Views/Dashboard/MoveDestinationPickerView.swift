@@ -34,7 +34,7 @@ struct MoveDestinationPickerView: View {
                     VStack(spacing: 24) {
                         
                         // Locations Card
-                        if viewModel.sourceURL != viewModel.importedVideosDirectory {
+                        if let sourceURL = viewModel.sourceURL, (sourceURL.path as NSString).standardizingPath != (viewModel.importedVideosDirectory.path as NSString).standardizingPath {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("LOCATIONS")
                                     .font(.system(size: 11, weight: .bold))
@@ -57,7 +57,10 @@ struct MoveDestinationPickerView: View {
                         }
                         
                         // Folders Card
-                        let otherFolders = viewModel.folders.filter { $0.url != viewModel.sourceURL }
+                        let otherFolders = viewModel.folders.filter { folder in
+                            guard let folderURL = folder.url, let sourceURL = viewModel.sourceURL else { return true }
+                            return (folderURL.path as NSString).standardizingPath != (sourceURL.path as NSString).standardizingPath
+                        }
                         if !otherFolders.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("FOLDERS")

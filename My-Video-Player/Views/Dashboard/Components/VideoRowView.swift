@@ -60,7 +60,7 @@ struct VideoRowView: View {
                     .padding(2)
                     .background(Color.homeBackground.opacity(0.7))
                     .cornerRadius(2)
-                    .padding(2)
+                    .padding(4)
             }
 
             VStack(alignment: .leading, spacing: isIpad ? 8 : 4) {
@@ -69,8 +69,12 @@ struct VideoRowView: View {
                     .foregroundColor(.homeTextPrimary)
                     .lineLimit(1)
                 
-                HStack(spacing: 8) {
+                HStack(spacing: 4) {
                     Text(formattedDate(video.creationDate))
+                    if video.asset == nil { // Only show file size for imported/local videos
+                        Text("•")
+                        Text(formatBytes(video.fileSizeBytes))
+                    }
                 }
                 .font(.system(size: isIpad ? 16 : 12))
                 .foregroundColor(.homeTextSecondary)
@@ -78,12 +82,6 @@ struct VideoRowView: View {
 
             Spacer()
 
-            if video.url != nil {
-                Text(formatBytes(video.fileSizeBytes)) // The "size"
-                    .font(.system(size: isIpad ? 16 : 12))
-                    .foregroundColor(.homeTextSecondary)
-                    .padding(.trailing, 2) // Close to the dots
-            }
             if !isSelectionMode {
                 Button(action: { onMenuAction?() }) {
                     Image(systemName: "ellipsis")

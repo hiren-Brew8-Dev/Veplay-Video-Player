@@ -64,7 +64,7 @@ struct FolderDetailView: View {
     var sortedVideos: [VideoItem] {
         let sorted = displayVideos.sorted {
             switch sortOption {
-            case .dateDesc: return $0.creationDate > $1.creationDate
+            case .recents, .dateDesc: return $0.creationDate > $1.creationDate
             case .dateAsc: return $0.creationDate < $1.creationDate
             case .nameAsc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
             case .nameDesc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending
@@ -648,7 +648,7 @@ struct FolderDetailView: View {
             calendar.startOfDay(for: video.creationDate)
         }
         let sortedDates = grouped.keys.sorted {
-            return sortOption == .dateAsc ? $0 < $1 : $0 > $1
+            return (sortOption == .dateAsc) ? $0 < $1 : $0 > $1
         }
         return sortedDates.map { date in
             let videosInDate = grouped[date] ?? []

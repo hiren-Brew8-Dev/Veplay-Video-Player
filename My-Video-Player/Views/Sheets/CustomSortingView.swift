@@ -13,6 +13,7 @@ struct CustomSortingView: View {
         case length = "Length"
         case size = "Size"
         case name = "Name"
+        case recents = "Recents"
     }
     
     // Computed property to filter criteria
@@ -21,6 +22,8 @@ struct CustomSortingView: View {
             return [.date, .length]
         } else if title == "Album" || title == "Gallery" {
             return [.date, .name, .length]
+        } else if title == "All Folders" {
+            return [.recents, .name, .date]
         } else {
             return [.date, .name, .length, .size]
         }
@@ -36,6 +39,7 @@ struct CustomSortingView: View {
             case .length: return self == .descending ? "From long to short" : "From short to long"
             case .size: return self == .descending ? "From large to small" : "From small to large"
             case .name: return self == .ascending ? "From A to Z" : "From Z to A"
+            case .recents: return self == .descending ? "Recently Accessed" : "Least Recently Accessed"
             }
         }
     }
@@ -176,6 +180,7 @@ struct CustomSortingView: View {
     
     func mapCurrentState() {
         switch sortOptionRaw {
+        case "Recents": selectedCriteria = .recents; selectedOrder = .descending
         case "Newest First": selectedCriteria = .date; selectedOrder = .descending
         case "Oldest First": selectedCriteria = .date; selectedOrder = .ascending
         case "Name (A-Z)": selectedCriteria = .name; selectedOrder = .ascending
@@ -200,6 +205,8 @@ struct CustomSortingView: View {
             sortOptionRaw = (selectedOrder == .descending) ? "Size (Large to Small)" : "Size (Small to Large)"
         case .length:
             sortOptionRaw = (selectedOrder == .descending) ? "Duration (Long to Short)" : "Duration (Short to Long)"
+        case .recents:
+            sortOptionRaw = "Recents"
         }
     }
 }

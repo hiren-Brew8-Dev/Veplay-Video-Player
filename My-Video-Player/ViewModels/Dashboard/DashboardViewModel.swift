@@ -236,10 +236,25 @@ class DashboardViewModel: ObservableObject {
     }
     
     var sortedFolders: [Folder] {
+        let option = SortOption(rawValue: folderSortOptionRaw) ?? .dateDesc
+        
         return folders.sorted { f1, f2 in
-            let date1 = f1.lastAccessedDate ?? f1.creationDate
-            let date2 = f2.lastAccessedDate ?? f2.creationDate
-            return date1 > date2
+            switch option {
+            case .recents:
+                let date1 = f1.lastAccessedDate ?? f1.creationDate
+                let date2 = f2.lastAccessedDate ?? f2.creationDate
+                return date1 > date2
+            case .nameAsc:
+                return f1.name.localizedStandardCompare(f2.name) == .orderedAscending
+            case .nameDesc:
+                return f1.name.localizedStandardCompare(f2.name) == .orderedDescending
+            case .dateDesc:
+                return f1.creationDate > f2.creationDate
+            case .dateAsc:
+                return f1.creationDate < f2.creationDate
+            default:
+                return f1.creationDate > f2.creationDate
+            }
         }
     }
     
@@ -421,7 +436,7 @@ class DashboardViewModel: ObservableObject {
     private func sortVideos(_ items: [VideoItem], by option: SortOption) -> [VideoItem] {
         return items.sorted {
             switch option {
-            case .dateDesc: return $0.creationDate > $1.creationDate
+            case .recents, .dateDesc: return $0.creationDate > $1.creationDate
             case .dateAsc: return $0.creationDate < $1.creationDate
             case .nameAsc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
             case .nameDesc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending
@@ -439,7 +454,7 @@ class DashboardViewModel: ObservableObject {
         let sorted = sortVideos(importedVideos, by: currentSort)
         
         switch currentSort {
-        case .dateDesc, .dateAsc:
+        case .recents, .dateDesc, .dateAsc:
             let grouped = Dictionary(grouping: sorted) { video -> Date in
                 calendar.startOfDay(for: video.creationDate)
             }
@@ -1191,12 +1206,21 @@ class DashboardViewModel: ObservableObject {
     func videoActions(for video: VideoItem) -> [CustomActionItem] {
         var items: [CustomActionItem] = []
         
+        // Determine source context automatically for search results or generic actions
+        let sourceURL = video.url?.deletingLastPathComponent()
+        var sourceAlbumId: String? = nil
+        if let asset = video.asset {
+            // Correct API to find user albums containing this specific asset
+            let collections = PHAssetCollection.fetchAssetCollectionsContaining(asset, with: .album, options: nil)
+            sourceAlbumId = collections.firstObject?.localIdentifier
+        }
+        
         items.append(CustomActionItem(title: "Share", icon: "square.and.arrow.up", role: nil, action: {
             self.shareVideo(item: video)
         }))
         
         items.append(CustomActionItem(title: "Copy", icon: "doc.on.doc", role: nil, action: {
-            self.copyVideos(ids: Set([video.id]), isCut: false)
+            self.copyVideos(ids: Set([video.id]), isCut: false, sourceURL: sourceURL, sourceAlbumId: sourceAlbumId)
             // Sheet is opened after a short delay to allow background state to settle
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.showMovePicker = true
@@ -1204,7 +1228,7 @@ class DashboardViewModel: ObservableObject {
         }))
         
         items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
-            self.copyVideos(ids: Set([video.id]), isCut: true)
+            self.copyVideos(ids: Set([video.id]), isCut: true, sourceURL: sourceURL, sourceAlbumId: sourceAlbumId)
             // Sheet is opened after a short delay to allow background state to settle
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.showMovePicker = true
@@ -1754,6 +1778,7 @@ class DashboardViewModel: ObservableObject {
     // MARK: - Models (Using existing Folder and VideoItem)
     
     enum SortOption: String, CaseIterable {
+        case recents = "Recents"
         case dateDesc = "Newest First"
         case dateAsc = "Oldest First"
         case nameAsc = "Name (A-Z)"
