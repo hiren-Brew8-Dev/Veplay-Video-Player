@@ -104,7 +104,10 @@ class VLCThumbnailHelper: NSObject, VLCMediaThumbnailerDelegate {
     func generate(for url: URL, completion: @escaping (UIImage?) -> Void) {
         self.completion = completion
         let media = VLCMedia(url: url)
+        // Parse media before thumbing to ensure tracks are identified
+        media.parse(options: VLCMediaParsingOptions.fetchLocal, timeout: 10000)
         self.thumbnailer = VLCMediaThumbnailer(media: media, andDelegate: self)
+        self.thumbnailer?.snapshotPosition = 0.1 // Try 10% into the video instead of just the start
         self.thumbnailer?.fetchThumbnail()
     }
     

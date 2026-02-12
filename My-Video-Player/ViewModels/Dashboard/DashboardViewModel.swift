@@ -651,8 +651,11 @@ class DashboardViewModel: ObservableObject {
         // Fallback to VLC for non-native formats (MKV, AVI, etc.) where AVAsset returns 0
         if duration <= 0 {
             let media = VLCMedia(url: url)
-            // VLCMedia length is in milliseconds and usually available after initialization for local files
-            // but for better reliability we can wait a tiny bit or just use the property if it's there.
+            media.parse(options: VLCMediaParsingOptions.fetchLocal, timeout: 5000)
+            // Wait a tiny bit or let length be fetched if available. 
+            // Since this is a background migration/fetch, it's less critical than player.
+            // But for legacy compatibility, we'll give it a moment.
+            Thread.sleep(forTimeInterval: 0.1) 
             let length = media.length.intValue
             if length > 0 {
                 duration = Double(length) / 1000.0
@@ -1599,25 +1602,7 @@ class DashboardViewModel: ObservableObject {
                 let videoFiles = fileURLs.filter { DashboardViewModel.supportedVideoExtensions.contains($0.pathExtension.lowercased()) }
                 
                 let loadedVideos = videoFiles.compactMap { url -> VideoItem? in
-                    // Verify file exists and has size
-                    let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
-                    let size = attributes?[.size] as? Int64 ?? 0
-                    guard size > 0 else { return nil }
-                    
-                    let duration: Double = 0 // Will fetch in background
-                    
-                    let resources = try? url.resourceValues(forKeys: [.creationDateKey, .fileSizeKey])
-                    
-                    return VideoItem(
-                        id: self.stableUUID(from: url.absoluteString),
-                        asset: nil,
-                        title: url.deletingPathExtension().lastPathComponent,
-                        duration: duration,
-                        creationDate: resources?.creationDate ?? Date(),
-                        fileSizeBytes: size,
-                        thumbnailPath: nil,
-                        url: url
-                    )
+                    return self.videoItem(from: url)
                 }.sorted(by: { $0.creationDate > $1.creationDate })
                 
                 DispatchQueue.main.async {
