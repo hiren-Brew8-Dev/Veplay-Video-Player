@@ -32,7 +32,9 @@ class ThumbnailCacheManager {
         if let asset = video.asset {
             return "thumb_asset_\(asset.localIdentifier)"
         } else if let url = video.url {
-            return "thumb_file_\(url.lastPathComponent)_\(url.path.hashValue)"
+            // Use filename + size + date for a stable key that survives app updates/container changes
+            // unlike url.path.hashValue which changes every launch.
+            return "thumb_file_\(url.lastPathComponent)_\(video.fileSizeBytes)_\(Int(video.creationDate.timeIntervalSince1970))"
         } else {
             return "thumb_\(video.id.uuidString)"
         }
