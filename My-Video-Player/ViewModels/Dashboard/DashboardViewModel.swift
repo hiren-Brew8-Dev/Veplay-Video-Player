@@ -657,10 +657,16 @@ class DashboardViewModel: ObservableObject {
         // Comprehensive fallback for duration (Legacy formats or corrupt files)
         if duration <= 0 {
             let media = VLCMedia(url: url)
-            // lengthWaitUntilDate is better because it's genuinely synchronous
-            // and gives VLC time to index legacy formats like MPEG/RM/VOB.
-            let lengthObj = media.lengthWaitUntil(NSDate(timeIntervalSinceNow: 2.0) as Date)
-            let length = lengthObj.intValue
+            // Parse and poll for duration to allow VLC to index legacy formats like MPEG/RM/VOB.
+            media.parse(options: .fetchLocal, timeout: 5000)
+            // Poll for length (usually available very quickly for local files after parse)
+            var pollCount = 0
+            while media.length.intValue <= 0 && pollCount < 15 {
+                Thread.sleep(forTimeInterval: 0.1)
+                pollCount += 1
+            }
+            
+            let length = media.length.intValue
             if length > 0 {
                 duration = Double(length) / 1000.0
             }

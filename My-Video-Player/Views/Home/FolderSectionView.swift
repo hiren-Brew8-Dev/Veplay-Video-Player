@@ -170,7 +170,13 @@ struct FolderSectionView: View {
                     .foregroundColor(.black)
                     .padding(.horizontal, 30)
                     .padding(.vertical, 12)
-                    .background(Color.white)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .cornerRadius(25)
             }
             .padding(.top, 10)
