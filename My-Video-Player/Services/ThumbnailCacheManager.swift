@@ -135,22 +135,26 @@ class ThumbnailCacheManager {
                     completion(thumbnail)
                 }
             } else if let url = video.url {
-                let thumbnail = self.generateThumbnailFromFile(url)
+                // Prioritize VLC for non-native legacy formats (mpeg, avi, mkv, flv, rm, etc.)
+                // to avoid black frames or failures from AVAssetImageGenerator.
+                let ext = url.pathExtension.lowercased()
+                let nativeExtensions = ["mp4", "mov", "m4v"]
                 
-                if let thumb = thumbnail {
-                    self.cache.store(thumb, forKey: cacheKey)
-                    DispatchQueue.main.async {
-                        completion(thumb)
+                if nativeExtensions.contains(ext) {
+                    if let thumb = self.generateThumbnailFromFile(url) {
+                        self.cache.store(thumb, forKey: cacheKey)
+                        DispatchQueue.main.async { completion(thumb) }
+                        return
                     }
-                } else {
-                    // Fallback to VLC for MKV/FLV etc.
-                    VLCThumbnailRequestManager.shared.request(for: url) { vlcThumb in
-                        if let vlcThumb = vlcThumb {
-                            self.cache.store(vlcThumb, forKey: cacheKey)
-                        }
-                        DispatchQueue.main.async {
-                            completion(vlcThumb)
-                        }
+                }
+                
+                // Fallback or Direct VLC path
+                VLCThumbnailRequestManager.shared.request(for: url) { vlcThumb in
+                    if let vlcThumb = vlcThumb {
+                        self.cache.store(vlcThumb, forKey: cacheKey)
+                    }
+                    DispatchQueue.main.async {
+                        completion(vlcThumb)
                     }
                 }
             } else {

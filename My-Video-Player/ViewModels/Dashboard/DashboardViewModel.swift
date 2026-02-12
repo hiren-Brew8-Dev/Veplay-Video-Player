@@ -644,26 +644,28 @@ class DashboardViewModel: ObservableObject {
     private func videoItem(from url: URL) -> VideoItem? {
         guard DashboardViewModel.supportedVideoExtensions.contains(url.pathExtension.lowercased()) else { return nil }
         
+        // 1. Initial metadata (Size and Date)
+        let resources = try? url.resourceValues(forKeys: [.creationDateKey, .fileSizeKey])
+        let creationDate = resources?.creationDate ?? Date()
+        let size = Int64(resources?.fileSize ?? 0)
+        
+        // 2. Duration Extraction
         let asset = AVURLAsset(url: url)
         var duration = CMTimeGetSeconds(asset.duration)
         if duration.isNaN { duration = 0 }
         
-        // Fallback to VLC for non-native formats (MKV, AVI, etc.) where AVAsset returns 0
+        // Comprehensive fallback for duration (Legacy formats or corrupt files)
         if duration <= 0 {
             let media = VLCMedia(url: url)
-            media.parse(options: VLCMediaParsingOptions.fetchLocal, timeout: 5000)
-            // Wait a tiny bit or let length be fetched if available. 
-            // Since this is a background migration/fetch, it's less critical than player.
-            // But for legacy compatibility, we'll give it a moment.
-            Thread.sleep(forTimeInterval: 0.1) 
-            let length = media.length.intValue
-            if length > 0 {
-                duration = Double(length) / 1000.0
+            // lengthWaitUntilDate is better because it's genuinely synchronous
+            // and gives VLC time to index legacy formats like MPEG/RM/VOB.
+            if let lengthObj = media.lengthWaitUntilDate(NSDate(timeIntervalSinceNow: 2.0)) {
+                let length = lengthObj.intValue
+                if length > 0 {
+                    duration = Double(length) / 1000.0
+                }
             }
         }
-        
-        let creationDate = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date()
-        let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int64) ?? 0
         
         return VideoItem(
             id: stableUUID(from: url.absoluteString),

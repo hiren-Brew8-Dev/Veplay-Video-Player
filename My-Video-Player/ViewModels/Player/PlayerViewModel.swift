@@ -908,7 +908,10 @@ import UIKit
 
     private func isVLCFormat(_ url: URL) -> Bool {
         let ext = url.pathExtension.lowercased()
-        let vlcExtensions = ["mkv", "avi", "wmv", "flv", "webm", "3gp", "vob", "mpg", "mpeg", "ts", "m2ts", "mts", "mxf", "ogv", "f4v", "swf", "rm", "rmvb", "divx", "asf"]
+        let vlcExtensions = [
+            "mkv", "avi", "wmv", "flv", "webm", "3gp", "vob", "mpg", "mpeg", "ts", "m2ts", "mts", "mxf", "ogv", "f4v", "swf", "rm", "rmvb", "divx", "asf",
+            "dv", "m2t", "m2p", "m4b", "m4p", "amv", "vro", "dat", "flc", "ogg", "obb", "rrc", "gifv", "mng", "qt", "yuv", "mpe", "mpv", "svi", "3g2", "roq", "nsv", "f4p", "f4a", "f4b", "mod"
+        ]
         return vlcExtensions.contains(ext)
     }
     
