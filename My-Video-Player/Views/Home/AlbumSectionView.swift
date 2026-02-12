@@ -8,81 +8,87 @@ struct AlbumSectionView: View {
     
     
     var body: some View {
-        VStack(spacing: 0) {
-            if viewModel.galleryAlbums.isEmpty {
-                VStack(spacing: 0) {
-                    Spacer()
-                        .frame(height: 80)
-                    
-                    VStack(spacing: 24) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.05))
-                                .frame(width: 100, height: 100)
-                            
-                            Image(systemName: viewModel.showPermissionDenied ? "photo.on.rectangle.angled" : "video.slash")
-                                .font(.system(size: 44))
-                                .foregroundColor(.white.opacity(0.2))
-                        }
+        GeometryReader { geometry in
+            let isLandscape = geometry.size.width > geometry.size.height
+            let currentWidth = geometry.size.width
+            
+            VStack(spacing: 0) {
+                if viewModel.galleryAlbums.isEmpty {
+                    VStack(spacing: 0) {
+                        Spacer()
+                            .frame(height: 80)
                         
-                        VStack(spacing: 12) {
-                            Text(viewModel.showPermissionDenied ? "No Gallery Access" : "No Video Albums Found")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
+                        VStack(spacing: 24) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white.opacity(0.05))
+                                    .frame(width: 100, height: 100)
+                                
+                                Image(systemName: viewModel.showPermissionDenied ? "photo.on.rectangle.angled" : "video.slash")
+                                    .font(.system(size: 44))
+                                    .foregroundColor(.white.opacity(0.2))
+                            }
                             
-                            Text(viewModel.showPermissionDenied ? 
-                                 "Grant photo access in settings to view\nyour device's video albums." :
-                                 "We couldn't find any video albums in your\nPhotos library.")
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.5))
-                                .multilineTextAlignment(.center)
-                                .lineSpacing(4)
-                        }
-                        .padding(.horizontal, 40)
-                        
-                        if viewModel.showPermissionDenied {
-                            Button(action: {
-                                if let url = URL(string: UIApplication.openSettingsURLString) {
-                                    UIApplication.shared.open(url)
-                                }
-                            }) {
-                                Text("Open Settings")
-                                    .font(.system(size: 16, weight: .bold))
+                            VStack(spacing: 12) {
+                                Text(viewModel.showPermissionDenied ? "No Gallery Access" : "No Video Albums Found")
+                                    .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(.white)
-                                    .padding(.horizontal, 40)
-                                    .padding(.vertical, 16)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
+                                
+                                Text(viewModel.showPermissionDenied ? 
+                                     "Grant photo access in settings to view\nyour device's video albums." :
+                                     "We couldn't find any video albums in your\nPhotos library.")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.white.opacity(0.5))
+                                    .multilineTextAlignment(.center)
+                                    .lineSpacing(4)
+                            }
+                            .padding(.horizontal, 40)
+                            
+                            if viewModel.showPermissionDenied {
+                                Button(action: {
+                                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                                        UIApplication.shared.open(url)
+                                    }
+                                }) {
+                                    Text("Open Settings")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 40)
+                                        .padding(.vertical, 16)
+                                        .background(
+                                            LinearGradient(
+                                                colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
                                         )
-                                    )
-                                    .cornerRadius(30)
-                                    .shadow(color: Color.homeAccent.opacity(0.4), radius: 15, x: 0, y: 8)
+                                        .cornerRadius(30)
+//                                        .shadow(color: Color.homeAccent.opacity(0.4), radius: 15, x: 0, y: 8)
+                                }
+                                .buttonStyle(.scalable)
+                                .padding(.top, 8)
                             }
-                            .buttonStyle(.scalable)
-                            .padding(.top, 8)
                         }
+                        
+                        Spacer()
                     }
-                    
-                    Spacer()
-                }
-            } else {
-                ScrollView {
-                    LazyVGrid(columns: GridLayout.gridColumns, spacing: GridLayout.spacing) {
-                        ForEach(viewModel.galleryAlbums, id: \.localIdentifier) { album in
-                            let folder = Folder(name: albumDestinationTitle(for: album), videoCount: album.estimatedAssetCount, videos: [], url: nil, albumIdentifier: album.localIdentifier, subfolders: [])
-                            NavigationLink(value: DashboardViewModel.NavigationDestination.folderDetail(folder)) {
-                                AlbumCardView(album: album)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
+                            ForEach(viewModel.galleryAlbums, id: \.localIdentifier) { album in
+                                let folder = Folder(name: albumDestinationTitle(for: album), videoCount: album.estimatedAssetCount, videos: [], url: nil, albumIdentifier: album.localIdentifier, subfolders: [])
+                                NavigationLink(value: DashboardViewModel.NavigationDestination.folderDetail(folder)) {
+                                    AlbumCardView(album: album, isLandscape: isLandscape, availableWidth: currentWidth)
+                                }
+                                .buttonStyle(.scalable)
                             }
-                            .buttonStyle(.scalable)
                         }
+                        .padding(.horizontal, GridLayout.horizontalPadding)
+                        .padding(.bottom, 100)
                     }
-                    .padding(.horizontal, GridLayout.horizontalPadding)
-                    .padding(.bottom, 100)
                 }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .background(Color.clear)
     }
@@ -96,18 +102,20 @@ struct AlbumSectionView: View {
 
 struct AlbumCardView: View {
     let album: PHAssetCollection
+    let isLandscape: Bool
+    let availableWidth: CGFloat
 
     @State private var thumbnail: UIImage?
     @State private var videoCount: Int = 0
 
     var body: some View {
-        let size = GridLayout.itemSize
-        let padding: CGFloat = 0
+        let size = GridLayout.itemSize(for: availableWidth, isLandscape: isLandscape)
         let thumbnailSize = size
         
         VStack(alignment: .leading, spacing: 12) {
             // 1. Thumbnail Section
             ZStack(alignment: .bottomTrailing) {
+// ... existing thumbnail logic ...
                 if let image = thumbnail {
                     Image(uiImage: image)
                         .resizable()
@@ -192,7 +200,7 @@ struct AlbumCardView: View {
             requestOptions.version = .current
 
             // Calculate exact size based on display size and screen scale
-            let size = GridLayout.itemSize
+            let size = GridLayout.itemSize(for: availableWidth, isLandscape: isLandscape)
             let padding: CGFloat = 8
             let thumbnailSize = size - (padding * 2)
             let pixelSize = thumbnailSize * UIScreen.main.scale

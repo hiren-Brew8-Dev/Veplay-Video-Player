@@ -46,35 +46,43 @@ struct HistoryView: View {
                 .padding(.bottom, 10)
                 .background(Color.homeBackground)
                 
-                ScrollView {
-                    if isGridView {
-                        LazyVGrid(columns: GridLayout.gridColumns, spacing: GridLayout.spacing) {
-                            ForEach(historyItems, id: \.self) { item in
-                                let video = videoFromHistory(item)
-                                Button(action: {
-                                    viewModel.currentPlaylist = historyItems.map { videoFromHistory($0) }
-                                    viewModel.playingVideo = video
-                                }) {
-                                    VideoCardView(video: video, viewModel: viewModel)
+                GeometryReader { geometry in
+                    let isLandscape = geometry.size.width > geometry.size.height
+                    let currentWidth = geometry.size.width
+                    
+                    ScrollView {
+                        VStack {
+                            if isGridView {
+                                LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
+                                    ForEach(historyItems, id: \.self) { item in
+                                        let video = videoFromHistory(item)
+                                        Button(action: {
+                                            viewModel.currentPlaylist = historyItems.map { videoFromHistory($0) }
+                                            viewModel.playingVideo = video
+                                        }) {
+                                            VideoCardView(video: video, viewModel: viewModel, itemSize: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape))
+                                        }
+                                    }
                                 }
+                                .padding()
+                                .padding(.bottom, 80)
+                            } else {
+                                LazyVStack(spacing: 0) {
+                                    ForEach(historyItems, id: \.self) { item in
+                                        let video = videoFromHistory(item)
+                                        Button(action: {
+                                            viewModel.currentPlaylist = historyItems.map { videoFromHistory($0) }
+                                            viewModel.playingVideo = video
+                                        }) {
+                                            VideoRowView(video: video, viewModel: viewModel)
+                                        }
+                                        Divider().background(Color.sheetDivider)
+                                    }
+                                }
+                                .padding(.bottom, 80)
+                                .padding(.horizontal, isLandscape ? (isIpad ? 80 : 40) : 0)
                             }
                         }
-                        .padding()
-                        .padding(.bottom, 80)
-                    } else {
-                        LazyVStack(spacing: 0) {
-                            ForEach(historyItems, id: \.self) { item in
-                                let video = videoFromHistory(item)
-                                Button(action: {
-                                    viewModel.currentPlaylist = historyItems.map { videoFromHistory($0) }
-                                    viewModel.playingVideo = video
-                                }) {
-                                    VideoRowView(video: video, viewModel: viewModel)
-                                }
-                                Divider().background(Color.sheetDivider)
-                            }
-                        }
-                        .padding(.bottom, 80)
                     }
                 }
             }

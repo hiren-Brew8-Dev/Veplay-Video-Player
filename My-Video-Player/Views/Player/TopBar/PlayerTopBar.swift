@@ -42,9 +42,9 @@ struct PlayerTopBar: View {
                     // Title - Truncated based on device
                     let prefixLimit = isIpad ? 40 : 15
                     Text(title.count > prefixLimit ? String(title.prefix(prefixLimit)) + "..." : title)
-                        .font(.system(size: isIpad ? 24 : 17, weight: .semibold))
+                        .font(.system(size: isIpad ? 20 : 17, weight: .semibold))
                         .foregroundColor(.white)
-                        .frame(height: isIpad ? 32 : 24)
+                        .frame(height: isIpad ? 28 : 24)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, isIpad ? 16 : 8)
                         .lineLimit(1)
@@ -58,10 +58,10 @@ struct PlayerTopBar: View {
                     if viewModel.isSleepTimerActive {
                         Button(action: onTimer) {
                             Image(systemName: "timer")
-                                .font(.system(size: isIpad ? 24 : 20))
+                                .font(.system(size: isIpad ? 20 : 20))
                                 .foregroundColor(.orange)
                         }
-                        .frame(width: isIpad ? 60 : 40, height: isIpad ? 60 : 44)
+                        .frame(width: isIpad ? 50 : 40, height: isIpad ? 50 : 44)
                     }
                     
                     CastButton(viewModel: viewModel, action: onCast)
@@ -72,10 +72,10 @@ struct PlayerTopBar: View {
                     
                     Button(action: onMenu) {
                         Image(systemName: "gearshape")
-                            .font(.system(size: isIpad ? 24 : 20))
+                            .font(.system(size: isIpad ? 20 : 20))
                             .foregroundColor(.white)
                     }
-                    .frame(width: isIpad ? 60 : 40, height: isIpad ? 60 : 44)
+                    .frame(width: isIpad ? 50 : 40, height: isIpad ? 50 : 44)
                 }
             }
             .padding(.horizontal, isLandscape ? (isIpad ? 80 : 50) : (isIpad ? 30 : 8))

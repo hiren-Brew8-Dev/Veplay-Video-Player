@@ -85,7 +85,7 @@ struct PlayerBottomBar: View {
                         .monospacedDigit()
                 }
             }
-            }
+            .padding(.top, 10) // Added space above slider as requested
             .padding(.horizontal, isLandscape ? (isIpad ? 80 : 50) : (isIpad ? 30 : 20))
             
             // 2. Control Buttons Row
@@ -95,17 +95,17 @@ struct PlayerBottomBar: View {
                     Button(action: onAudioCaptions) {
                         HStack(spacing: 6) {
                             Image(systemName: "captions.bubble.fill")
-                                .font(.system(size: isIpad ? 24 : 14))
+                                .font(.system(size: isIpad ? 18 : 14))
                             Text(isLandscape ? "Audio & CC" : "Audio & CC")
                                 .font(.system(size: isIpad ? 17 : 13, weight: .medium))
                                 .fixedSize(horizontal: true, vertical: false)
                         }
                         .foregroundColor(.white)
-                        .padding(.horizontal, isIpad ? 20 : 12)
-                        .padding(.vertical, isIpad ? 12 : 6)
+                        .padding(.horizontal, isIpad ? 16 : 12)
+                        .padding(.vertical, isIpad ? 8 : 6)
                         .background(Color.white.opacity(0.15))
                         .clipShape(Capsule())
-                        .frame(height: isIpad ? 48 : 32)
+                        .frame(height: isIpad ? 40 : 32)
                     }
                     .transition(.opacity.combined(with: .scale(scale: 0.8)))
                     
@@ -120,17 +120,17 @@ struct PlayerBottomBar: View {
                         }) {
                             HStack(spacing: 6) {
                                 Image(systemName: "aspectratio")
-                                    .font(.system(size: isIpad ? 24 : 14))
+                                    .font(.system(size: isIpad ? 18 : 14))
                                 Text(currentAspectRatio.shortLabel)
                                     .font(.system(size: isIpad ? 17 : 13, weight: .medium))
                                     .fixedSize(horizontal: true, vertical: false)
                             }
                             .foregroundColor(.white)
-                            .padding(.horizontal, isIpad ? 16 : 10)
-                            .padding(.vertical, isIpad ? 12 : 6)
+                            .padding(.horizontal, isIpad ? 14 : 10)
+                            .padding(.vertical, isIpad ? 8 : 6)
                             .background(Color.white.opacity(0.15))
                             .clipShape(Capsule())
-                            .frame(height: isIpad ? 48 : 32)
+                            .frame(height: isIpad ? 40 : 32)
                         }
                         .matchedGeometryEffect(id: "aspectRatio", in: animation)
                         
@@ -151,21 +151,21 @@ struct PlayerBottomBar: View {
                                     .font(.system(size: isIpad ? 20 : 13, weight: .bold))
                                     .fixedSize(horizontal: true, vertical: false)
                                     .foregroundColor(.white)
-                                    .padding(.horizontal, isIpad ? 16 : 10)
-                                    .padding(.vertical, isIpad ? 12 : 6)
+                                    .padding(.horizontal, isIpad ? 14 : 10)
+                                    .padding(.vertical, isIpad ? 8 : 6)
                                     .background(Color.white.opacity(0.15))
                                     .clipShape(Capsule())
-                                    .frame(height: isIpad ? 48 : 32)
+                                    .frame(height: isIpad ? 40 : 32)
                             }
                             .matchedGeometryEffect(id: "playbackSpeed", in: animation)
                             
                             // Rotate button
                             Button(action: onRotate) {
                                 Image(systemName: "viewfinder")
-                                    .font(.system(size: isIpad ? 24 : 18))
+                                    .font(.system(size: isIpad ? 20 : 18))
                                     .foregroundColor(.white)
                             }
-                            .frame(width: isIpad ? 44 : 32, height: isIpad ? 44 : 32)
+                            .frame(width: isIpad ? 40 : 32, height: isIpad ? 40 : 32)
                             .transition(.opacity)
                         }
                     }
@@ -199,11 +199,12 @@ struct PlayerBottomBar: View {
                 }
             }
             .padding(.horizontal, isLandscape ? (isIpad ? 100 : 50) : (isIpad ? 40 : 16))
-        
+        }
+        .padding(.top, 15) // Extra top padding for the whole bar
         .padding(.bottom, isLandscape ? 15 : 30) // Adjusted for safe area balance
         .background(
             LinearGradient(
-                gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.8)]),
+                gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.9)]), // Increased opacity slightly
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -312,7 +313,7 @@ struct PlayerBottomBar: View {
                 }
             }
         )
-        .accentColor(.homeAccent)
+        .tint(.homeAccent) // Use tint for modern SwiftUI slider coloring
         .onChange(of: dragValue) { oldVal, newVal in
             if isDragging {
                 onSmoothSeek(newVal)

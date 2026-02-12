@@ -20,63 +20,68 @@ struct VideoSectionView: View {
     @State private var showImportOptions = false
 
     var body: some View {
-        ZStack {
+        GeometryReader { geometry in
+            let isLandscape = geometry.size.width > geometry.size.height
+            let currentWidth = geometry.size.width
+            
+            ZStack {
 //            Color.clear.edgesIgnoringSafeArea(.all)
             
-            VStack(spacing: 0) {
-                // Header
-                if viewModel.isSelectionMode {
-                    selectionHeader
-                }
-                
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(spacing: 24) {
-                            // Folders Section
-                            if !viewModel.isSelectionMode {
-                                foldersSection
-                                    .transition(.asymmetric(
-                                        insertion: .move(edge: .top).combined(with: .opacity),
-                                        removal: .move(edge: .top).combined(with: .opacity)
-                                    ))
-                            }
-                            
-                            // Imported Videos Section
-                            VStack(alignment: .leading, spacing: 15) {
-                                Text("Imported Videos")
-                                    .font(.system(size: isIpad ? 24 : 18, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                VStack(spacing: 0) {
+                    // Header
+                    if viewModel.isSelectionMode {
+                        selectionHeader
+                    }
+                    
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(spacing: 24) {
+                                // Folders Section
+                                if !viewModel.isSelectionMode {
+                                    foldersSection(isLandscape: isLandscape)
+                                        .transition(.asymmetric(
+                                            insertion: .move(edge: .top).combined(with: .opacity),
+                                            removal: .move(edge: .top).combined(with: .opacity)
+                                        ))
+                                }
                                 
-                                if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
-                                    emptyStateView
-                                } else {
-                                    if isGridView {
-                                        contentView
+                                // Imported Videos Section
+                                VStack(alignment: .leading, spacing: 15) {
+                                    Text("Imported Videos")
+                                        .font(.system(size: isIpad ? 24 : 18, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                                    
+                                    if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
+                                        emptyStateView
                                     } else {
-                                        listView
+                                        if isGridView {
+                                            videosGrid(isLandscape: isLandscape, width: currentWidth)
+                                        } else {
+                                            listView(isLandscape: isLandscape)
+                                        }
                                     }
                                 }
                             }
+                            .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
                         }
-                        .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
-                    }
-                    .onChange(of: viewModel.highlightVideoId) { oldId, newId in
-                        if let id = newId {
-                            withAnimation(.spring()) {
-                                proxy.scrollTo(id, anchor: .center)
+                        .onChange(of: viewModel.highlightVideoId) { oldId, newId in
+                            if let id = newId {
+                                withAnimation(.spring()) {
+                                    proxy.scrollTo(id, anchor: .center)
+                                }
                             }
                         }
                     }
                 }
-            }
-            
-            if viewModel.isSelectionMode {
-                selectionActionBar
-            }
-            
-            // Syncing Overlay
+                
+                if viewModel.isSelectionMode {
+                    selectionActionBar
+                }
+                
+                // Syncing Overlay
 
+            }
         }
 //        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
         .sheet(isPresented: $showSortSheet) {
@@ -122,8 +127,10 @@ struct VideoSectionView: View {
     
     // MARK: - Headers
     
-    private var foldersSection: some View {
-        VStack(alignment: .leading, spacing: 15) {
+    private func foldersSection(isLandscape: Bool) -> some View {
+        let cardSize: CGFloat = isIpad ? (isLandscape ? 180 : 200) : 150
+        
+        return VStack(alignment: .leading, spacing: 15) {
             HStack {
                 Text("Folders")
                     .font(.system(size: 18, weight: .bold))
@@ -149,7 +156,7 @@ struct VideoSectionView: View {
                     // Sticky Add Folder Card
                     AddFolderCardView(action: {
                         viewModel.showCreateFolderAlert = true
-                    }, size: isIpad ? 220 : 150)
+                    }, size: cardSize)
                     .padding(.leading, AppDesign.Icons.horizontalPadding)
                     
                     // Folder Cards
@@ -159,7 +166,7 @@ struct VideoSectionView: View {
                         }) {
                             FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
                                 triggerFolderActionSheet(for: folder)
-                            }, size: isIpad ? 220 : 150)
+                            }, size: cardSize)
                         }
                     }
                 }
@@ -198,20 +205,6 @@ struct VideoSectionView: View {
         }
     }
     
-    private var videosSection: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("Imported Videos")
-                .font(.system(size: isIpad ? 24 : 18, weight: .bold))
-                .foregroundColor(.white)
-                .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-            
-            if isGridView {
-                contentView
-            } else {
-                listView
-            }
-        }
-    }
     
     private func triggerFolderActionSheet(for folder: Folder) {
         viewModel.actionSheetTarget = .folder(folder)
@@ -468,7 +461,7 @@ struct VideoSectionView: View {
                         )
                     )
                     .cornerRadius(30)
-                    .shadow(color: Color.homeAccent.opacity(0.4), radius: 15, x: 0, y: 8)
+//                    .shadow(color: Color.homeAccent.opacity(0.4), radius: 15, x: 0, y: 8)
                 }
                 .padding(.top, 8)
             }
@@ -477,11 +470,6 @@ struct VideoSectionView: View {
         .padding(.top, 20)
     }
     
-    private var contentView: some View {
-        VStack(spacing: 20) {
-            videosGrid
-        }
-    }
     
     private var allVideosCard: some View {
         Button(action: {
@@ -520,13 +508,13 @@ struct VideoSectionView: View {
         .padding(.horizontal)
     }
     
-    private var videosGrid: some View {
+    private func videosGrid(isLandscape: Bool, width: CGFloat) -> some View {
         LazyVStack(alignment: .leading, spacing: 15, pinnedViews: [.sectionHeaders]) {
             ForEach(viewModel.groupedImportedVideos) { section in
                 Section(header: sectionHeader(for: section.date)) {
-                    LazyVGrid(columns: GridLayout.gridColumns, spacing: GridLayout.spacing) {
+                    LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
                          ForEach(section.videos) { video in
-                             videoItemView(for: video)
+                             videoItemView(for: video, isLandscape: isLandscape, width: width)
                          }
                     }
                     .padding(.horizontal, GridLayout.horizontalPadding)
@@ -535,7 +523,7 @@ struct VideoSectionView: View {
         }
     }
     
-    private var listView: some View {
+    private func listView(isLandscape: Bool) -> some View {
         LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
             ForEach(viewModel.groupedImportedVideos) { section in
                 Section {
@@ -556,7 +544,7 @@ struct VideoSectionView: View {
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(Color.premiumCardBorder, lineWidth: 1)
                     )
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, isLandscape ? (isIpad ? 80 : 40) : 10)
                 } header: {
                     sectionHeader(for: section.date)
                 }
@@ -614,7 +602,7 @@ struct VideoSectionView: View {
         .buttonStyle(.scalable)
     }
     
-    private func videoItemView(for video: VideoItem) -> some View {
+    private func videoItemView(for video: VideoItem, isLandscape: Bool, width: CGFloat) -> some View {
         Button(action: {
             handleVideoTap(video)
         }) {
@@ -625,7 +613,8 @@ struct VideoSectionView: View {
                 isSelected: viewModel.selectedVideoIds.contains(video.id),
                 onMenuAction: {
                     triggerActionSheet(for: video)
-                }
+                },
+                itemSize: GridLayout.itemSize(for: width, isLandscape: isLandscape)
             )
         }
     }

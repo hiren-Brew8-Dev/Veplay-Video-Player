@@ -94,18 +94,16 @@ struct FolderDetailView: View {
                     standardHeader
                 }
                 
-                ScrollView(.vertical, showsIndicators: true) {
-                    VStack {
-                        if isLoading {
-                            ProgressView()
-                                .padding(.top, 50)
-                        } else if isGridView {
-                            gridView
-                        } else {
-                            listView
-                        }
+                if isLoading {
+                    ProgressView()
+                        .padding(.top, 50)
+                } else if isGridView {
+                    gridView
+                } else {
+                    ScrollView(.vertical, showsIndicators: true) {
+                        listView
+                            .padding(.bottom, viewModel.isSelectionMode ? 140 : 90)
                     }
-                    .padding(.bottom, viewModel.isSelectionMode ? 140 : 90)
                 }
             }
             
@@ -334,46 +332,54 @@ struct FolderDetailView: View {
     }
     
     private var gridView: some View {
-        LazyVGrid(columns: GridLayout.gridColumns, spacing: GridLayout.spacing) {
-            // Folders Section
-            if !folder.subfolders.isEmpty {
-                Section(header: sectionHeaderLabel("Folders")) {
-                    ForEach(folder.subfolders) { subfolder in
-                        NavigationLink(value: DashboardViewModel.NavigationDestination.folderDetail(subfolder)) {
-                            FolderCardView(folder: subfolder, viewModel: viewModel, onMenuAction: {
-                                activeActionItem = .folder(subfolder)
-                                showActionSheet = true
-                            })
-                        }
-                    }
-                }
-            }
+        GeometryReader { geometry in
+            let isLandscape = geometry.size.width > geometry.size.height
+            let currentWidth = geometry.size.width
             
-            // Videos Section (Unified or Grouped)
-            if folder.url == nil && (sortOption == .dateAsc || sortOption == .dateDesc) {
-                // ALBUIM MODE: Show Date Sections
-                ForEach(groupedVideos, id: \.id) { section in
-                    Section(header: sectionHeader(for: section.date)) {
-                        ForEach(section.videos, id: \.id) { video in
-                            gridVideoItem(liveVideo(video))
+            ScrollView {
+                LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
+                    // Folders Section
+                    if !folder.subfolders.isEmpty {
+                        Section(header: sectionHeaderLabel("Folders")) {
+                            ForEach(folder.subfolders) { subfolder in
+                                NavigationLink(value: DashboardViewModel.NavigationDestination.folderDetail(subfolder)) {
+                                    FolderCardView(folder: subfolder, viewModel: viewModel, onMenuAction: {
+                                        activeActionItem = .folder(subfolder)
+                                        showActionSheet = true
+                                    }, size: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape))
+                                }
+                            }
                         }
-                    }
-                }
-            } else {
-                // FOLDER MODE: Flat List (User Preference)
-                Section {
-                    // Import Button (independent item)
-                    if !viewModel.isSelectionMode && folder.url != nil {
-                        importButton
                     }
                     
-                    ForEach(sortedVideos, id: \.id) { video in
-                        gridVideoItem(liveVideo(video))
+                    // Videos Section (Unified or Grouped)
+                    if folder.url == nil && (sortOption == .dateAsc || sortOption == .dateDesc) {
+                        // ALBUM MODE: Show Date Sections
+                        ForEach(groupedVideos, id: \.id) { section in
+                            Section(header: sectionHeader(for: section.date)) {
+                                ForEach(section.videos, id: \.id) { video in
+                                    gridVideoItem(liveVideo(video), isLandscape: isLandscape, width: currentWidth)
+                                }
+                            }
+                        }
+                    } else {
+                        // FOLDER MODE: Flat List (User Preference)
+                        Section {
+                            // Import Button (independent item)
+                            if !viewModel.isSelectionMode && folder.url != nil {
+                                importButton(isLandscape: isLandscape, width: currentWidth)
+                            }
+                            
+                            ForEach(sortedVideos, id: \.id) { video in
+                                gridVideoItem(liveVideo(video), isLandscape: isLandscape, width: currentWidth)
+                            }
+                        }
                     }
                 }
+                .padding(.horizontal, GridLayout.horizontalPadding)
+                .padding(.bottom, viewModel.isSelectionMode ? 140 : 90)
             }
         }
-        .padding(.horizontal, GridLayout.horizontalPadding)
     }
     
     private var listView: some View {
@@ -494,7 +500,7 @@ struct FolderDetailView: View {
         .background(Color.clear)
     }
     
-    private func gridVideoItem(_ video: VideoItem) -> some View {
+    private func gridVideoItem(_ video: VideoItem, isLandscape: Bool, width: CGFloat) -> some View {
         Button {
             handleVideoTap(video)
         } label: {
@@ -507,7 +513,8 @@ struct FolderDetailView: View {
                     viewModel.actionSheetTarget = .video(video)
                     viewModel.actionSheetItems = videoActions(for: video)
                     viewModel.showActionSheet = true
-                }
+                },
+                itemSize: GridLayout.itemSize(for: width, isLandscape: isLandscape)
             )
             .opacity(viewModel.isSelectionMode && !selectedVideoIds.contains(video.id) ? 0.7 : 1.0)
         }
@@ -692,10 +699,10 @@ struct FolderDetailView: View {
     }
 
     
-    private var importButton: some View {
+    private func importButton(isLandscape: Bool, width: CGFloat) -> some View {
         AddVideoCardView(action: {
             showImportOptions = true
-        })
+        }, size: GridLayout.itemSize(for: width, isLandscape: isLandscape))
     }
     
     // MARK: - Helpers

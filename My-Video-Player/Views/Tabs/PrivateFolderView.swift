@@ -6,9 +6,6 @@ struct PrivateFolderView: View {
     @State private var isAuthenticated = false
     @Environment(\.presentationMode) var presentationMode
     
-    // Columns for grid
-    private let columns = GridLayout.gridColumns
-    
     var body: some View {
         ZStack {
             Color.homeBackground.edgesIgnoringSafeArea(.all)
@@ -40,25 +37,30 @@ struct PrivateFolderView: View {
                     
                     // Private Content (Mocked as empty or specific items)
                     // In a real app, this would filter for 'isPrivate' flag
-                    ScrollView {
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            // Placeholder: showing same videos but pretending they are secure
-                            // In real implementation: viewModel.privateVideos
-                            ForEach(viewModel.videos.prefix(3)) { video in
-                                Button(action: {
-                                    viewModel.playingVideo = video
-                                }) {
-                                    VideoCardView(video: video, viewModel: viewModel)
-                                        .overlay(
-                                            Image(systemName: "lock.shield.fill")
-                                                .foregroundColor(.yellow)
-                                                .padding(4),
-                                            alignment: .topLeading
-                                        )
+                    GeometryReader { geometry in
+                        let isLandscape = geometry.size.width > geometry.size.height
+                        let currentWidth = geometry.size.width
+                        
+                        ScrollView {
+                            LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: 12) {
+                                // Placeholder: showing same videos but pretending they are secure
+                                // In real implementation: viewModel.privateVideos
+                                ForEach(viewModel.videos.prefix(3)) { video in
+                                    Button(action: {
+                                        viewModel.playingVideo = video
+                                    }) {
+                                        VideoCardView(video: video, viewModel: viewModel, itemSize: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape))
+                                            .overlay(
+                                                Image(systemName: "lock.shield.fill")
+                                                    .foregroundColor(.yellow)
+                                                    .padding(4),
+                                                alignment: .topLeading
+                                            )
+                                    }
                                 }
                             }
+                            .padding(.horizontal)
                         }
-                        .padding(.horizontal)
                     }
                 }
             } else {

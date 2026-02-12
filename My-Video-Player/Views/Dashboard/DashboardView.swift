@@ -1,6 +1,7 @@
 import SwiftUI
 import PhotosUI
 import UIKit
+import UniformTypeIdentifiers
 
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
@@ -221,7 +222,7 @@ struct DashboardView: View {
                 }
                 
                 // Ellipsis Menu (Shown only on Home/Video for now)
-                if viewModel.selectedTab == .home {
+                if viewModel.selectedTab == .home && !viewModel.importedVideos.isEmpty {
                     Menu {
                         Button(action: { 
                             withAnimation { viewModel.isSelectionMode = true }
@@ -326,11 +327,16 @@ struct DashboardView: View {
 
     private func handlePhotoImport(_ items: [PhotosPickerItem]) {
         guard !items.isEmpty else { return }
-        viewModel.isImporting = true
-        Task {
-            var importedURLs = [URL]()
-            var importedNames = [String]()
-            for item in items {
+        
+        let totalCount = items.count
+        
+        Task.detached(priority: .userInitiated) {
+            await MainActor.run {
+                viewModel.startImportSession(count: totalCount)
+            }
+            
+            for (index, item) in items.enumerated() {
+                // 1. Resolve Filename (Background)
                 var fileName: String?
                 if let localID = item.itemIdentifier {
                     let result = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil)
@@ -339,17 +345,65 @@ struct DashboardView: View {
                         fileName = resources.first?.originalFilename
                     }
                 }
+                
+                // 2. Setup Live Progress Reporting (Simulated for PhotosPickerItem)
+                await MainActor.run {
+                    viewModel.importCurrentIndex = index + 1
+                    viewModel.importStatusMessage = "Preparing inputs..."
+                    viewModel.importProgress = Double(index) / Double(totalCount)
+                }
+                
+                // Start a background task to simulate progress for the download/export phase
+                let progressTask = Task {
+                    var simulatedProgress = 0.0
+                    // Increment progress every 100ms
+                    while !Task.isCancelled && simulatedProgress < 0.9 {
+                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+                        simulatedProgress += 0.01 // +1%
+                        
+                        // Update UI on MainActor
+                        await MainActor.run {
+                            // Calculate global progress
+                            // Base = index/total.
+                            // Current item contribution = simulated * (1/total)
+                            let base = Double(index) / Double(totalCount)
+                            let currentItemContribution = simulatedProgress * (1.0 / Double(totalCount))
+                            viewModel.importProgress = min(base + currentItemContribution, Double(index + 1) / Double(totalCount) - 0.01)
+                            viewModel.importStatusMessage = "Downloading: \(Int(simulatedProgress * 100))%"
+                        }
+                    }
+                }
+                
+                // 3. Load Transferable (Heavy I/O)
+                // We use standard loadTransferable. The progressTask above gives visual feedback.
                 if let movie = try? await item.loadTransferable(type: VideoTransferable.self) {
-                    importedURLs.append(movie.url)
-                    importedNames.append(fileName ?? movie.url.lastPathComponent)
+                    progressTask.cancel() // Stop the simulator
+                    
+                    // 4. Update UI: Finalizing
+                    await MainActor.run {
+                        viewModel.importStatusMessage = "Finalizing: \(fileName ?? movie.url.lastPathComponent)"
+                    }
+                    
+                    // 5. Perform Import
+                    await viewModel.importSingleVideo(from: movie.url, name: fileName ?? movie.url.lastPathComponent)
+                    
+                    // 6. Item Complete
+                    await MainActor.run {
+                        viewModel.importProgress = Double(index + 1) / Double(totalCount)
+                    }
+                } else {
+                    progressTask.cancel()
+                    print("Failed to load transferable for item \(index)")
                 }
             }
+            
+            // Finalize
             await MainActor.run {
                 selectedPhotoItems.removeAll()
                 viewModel.selectedTab = .home
                 viewModel.homeSelectedTab = "Video"
+                viewModel.finalizeImportSession()
             }
-            await viewModel.importVideos(from: importedURLs, names: importedNames)
         }
     }
 
@@ -399,35 +453,98 @@ struct DashboardView: View {
     
     private var importingOverlay: some View {
         ZStack {
-            Color.homeBackground.opacity(0.4)
+            Color.homeBackground.opacity(0.8)
                 .edgesIgnoringSafeArea(.all)
             
-            VStack(spacing: 24) {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .scaleEffect(1.3)
-                
-                Text("Syncing...")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
-            }
-            .padding(.horizontal, 40)
-            .padding(.vertical, 30)
-            .background(
-                ZStack {
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(.ultraThinMaterial)
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(Color.premiumCardBackground.opacity(0.7))
+            if isIpad {
+                importingContent
+            } else {
+                VStack {
+                    Spacer()
+                    importingContent
+                    Spacer()
                 }
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(Color.premiumCardBorder, lineWidth: 1.5)
-            )
-            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 10)
+            }
         }
         .zIndex(100)
+    }
+
+    private var importingContent: some View {
+        VStack(spacing: 28) {
+            // UI Header
+            VStack(spacing: 8) {
+                Text("Importing Videos")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.white)
+                
+                if viewModel.importCount > 1 {
+                    Text("Processing \(viewModel.importCurrentIndex) of \(viewModel.importCount)")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+            }
+            
+            // Progress Circle/Ring
+            ZStack {
+                Circle()
+                    .stroke(Color.white.opacity(0.1), lineWidth: 8)
+                    .frame(width: 120, height: 120)
+                
+                Circle()
+                    .trim(from: 0, to: viewModel.importProgress)
+                    .stroke(
+                        LinearGradient(
+                            colors: [.homeAccent, .homeAccent.opacity(0.6)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                    )
+                    .frame(width: 120, height: 120)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 0.3), value: viewModel.importProgress)
+                
+                VStack(spacing: 2) {
+                    Text("\(Int(viewModel.importProgress * 100))%")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("Complete")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+            }
+            
+            // Status Message
+            VStack(spacing: 12) {
+                Text(viewModel.importStatusMessage)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .frame(height: 44)
+                
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .homeAccent))
+                    .scaleEffect(0.8)
+            }
+            .padding(.horizontal, 20)
+        }
+        .padding(.vertical, 40)
+        .padding(.horizontal, 30)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 32)
+                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 32)
+                    .fill(Color.premiumCardBackground.opacity(0.5))
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 32)
+                .stroke(Color.premiumCardBorder, lineWidth: 1.5)
+        )
+        .frame(width: 320)
+        .shadow(color: Color.black.opacity(0.5), radius: 40, x: 0, y: 20)
     }
 }
 
@@ -451,7 +568,7 @@ struct PlusButtonOverlay: View {
                         Circle()
                             .fill(Color.white.opacity(0.05))
                     }
-                    .frame(width: isIpad ? 80 : 56, height: isIpad ? 80 : 56)
+                    .frame(width: isIpad ? 64 : 56, height: isIpad ? 64 : 56)
                     .overlay(
                         Circle()
                             .stroke(
@@ -463,7 +580,7 @@ struct PlusButtonOverlay: View {
                                 lineWidth: 1
                             )
                     )
-                    .shadow(color: Color.black.opacity(0.4), radius: isIpad ? 15 : 10, x: 0, y: 5)
+                    .shadow(color: Color.black.opacity(0.4), radius: isIpad ? 12 : 10, x: 0, y: 5)
                     
                     // Interactive Menu (Overlay)
                     Menu {
@@ -483,15 +600,15 @@ struct PlusButtonOverlay: View {
                                 .contentShape(Circle())
                             
                             Image(systemName: "plus")
-                                .font(.system(size: isIpad ? 36 : 24, weight: .medium))
+                                .font(.system(size: isIpad ? 28 : 24, weight: .medium))
                                 .foregroundColor(.white)
                         }
-                        .frame(width: isIpad ? 80 : 56, height: isIpad ? 80 : 56)
+                        .frame(width: isIpad ? 64 : 56, height: isIpad ? 64 : 56)
                     }
                 }
             }
             .padding(.trailing, AppDesign.Icons.horizontalPadding + (isIpad ? 16 : 0))
-            .padding(.bottom, (UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0) + (isIpad ? 100 : 60))
+            .padding(.bottom, (UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0) + (isIpad ? 80 : 60))
             .ignoresSafeArea(.keyboard)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }

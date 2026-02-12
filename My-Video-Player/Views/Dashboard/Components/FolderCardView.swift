@@ -4,7 +4,7 @@ struct FolderCardView: View {
     let folder: Folder
     let viewModel: DashboardViewModel?
     var onMenuAction: (() -> Void)? = nil
-    var size: CGFloat = GridLayout.itemSize
+    var size: CGFloat = 160
     
     var body: some View {
         let padding: CGFloat = 8 // Internal padding to match VideoCardView logic

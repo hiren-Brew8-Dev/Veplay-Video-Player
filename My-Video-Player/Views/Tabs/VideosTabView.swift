@@ -122,16 +122,22 @@ struct VideosTabView: View {
                                     }
                                     .padding(.horizontal)
                                 
-                                LazyVGrid(columns: GridLayout.gridColumns, spacing: GridLayout.spacing) {
-                                    ForEach(viewModel.videos.prefix(6)) { video in
-                                        Button(action: {
-                                            // self.selectedVideo = video
-                                            viewModel.playingVideo = video
-                                        }) {
-                                            VideoCardView(video: video, viewModel: viewModel)
+                                GeometryReader { geometry in
+                                    let isLandscape = geometry.size.width > geometry.size.height
+                                    let currentWidth = geometry.size.width
+                                    
+                                    LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
+                                        ForEach(viewModel.videos.prefix(6)) { video in
+                                            Button(action: {
+                                                // self.selectedVideo = video
+                                                viewModel.playingVideo = video
+                                            }) {
+                                                VideoCardView(video: video, viewModel: viewModel, itemSize: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape))
+                                            }
                                         }
                                     }
                                 }
+                                .frame(height: 400) // Give it enough height for the items
                                 .padding(.horizontal)
                             }
                         }

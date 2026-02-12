@@ -2,9 +2,9 @@ import SwiftUI
 
 struct AddVideoCardView: View {
     var action: () -> Void
+    var size: CGFloat = 150
     
     var body: some View {
-        let size = GridLayout.itemSize
         let thumbnailSize = size
         
         Button(action: action) {

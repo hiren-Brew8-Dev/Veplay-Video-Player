@@ -4,8 +4,6 @@ struct FoldersView: View {
     @ObservedObject var viewModel: DashboardViewModel
     @Environment(\.presentationMode) var presentationMode
     
-    private let columns = GridLayout.gridColumns
-    
     @AppStorage("isGridView") private var isGridView: Bool = true
     @State private var showCreateFolder = false
     @State private var folderToRename: Folder?
@@ -17,7 +15,6 @@ struct FoldersView: View {
     @State private var activeFolder: Folder?
     
     var body: some View {
-        // NavigationView removed to support Global Navigation
         ZStack(alignment: .bottomTrailing) {
             Color.homeBackground.edgesIgnoringSafeArea(.all)
             
@@ -49,55 +46,17 @@ struct FoldersView: View {
                 }
                 .padding()
                 
-                ScrollView(.vertical, showsIndicators: true) {
-                    VStack {
-                        if isGridView {
-                            LazyVGrid(columns: columns, spacing: 16) {
-                                ForEach(Array(viewModel.folders.enumerated()), id: \.element.id) { index, folder in
-                                    NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
-                                        FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
-                                            viewModel.actionSheetTarget = .folder(folder)
-                                            viewModel.actionSheetItems = [
-                                                CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
-                                                    folderToRename = folder
-                                                    newFolderName = folder.name
-                                                    showRenameAlert = true
-                                                }),
-                                                CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
-                                                    viewModel.deleteFolder(folder)
-                                                })
-                                            ]
-                                            viewModel.showActionSheet = true
-                                        })
-                                            .opacity(animatedIndices.contains(folder.id) ? 1 : 0)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal)
-                        } else {
-                            LazyVStack(spacing: 8) {
-                                ForEach(viewModel.folders) { folder in
-                                    NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
-                                        HStack(spacing: 16) {
-                                            Image(systemName: "folder.fill")
-                                                .font(.system(size: 24))
-                                                .foregroundColor(.homeAccent)
-                                                .frame(width: 44, height: 44)
-                                                .background(Color.homeCardBackground)
-                                                .cornerRadius(8)
-                                            
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(folder.name)
-                                                    .font(.system(size: 16, weight: .semibold))
-                                                    .foregroundColor(.homeTextPrimary)
-                                                Text("\(folder.videos.count) Videos")
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(.homeTextSecondary)
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            Button(action: {
+                GeometryReader { geometry in
+                    let isLandscape = geometry.size.width > geometry.size.height
+                    let currentWidth = geometry.size.width
+                    
+                    ScrollView(.vertical, showsIndicators: true) {
+                        VStack {
+                            if isGridView {
+                                LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: 16) {
+                                    ForEach(Array(viewModel.folders.enumerated()), id: \.element.id) { index, folder in
+                                        NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
+                                            FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
                                                 viewModel.actionSheetTarget = .folder(folder)
                                                 viewModel.actionSheetItems = [
                                                     CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
@@ -110,36 +69,73 @@ struct FoldersView: View {
                                                     })
                                                 ]
                                                 viewModel.showActionSheet = true
-                                            }) {
-                                                Image(systemName: "ellipsis")
-                                                    .foregroundColor(.homeTextSecondary)
-                                                    .padding(8)
-                                            }
+                                            }, size: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape))
+                                                .opacity(animatedIndices.contains(folder.id) ? 1 : 0)
                                         }
-                                        .padding(.horizontal)
-                                        .padding(.vertical, 8)
-                                        .background(Color.homeCardBackground.opacity(0.3))
-                                        .cornerRadius(12)
                                     }
                                 }
+                                .padding(.horizontal)
+                            } else {
+                                LazyVStack(spacing: 8) {
+                                    ForEach(viewModel.folders) { folder in
+                                        NavigationLink(destination: FolderDetailView(initialFolder: folder, viewModel: viewModel)) {
+                                            HStack(spacing: 16) {
+                                                Image(systemName: "folder.fill")
+                                                    .font(.system(size: 24))
+                                                    .foregroundColor(.homeAccent)
+                                                    .frame(width: 44, height: 44)
+                                                    .background(Color.homeCardBackground)
+                                                    .cornerRadius(8)
+                                                
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(folder.name)
+                                                        .font(.system(size: 16, weight: .semibold))
+                                                        .foregroundColor(.homeTextPrimary)
+                                                    Text("\(folder.videos.count) Videos")
+                                                        .font(.system(size: 12))
+                                                        .foregroundColor(.homeTextSecondary)
+                                                }
+                                                
+                                                Spacer()
+                                                
+                                                Button(action: {
+                                                    viewModel.actionSheetTarget = .folder(folder)
+                                                    viewModel.actionSheetItems = [
+                                                        CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
+                                                            folderToRename = folder
+                                                            newFolderName = folder.name
+                                                            showRenameAlert = true
+                                                        }),
+                                                        CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
+                                                            viewModel.deleteFolder(folder)
+                                                        })
+                                                    ]
+                                                    viewModel.showActionSheet = true
+                                                }) {
+                                                    Image(systemName: "ellipsis")
+                                                        .foregroundColor(.homeTextSecondary)
+                                                        .padding(8)
+                                                }
+                                            }
+                                            .padding(.horizontal)
+                                            .padding(.vertical, 8)
+                                            .background(Color.homeCardBackground.opacity(0.3))
+                                            .cornerRadius(12)
+                                        }
+                                        .padding(.horizontal, isLandscape ? (isIpad ? 80 : 40) : 0)
+                                    }
+                                }
+                                .padding(.horizontal)
                             }
-                            .padding(.horizontal)
                         }
+                        .padding(.bottom, 80)
                     }
-                    .padding(.bottom, 80)
                 }
             }
-            /* FAB Removed as requested */
         }
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
-        .onAppear {
-             // Ensure Tab Bar is hidden via toolbar modifier, not global appearance
-             // UITabBar.appearance().isHidden = false // Do not toggle global state here
-        }
-             // Note: The parent `DashboardView` has the TabView.
-        
-        .toolbar(.hidden, for: .tabBar) // SwiftUI 4+
+        .toolbar(.hidden, for: .tabBar)
         .sheet(isPresented: $showCreateFolder) {
             CreateFolderSheet(viewModel: viewModel)
         }
@@ -155,7 +151,4 @@ struct FoldersView: View {
             Text("Enter a new name for this folder")
         }
     }
-    
-    // .navigationViewStyle(.stack) removed
 }
-

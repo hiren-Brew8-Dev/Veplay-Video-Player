@@ -3,9 +3,6 @@ import SwiftUI
 struct FolderSectionView: View {
     @ObservedObject var viewModel: DashboardViewModel
     
-    
-    private let columns = GridLayout.gridColumns
-    
     @State private var showActionSheet = false
     @State private var activeFolder: Folder?
     @State private var showSearch = false
@@ -81,45 +78,50 @@ struct FolderSectionView: View {
                             Spacer()
                         }
                     } else {
-                        ScrollViewReader { proxy in
-                            ScrollView {
-                                LazyVGrid(columns: columns, spacing: GridLayout.spacing) {
-                                    ForEach(viewModel.sortedFolders) { folder in
-                                        Button(action: {
-                                            viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.folderDetail(folder))
-                                        }) {
-                                            FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
-                                                viewModel.actionSheetTarget = .folder(folder)
-                                                viewModel.actionSheetItems = [
-                                                    CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
-                                                        viewModel.folderToRename = folder
-                                                        viewModel.renameFolderName = folder.name
-                                                        viewModel.showRenameFolderAlert = true
-                                                    }),
-                                                    CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
-                                                        viewModel.folderToDelete = folder
-                                                        viewModel.showDeleteFolderAlert = true
-                                                    })
-                                                ]
-                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                                    viewModel.showActionSheet = true
-                                                }
+                        GeometryReader { geometry in
+                            let isLandscape = geometry.size.width > geometry.size.height
+                            let currentWidth = geometry.size.width
+                            
+                            ScrollViewReader { proxy in
+                                ScrollView {
+                                    LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
+                                        ForEach(viewModel.sortedFolders) { folder in
+                                            Button(action: {
+                                                viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.folderDetail(folder))
+                                            }) {
+                                                FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
+                                                    viewModel.actionSheetTarget = .folder(folder)
+                                                    viewModel.actionSheetItems = [
+                                                        CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
+                                                            viewModel.folderToRename = folder
+                                                            viewModel.renameFolderName = folder.name
+                                                            viewModel.showRenameFolderAlert = true
+                                                        }),
+                                                        CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
+                                                            viewModel.folderToDelete = folder
+                                                            viewModel.showDeleteFolderAlert = true
+                                                        })
+                                                    ]
+                                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                        viewModel.showActionSheet = true
+                                                    }
+                                                }, size: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape))
+                                            }
+                                            .buttonStyle(.scalable)
+                                            .id(folder.id) // Important for scrolling
+                                            .simultaneousGesture(TapGesture().onEnded {
+                                                viewModel.markFolderAsAccessed(folder)
                                             })
                                         }
-                                        .buttonStyle(.scalable)
-                                        .id(folder.id) // Important for scrolling
-                                        .simultaneousGesture(TapGesture().onEnded {
-                                            viewModel.markFolderAsAccessed(folder)
-                                        })
                                     }
+                                    .padding(.horizontal, GridLayout.horizontalPadding)
+                                    .padding(.bottom, 90)
                                 }
-                                .padding(.horizontal, GridLayout.horizontalPadding)
-                                .padding(.bottom, 90)
-                            }
-                            .onChange(of: viewModel.highlightFolderId) { oldId, newId in
-                                if let id = newId {
-                                    withAnimation {
-                                        proxy.scrollTo(id, anchor: .center)
+                                .onChange(of: viewModel.highlightFolderId) { oldId, newId in
+                                    if let id = newId {
+                                        withAnimation {
+                                            proxy.scrollTo(id, anchor: .center)
+                                        }
                                     }
                                 }
                             }

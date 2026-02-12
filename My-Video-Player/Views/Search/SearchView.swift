@@ -189,64 +189,69 @@ struct SearchView: View {
     
     @ViewBuilder
     private var resultsSection: some View {
-        let baseVideos: [VideoItem] = {
-            if let initialVideos = initialVideos {
-                return initialVideos
+        GeometryReader { geometry in
+            let isLandscape = geometry.size.width > geometry.size.height
+            let currentWidth = geometry.size.width
+            let baseVideos: [VideoItem] = {
+                if let initialVideos = initialVideos {
+                    return initialVideos
+                }
+                
+                if viewModel.lastActiveDataTab == .home {
+                    return viewModel.allLocalSearchableVideos
+                } else {
+                    return viewModel.allGallerySearchableVideos
+                }
+            }()
+            
+            let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let filtered = baseVideos.filter {
+                query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)
             }
             
-            if viewModel.lastActiveDataTab == .home {
-                return viewModel.allLocalSearchableVideos
-            } else {
-                return viewModel.allGallerySearchableVideos
-            }
-        }()
-        
-        let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let filtered = baseVideos.filter {
-            query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)
-        }
-        
-        VStack(alignment: .leading, spacing: 16) {
-            if filtered.isEmpty {
-                VStack(spacing: 20) {
-                    Spacer().frame(height: 100)
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.05))
-                            .frame(width: 100, height: 100)
+            VStack(alignment: .leading, spacing: 16) {
+                if filtered.isEmpty {
+                    VStack(spacing: 20) {
+                        Spacer().frame(height: 100)
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.05))
+                                .frame(width: 100, height: 100)
+                            
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 44))
+                                .foregroundColor(.white.opacity(0.2))
+                        }
                         
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 44))
-                            .foregroundColor(.white.opacity(0.2))
+                        Text("No results found for \"\(viewModel.searchText)\"")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white.opacity(0.5))
                     }
-                    
-                    Text("No results found for \"\(viewModel.searchText)\"")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white.opacity(0.5))
-                }
-                .frame(maxWidth: .infinity)
-            } else {
-                LazyVGrid(columns: GridLayout.gridColumns, spacing: GridLayout.spacing) {
-                    ForEach(filtered) { video in
-                        Button(action: {
-                            isSearchFocused = false
-                            viewModel.currentPlaylist = filtered
-                            viewModel.playingVideo = video
-                        }) {
-                            VideoCardView(
-                                video: video,
-                                viewModel: viewModel,
-                                onMenuAction: {
-                                    isSearchFocused = false
-                                    viewModel.actionSheetTarget = .video(video)
-                                    viewModel.actionSheetItems = viewModel.videoActions(for: video)
-                                    viewModel.showActionSheet = true
-                                }
-                            )
+                    .frame(maxWidth: .infinity)
+                } else {
+                    LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
+                        ForEach(filtered) { video in
+                            Button(action: {
+                                isSearchFocused = false
+                                viewModel.currentPlaylist = filtered
+                                viewModel.playingVideo = video
+                            }) {
+                                VideoCardView(
+                                    video: video,
+                                    viewModel: viewModel,
+                                    onMenuAction: {
+                                        isSearchFocused = false
+                                        viewModel.actionSheetTarget = .video(video)
+                                        viewModel.actionSheetItems = viewModel.videoActions(for: video)
+                                        viewModel.showActionSheet = true
+                                    },
+                                    itemSize: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape)
+                                )
+                            }
                         }
                     }
+                    .padding(.horizontal, 15)
                 }
-                .padding(.horizontal, 15)
             }
         }
     }

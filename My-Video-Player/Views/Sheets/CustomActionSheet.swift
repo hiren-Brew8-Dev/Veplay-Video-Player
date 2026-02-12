@@ -17,10 +17,20 @@ struct CustomActionSheet: View {
     @Binding var isPresented: Bool
     
     var body: some View {
+        if isIpad {
+            sheetContent
+        } else {
+            VStack(spacing: 0) {
+                Spacer()
+                sheetContent
+            }
+            .edgesIgnoringSafeArea(.bottom)
+        }
+    }
+    
+    private var sheetContent: some View {
         VStack(spacing: 0) {
             if !isIpad {
-                Spacer()
-                
                 // Drag Handle
                 Capsule()
                     .fill(Color.white.opacity(0.3))
@@ -29,78 +39,75 @@ struct CustomActionSheet: View {
                     .padding(.bottom, 24)
             }
                 
-                // Header Section
-                if let target = target {
-                    headerView(for: target)
-                        .padding(.horizontal, 22)
-                        .padding(.bottom, 28)
-                }
-                
-                // Actions Card
-                VStack(spacing: 0) {
-                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        Button(action: {
-                            withAnimation {
-                                isPresented = false
-                            }
-                            // Increased delay to allow sheet to fully dismiss and UI to stabilize
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                item.action()
-                            }
-                        }) {
-                            HStack(spacing: 16) {
-                                ZStack {
-                                    Circle()
-                                        .fill(item.role == .destructive ? Color.red.opacity(0.1) : Color.premiumCircleBackground)
-                                        .frame(width: isIpad ? 48 : 36, height: isIpad ? 48 : 36)
-                                    
-                                    Image(systemName: item.icon)
-                                        .font(.system(size: isIpad ? 22 : 16, weight: .semibold))
-                                        .foregroundColor(item.role == .destructive ? .red : .white)
-                                }
+            // Header Section
+            if let target = target {
+                headerView(for: target)
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 28)
+            }
+            
+            // Actions Card
+            VStack(spacing: 0) {
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    Button(action: {
+                        withAnimation {
+                            isPresented = false
+                        }
+                        // Increased delay to allow sheet to fully dismiss and UI to stabilize
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            item.action()
+                        }
+                    }) {
+                        HStack(spacing: 16) {
+                            ZStack {
+                                Circle()
+                                    .fill(item.role == .destructive ? Color.red.opacity(0.1) : Color.premiumCircleBackground)
+                                    .frame(width: isIpad ? 48 : 36, height: isIpad ? 48 : 36)
                                 
-                                Text(item.title)
-                                    .font(.system(size: isIpad ? 20 : 16, weight: .medium))
+                                Image(systemName: item.icon)
+                                    .font(.system(size: isIpad ? 22 : 16, weight: .semibold))
                                     .foregroundColor(item.role == .destructive ? .red : .white)
-                                
-                                Spacer()
                             }
-                            .padding(.horizontal, 16)
-                            .frame(height: isIpad ? 72 : 56)
-                            .contentShape(Rectangle())
+                            
+                            Text(item.title)
+                                .font(.system(size: isIpad ? 20 : 16, weight: .medium))
+                                .foregroundColor(item.role == .destructive ? .red : .white)
+                            
+                            Spacer()
                         }
-                        
-                        if index < items.count - 1 {
-                            Rectangle()
-                                .fill(Color.premiumCardBorder)
-                                .frame(height: 1)
-                                .padding(.leading, 68)
-                                .padding(.trailing, 16)
-                        }
+                        .padding(.horizontal, 16)
+                        .frame(height: isIpad ? 72 : 56)
+                        .contentShape(Rectangle())
+                    }
+                    
+                    if index < items.count - 1 {
+                        Rectangle()
+                            .fill(Color.premiumCardBorder)
+                            .frame(height: 1)
+                            .padding(.leading, 68)
+                            .padding(.trailing, 16)
                     }
                 }
-                .background(Color.premiumCardBackground)
-                .cornerRadius(20)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.premiumCardBorder, lineWidth: 1)
-                )
-                .padding(.horizontal, 20)
-                .padding(.bottom, 40) // Extra padding for safe area
             }
-            .background(
-                LinearGradient(
-                    colors: [.premiumGradientTop, .premiumGradientBottom],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+            .background(Color.premiumCardBackground)
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.premiumCardBorder, lineWidth: 1)
             )
-            
-            .applyIf(isIpad) { $0.cornerRadius(28) }
-            .applyIf(!isIpad) { $0.cornerRadiusLocal(28, corners: [.topLeft, .topRight]) }
-            .shadow(color: Color.black.opacity(0.5), radius: 20, x: 0, y: isIpad ? 10 : -10)
-        
-        .applyIf(!isIpad) { $0.edgesIgnoringSafeArea(.bottom) }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40) // Extra padding for safe area
+        }
+        .background(
+            LinearGradient(
+                colors: [.premiumGradientTop, .premiumGradientBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .applyIf(isIpad) { $0.cornerRadius(28) }
+        .applyIf(!isIpad) { $0.cornerRadiusLocal(28, corners: [.topLeft, .topRight]) }
+        .shadow(color: Color.black.opacity(0.5), radius: 20, x: 0, y: isIpad ? 10 : -10)
     }
     
     @ViewBuilder

@@ -38,14 +38,14 @@ struct DoubleTapOverlay: View {
                     HStack {
                         Spacer()
                         indicatorText
-                            .padding(.top, isLandscape ? 20 : 50)
+                            .padding(.top, isLandscape ? isIpad ? 40 : 20 : isIpad ? 80 : 50)
                         Spacer()
                     }
                     Spacer()
                 }
             } else {
                 // Regular Skip UI
-                if isLandscape {
+                if isLandscape || isIpad {
                     HStack(spacing: 0) {
                         if !isForward {
                             indicatorText

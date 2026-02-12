@@ -15,7 +15,7 @@ struct VideoSection: Identifiable {
 class DashboardViewModel: ObservableObject {
     static let supportedVideoExtensions = [
         "mp4", "mov", "m4v", "avi", "mkv", "3gp", "wmv", "flv", "webm", "ts", "mpg", "mpeg", "vob", "ogv", "divx", "asf", "m2ts", "rmvb", "rm", "mts", "swf", "dv", "m2t", "m2p", "m4p", "m4b", "flc", "f4v", "ogg", "obb", "vro", "dat",
-        "rrc", "gifv", "mng", "qt", "yuv", "amv", "mp2", "mpe", "mpv", "svi", "3g2", "mxf", "roq", "nsv", "f4p", "f4a", "f4b", "mod"
+        "rrc", "gifv", "mng", "qt", "yuv", "amv", "mpe", "mpv", "svi", "3g2", "mxf", "roq", "nsv", "f4p", "f4a", "f4b", "mod"
     ]
     
     // Access Tracking
@@ -44,17 +44,27 @@ class DashboardViewModel: ObservableObject {
         }
     }
     @Published var lastActiveDataTab: MainTabs = .home
-    @Published var isGridView: Bool = UserDefaults.standard.bool(forKey: "isGridView") {
+    @Published var isGridView: Bool = {
+        if UserDefaults.standard.object(forKey: "isGridView") == nil {
+            return true   // Default value
+        }
+        return UserDefaults.standard.bool(forKey: "isGridView")
+    }() {
         didSet {
             UserDefaults.standard.set(isGridView, forKey: "isGridView")
         }
     }
+
     @Published var showSortSheet: Bool = false
     @Published var isHeaderExpanded: Bool = false
     @Published var isTabBarHidden: Bool = false
     @Published var playingVideo: VideoItem? = nil
     @Published var currentPlaylist: [VideoItem] = []
     @Published var isImporting: Bool = false
+    @Published var importProgress: Double = 0.0
+    @Published var importStatusMessage: String = ""
+    @Published var importCount: Int = 0
+    @Published var importCurrentIndex: Int = 0
     @Published var isShowingSearch: Bool = false
     @Published var homeSelectedTab: String = "Video"
     @Published var navigationPath = NavigationPath()
@@ -396,7 +406,7 @@ class DashboardViewModel: ObservableObject {
                 self?.updateGroupedVideos()
             }
             .store(in: &cancellables)
-            
+        
         // Master list observer for combined videos (Search/etc) - uses DEFAULT (videoSortOptionRaw)
         Publishers.CombineLatest3($importedVideos, $allGalleryVideos, $videoSortOptionRaw)
             .receive(on: RunLoop.main)
@@ -488,9 +498,9 @@ class DashboardViewModel: ObservableObject {
         // Logic for favoriting
         print("Toggle favorite for \(video.title)")
     }
-       @Published var alertMessage: String = ""
+    @Published var alertMessage: String = ""
     @Published var showAlert: Bool = false
-
+    
     func createFolder(name: String) -> Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return false }
@@ -501,22 +511,15 @@ class DashboardViewModel: ObservableObject {
         
         // Check if folder exists
         if FileManager.default.fileExists(atPath: folderURL.path) {
-            // Find existing folder ID as precisely as possible
-            if let existingFolder = folders.first(where: { $0.url?.path == folderURL.path }) {
-                highlightFolderWithTimeout(existingFolder.id)
-            }
-            
             // Show alert explaining it exists
             alertMessage = "A folder named '\(trimmedName)' already exists."
             showAlert = true
-            return false // Don't dismiss the create dialog immediately if you want them to rename? 
-            // Actually, if we want typical behavior, we return false to keep the alert open or show a new one.
-            // But the user said "not highlight that foldere not propperly" - maybe they want it to switch and highlight.
+            return false
         }
         
         // Ensure "Folders" directory exists
         if !FileManager.default.fileExists(atPath: baseURL.path) {
-             try? FileManager.default.createDirectory(at: baseURL, withIntermediateDirectories: true)
+            try? FileManager.default.createDirectory(at: baseURL, withIntermediateDirectories: true)
         }
         
         do {
@@ -525,13 +528,6 @@ class DashboardViewModel: ObservableObject {
             
             // Immediate partial refresh to get the new folder in the list
             loadUserFolders() 
-            
-            // Wait a tiny bit for folders to refresh then highlight
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-                if let newFolder = self?.folders.first(where: { $0.url?.path == folderURL.path }) {
-                    self?.highlightFolderWithTimeout(newFolder.id)
-                }
-            }
             
             newFolderName = ""
             showCreateFolderAlert = false 
@@ -662,7 +658,7 @@ class DashboardViewModel: ObservableObject {
             url: url
         )
     }
-
+    
     func videoItem(from asset: PHAsset) -> VideoItem {
         // We no longer access PHAsset properties (like filename via KVC) on the main thread here
         // as it triggers "Missing prefetched properties" errors and degrades performance.
@@ -677,14 +673,14 @@ class DashboardViewModel: ObservableObject {
             fileSizeBytes: 0
         )
     }
-
+    
     func loadTitle(for video: VideoItem, completion: @escaping (String) -> Void) {
         // If we already have a non-placeholder, non-generic title, just return it.
         if video.title != VideoItem.titlePlaceholder && !video.isGenericTitle {
             completion(video.title)
             return
         }
-
+        
         guard let asset = video.asset else {
             if let url = video.url {
                 let name = url.deletingPathExtension().lastPathComponent
@@ -694,7 +690,7 @@ class DashboardViewModel: ObservableObject {
             }
             return
         }
-
+        
         // Use background queue for ALL PHAsset property access
         DispatchQueue.global(qos: .userInitiated).async {
             var bestFilename: String? = nil
@@ -714,26 +710,26 @@ class DashboardViewModel: ObservableObject {
                     bestFilename = name
                 }
             }
-
+            
             // 3. Use the found filename if available
             if let foundName = bestFilename, !foundName.isEmpty {
                 DispatchQueue.main.async { completion(foundName) }
                 return
             }
-
+            
             // 4. No filename found? Fallback to metadata-free generation (e.g. Dates)
             // We consciously avoid requestAVAsset here to prevent "FigApplicationStateMonitor" errors.
             self.fallbackTitle(for: asset, video: video, bestFilename: nil, completion: completion)
         }
     }
-
+    
     private func fallbackTitle(for asset: PHAsset, video: VideoItem, bestFilename: String?, completion: @escaping (String) -> Void) {
         // 1. If we found a valid filename (even generic), use it.
         if let filename = bestFilename, !filename.isEmpty {
-             DispatchQueue.main.async { completion(filename) }
-             return
+            DispatchQueue.main.async { completion(filename) }
+            return
         }
-
+        
         // 2. Check for screen recordings specifically
         if asset.mediaSubtypes.contains(.videoScreenRecording) {
             let formatter = DateFormatter()
@@ -742,20 +738,20 @@ class DashboardViewModel: ObservableObject {
             DispatchQueue.main.async { completion("Screen Recording \(dateStr)") }
             return
         }
-
+        
         // 3. If we have any existing title that isn't a placeholder, keep it
         if video.title != VideoItem.titlePlaceholder && !video.title.isEmpty {
             DispatchQueue.main.async { completion(video.title) }
             return
         }
-
+        
         // 4. Ultimate fallback: Date-based title
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         let fallback = "Video " + formatter.string(from: asset.creationDate ?? Date())
         DispatchQueue.main.async { completion(fallback) }
     }
-
+    
     private func stableUUID(from identifier: String) -> UUID {
         if let uuid = UUID(uuidString: identifier) { return uuid }
         
@@ -779,7 +775,7 @@ class DashboardViewModel: ObservableObject {
                                 part1 & 0xFFFF,
                                 (part2 >> 48) & 0xFFFF,
                                 part2 & 0xFFFFFFFFFFFF)
-                                
+        
         return UUID(uuidString: uuidString) ?? UUID()
     }
     
@@ -949,7 +945,7 @@ class DashboardViewModel: ObservableObject {
         }
     }
     
-
+    
     func renameVideo(_ video: VideoItem, to newName: String) {
         // Only rename local imported videos
         guard let oldURL = video.url else { return }
@@ -1003,7 +999,7 @@ class DashboardViewModel: ObservableObject {
         
         print("📋 \(isCut ? "Cut" : "Copied") \(ids.count) videos")
     }
-
+    
     func pasteVideos(to destination: URL) {
         let allPossibleVideos = importedVideos + allGalleryVideos + allVideosAcrossFolders
         let videosToPaste = allPossibleVideos.filter { copiedVideoIds.contains($0.id) }
@@ -1052,7 +1048,7 @@ class DashboardViewModel: ObservableObject {
                                     // The file was successfully pasted with this name.
                                     // If the source path is different from any successful destination path, delete source.
                                     if !results.contains(where: { $0.url?.path == url.path }) {
-                                         self.deleteVideo(video)
+                                        self.deleteVideo(video)
                                     }
                                 }
                             }
@@ -1091,7 +1087,7 @@ class DashboardViewModel: ObservableObject {
             }
         }
     }
-
+    
     private func getURLAsync(for item: VideoItem) async -> URL? {
         return await withCheckedContinuation { continuation in
             getURL(for: item) { url in
@@ -1237,32 +1233,60 @@ class DashboardViewModel: ObservableObject {
         return all.first(where: { ($0.url?.lastPathComponent)?.lowercased() == targetName })
     }
     
+    func startImportSession(count: Int) {
+        self.isImporting = true
+        self.importCount = count
+        self.importCurrentIndex = 0
+        self.importProgress = 0.0
+        self.importStatusMessage = "Starting..."
+    }
+    
+    func finalizeImportSession() {
+        self.loadData()
+        self.isImporting = false
+        self.importProgress = 0.0
+        self.importStatusMessage = ""
+        self.isSelectionMode = false
+    }
+    
+    @discardableResult
+    func importSingleVideo(from url: URL, name: String? = nil, to destination: URL? = nil, shouldMove: Bool = false) async -> VideoItem? {
+        let items = await importVideos(from: [url], names: name != nil ? [name!] : nil, to: destination, shouldMove: shouldMove, isInternalSession: true)
+        return items.first
+    }
+    
     // Import logic
     @discardableResult
-    func importVideos(from urls: [URL], names: [String]? = nil, to destination: URL? = nil, shouldMove: Bool = false) async -> [VideoItem] {
-        var successfulItems: [VideoItem] = []
+    func importVideos(from urls: [URL], names: [String]? = nil, to destination: URL? = nil, shouldMove: Bool = false, isInternalSession: Bool = false) async -> [VideoItem] {
         
-        // Start Loading
-        await MainActor.run {
-            self.isImporting = true
+        // 1. Setup State on Main Actor
+        let targetDirectory = destination ?? self.activeImportFolderURL ?? self.importedVideosDirectory
+        
+        if !isInternalSession {
+            await MainActor.run {
+                self.importCount = urls.count
+                self.importCurrentIndex = 1
+                self.importProgress = 0.0
+                self.importStatusMessage = "Starting import..."
+                self.isImporting = true
+            }
         }
         
-        let targetDirectory = destination ?? self.activeImportFolderURL ?? self.importedVideosDirectory
-        let context = CDManager.shared.container.viewContext
-        let fileManager = FileManager.default
-        
+        // 2. Perform Heavy Work in Detached Task
+        return await Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return [] }
+            
+            var successfulItems: [VideoItem] = []
+            let fileManager = FileManager.default
+            // Note: We only access context inside MainActor.run blocks, so this is safe to capture reference
+            let context = CDManager.shared.container.viewContext 
+            
             for (index, url) in urls.enumerated() {
                 var filename: String
                 if let names = names, index < names.count {
                     filename = names[index]
                 } else {
                     filename = url.lastPathComponent
-                }
-                
-                // If the filename is just a placeholder or UUID, try to get a better one
-                if filename.starts(with: VideoItem.titlePlaceholder) || filename.count > 30 {
-                   // This is suspicious, but we can't easily resolve here without the original asset
-                   // However, DashboardView should have passed the correct name.
                 }
                 
                 var destinationURL = targetDirectory.appendingPathComponent(filename)
@@ -1272,7 +1296,7 @@ class DashboardViewModel: ObservableObject {
                     // Check if it's the exact SAME file being re-imported from the same location (skip case)
                     if url.path == destinationURL.path {
                         print("ℹ️ File already exists at destination and is the same source. Skipping copy.")
-                        if let item = self.videoItem(from: destinationURL) {
+                        if let item = await self.videoItemAsync(from: destinationURL) {
                             successfulItems.append(item)
                         }
                         continue
@@ -1294,7 +1318,7 @@ class DashboardViewModel: ObservableObject {
                     print("🔄 Renamed duplicate to: \(filename)")
                 }
                 
-                // 1. Save to History (Core Data)
+                // 1. Save to History (Core Data) - Must be on MainActor
                 await MainActor.run {
                     let newItem = HistoryItem(context: context)
                     newItem.id = UUID()
@@ -1306,67 +1330,109 @@ class DashboardViewModel: ObservableObject {
                     newItem.timestamp = Date()
                     try? context.save()
                 }
-            
-            // 2. Copy/Move File
-            do {
-                // Ensure access
-                let gainedAccess = url.startAccessingSecurityScopedResource()
-                defer { if gainedAccess { url.stopAccessingSecurityScopedResource() } }
                 
-                // Try to move if requested, otherwise copy
+                // 2. Copy/Move File
                 do {
-                    if shouldMove {
-                        try fileManager.moveItem(at: url, to: destinationURL)
-                        if let item = self.videoItem(from: destinationURL) {
-                            successfulItems.append(item)
+                    // Update progress
+                    await MainActor.run {
+                        if !isInternalSession || urls.count > 1 {
+                            self.importCurrentIndex = (isInternalSession ? self.importCurrentIndex : index + 1)
+                            self.importStatusMessage = "Copying \(filename)..."
+                            if !isInternalSession {
+                                self.importProgress = (Double(index) + 0.5) / Double(urls.count)
+                            }
                         }
-                        print("⚡ Moved (instant): \(filename)")
-                    } else {
-                        try fileManager.copyItem(at: url, to: destinationURL)
-                        if let item = self.videoItem(from: destinationURL) {
-                            successfulItems.append(item)
-                        }
-                        print("✅ Copied: \(filename)")
                     }
-                } catch {
-                    // Fallback to copy if move fails (e.g. across volumes)
-                    if shouldMove {
-                        do {
-                            try fileManager.copyItem(at: url, to: destinationURL)
-                            if let item = self.videoItem(from: destinationURL) {
+                    
+                    // Ensure access
+                    let gainedAccess = url.startAccessingSecurityScopedResource()
+                    defer { if gainedAccess { url.stopAccessingSecurityScopedResource() } }
+                    
+                    // Try to move if requested, otherwise copy
+                    // BLOCKING IO - now safe in detached task
+                    do {
+                        if shouldMove {
+                            try fileManager.moveItem(at: url, to: destinationURL)
+                            if let item = await self.videoItemAsync(from: destinationURL) {
                                 successfulItems.append(item)
                             }
-                            print("✅ Copied (Move fallback): \(filename)")
-                        } catch {
-                            print("❌ Error importing \(url.lastPathComponent): \(error)")
+                            print("⚡ Moved (instant): \(filename)")
+                        } else {
+                            try fileManager.copyItem(at: url, to: destinationURL)
+                            if let item = await self.videoItemAsync(from: destinationURL) {
+                                successfulItems.append(item)
+                            }
+                            print("✅ Copied: \(filename)")
+                        }
+                    } catch {
+                        // Fallback to copy if move fails (e.g. across volumes)
+                        if shouldMove {
+                            do {
+                                try fileManager.copyItem(at: url, to: destinationURL)
+                                if let item = await self.videoItemAsync(from: destinationURL) {
+                                    successfulItems.append(item)
+                                }
+                                print("✅ Copied (Move fallback): \(filename)")
+                            } catch {
+                                print("❌ Error importing \(url.lastPathComponent): \(error)")
+                                await MainActor.run {
+                                    self.alertMessage = "Failed to copy '\(filename)': \(error.localizedDescription)"
+                                    self.showAlert = true
+                                }
+                            }
+                        } else {
+                            print("❌ Error copying \(url.lastPathComponent): \(error)")
                             await MainActor.run {
                                 self.alertMessage = "Failed to copy '\(filename)': \(error.localizedDescription)"
                                 self.showAlert = true
                             }
                         }
-                    } else {
-                        print("❌ Error copying \(url.lastPathComponent): \(error)")
+                    }
+                    
+                    if !isInternalSession {
                         await MainActor.run {
-                            self.alertMessage = "Failed to copy '\(filename)': \(error.localizedDescription)"
-                            self.showAlert = true
+                            self.importProgress = Double(index + 1) / Double(urls.count)
                         }
                     }
                 }
             }
-        }
-        
-        // 3. Finalize
-        await MainActor.run {
-            self.loadImportedVideos()
-            self.loadUserFolders()
-            self.isImporting = false
-            self.activeImportFolderURL = nil
-            self.isSelectionMode = false 
-        }
-        
-        return successfulItems
+            
+            // 3. Finalize
+            if !isInternalSession {
+                await MainActor.run {
+                    self.loadImportedVideos() // This triggers UI refresh
+                    self.loadUserFolders()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.isImporting = false
+                        self.importProgress = 0.0
+                        self.importStatusMessage = ""
+                        self.activeImportFolderURL = nil
+                        self.isSelectionMode = false 
+                    }
+                }
+            }
+            
+            return successfulItems
+        }.value
     }
-
+    
+    // Helper to get video item safely from detached task (accesses non-isolated VideoItem init or MainActor helper?)
+    // VideoItem init is simple struct/data init, so it should be fine. 
+    // BUT self.videoItem(...) calls videoItem(from: VideoItem.swift logic?). 
+    // self.videoItem(from: URL) is likely just reading attributes.
+    // Let's assume videoItem(from:) is safe or we need to wrap it.
+    private func videoItemAsync(from url: URL) async -> VideoItem? {
+        // Since we are traversing files, it's safer to just do it here or call a non-ui helper.
+        // Assuming self.videoItem(from: url) is available and thread-safe or we run it on MainActor if needed.
+        // Actually, creating the VideoItem involves reading file attributes. Better do it in background.
+        // Let's create a local helper or use MainActor if the existing one is MainActor-isolated.
+        // DashboardViewModel is usually @MainActor.
+        
+        return await MainActor.run {
+            return self.videoItem(from: url)
+        }
+    }
+    
     func findFolder(byId id: UUID) -> Folder? {
         return findFolder(byId: id, in: folders)
     }
@@ -1390,7 +1456,7 @@ class DashboardViewModel: ObservableObject {
         }
         return nil
     }
-
+    
     // MARK: - Helpers
     
     private func checkPhotoLibraryPermission() {
@@ -1537,7 +1603,7 @@ class DashboardViewModel: ObservableObject {
             } catch {
                 print("Error loading imported videos: \(error)")
                 DispatchQueue.main.async {
-                     self.isImporting = false
+                    self.isImporting = false
                 }
             }
         }
@@ -1622,9 +1688,9 @@ class DashboardViewModel: ObservableObject {
                     Task {
                         let duration = await helper.fetchDuration(for: url)
                         if duration > 0 {
-                             await MainActor.run {
-                                 self.updateDuration(for: video.id, duration: duration)
-                             }
+                            await MainActor.run {
+                                self.updateDuration(for: video.id, duration: duration)
+                            }
                         }
                     }
                     continue
@@ -1734,46 +1800,47 @@ class DashboardViewModel: ObservableObject {
     }
     
     private func performAlbumFetch() {
-                let fetchOptions = PHFetchOptions()
-                // Sort user albums by title
-                fetchOptions.sortDescriptors = [NSSortDescriptor(key: "localizedTitle", ascending: true)]
-                
-                let smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .any, options: nil)
-                let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
-                
-                var videoAlbums: [PHAssetCollection] = []
-                var userDestinations: [PHAssetCollection] = [] // Writable targets
-                
-                let processCollections = { (fetchResult: PHFetchResult<PHAssetCollection>, isUserAlbum: Bool) in
-                    fetchResult.enumerateObjects { collection, _, _ in
-                        let title = collection.localizedTitle ?? ""
-                        if title.lowercased() == "recents" || title.lowercased() == "recent" {
-                            return
-                        }
-                        
-                        // User albums are always destination candidates
-                        if isUserAlbum {
-                            userDestinations.append(collection)
-                        }
-                        
-                        let options = PHFetchOptions()
-                        options.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
-                        let assets = PHAsset.fetchAssets(in: collection, options: options)
-                        
-                        if assets.count > 0 {
-                            videoAlbums.append(collection)
-                        }
-                    }
+        let fetchOptions = PHFetchOptions()
+        // Sort user albums by title
+        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "localizedTitle", ascending: true)]
+        
+        let smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .any, options: nil)
+        let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+        
+        var videoAlbums: [PHAssetCollection] = []
+        var userDestinations: [PHAssetCollection] = [] // Writable targets
+        
+        let processCollections = { (fetchResult: PHFetchResult<PHAssetCollection>, isUserAlbum: Bool) in
+            fetchResult.enumerateObjects { collection, _, _ in
+                let title = collection.localizedTitle ?? ""
+                if title.lowercased() == "recents" || title.lowercased() == "recent" {
+                    return
                 }
                 
-                processCollections(smartAlbums, false)
-                processCollections(userAlbums, true)
-                
-                DispatchQueue.main.async {
-                    self.galleryAlbums = videoAlbums
-                    self.allGalleryAlbums = userDestinations // Only user-created albums for pasting
-                    self.objectWillChange.send()
+                // User albums are always destination candidates
+                if isUserAlbum {
+                    userDestinations.append(collection)
                 }
+                
+                let options = PHFetchOptions()
+                options.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
+                let assets = PHAsset.fetchAssets(in: collection, options: options)
+                
+                if assets.count > 0 {
+                    videoAlbums.append(collection)
+                }
+            }
+        }
+        
+        processCollections(smartAlbums, false)
+        processCollections(userAlbums, true)
+        
+        DispatchQueue.main.async {
+            self.galleryAlbums = videoAlbums
+            self.allGalleryAlbums = userDestinations // Only user-created albums for pasting
+            self.objectWillChange.send()
+        }
+        
     }
 }
 

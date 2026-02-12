@@ -365,9 +365,9 @@ struct PlayerControlsView: View {
                 resetTimer()
             }) {
                     Image(systemName: "gobackward.10")
-                        .font(.system(size: isIpad ? 54 : 30, weight: .regular))
+                        .font(.system(size: isIpad ? 36 : 30, weight: .regular))
                         .foregroundColor(.white)
-                        .frame(width: isIpad ? 90 : 54, height: isIpad ? 90 : 54)
+                        .frame(width: isIpad ? 64 : 54, height: isIpad ? 64 : 54)
                         .contentShape(Rectangle())
             }
             
@@ -379,10 +379,10 @@ struct PlayerControlsView: View {
                 ZStack {
                     Circle()
                         .fill(Color.white)
-                        .frame(width: isIpad ? 120 : 74, height: isIpad ? 120 : 74)
+                        .frame(width: isIpad ? 84 : 74, height: isIpad ? 84 : 74)
                     
                     Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: isIpad ? 54 : 34))
+                        .font(.system(size: isIpad ? 36 : 34))
                         .foregroundColor(.black)
                 }
             }
@@ -394,9 +394,9 @@ struct PlayerControlsView: View {
                 resetTimer()
             }) {
                     Image(systemName: "goforward.10")
-                        .font(.system(size: isIpad ? 54 : 30, weight: .regular))
+                        .font(.system(size: isIpad ? 36 : 30, weight: .regular))
                         .foregroundColor(.white)
-                        .frame(width: isIpad ? 90 : 54, height: isIpad ? 90 : 54)
+                        .frame(width: isIpad ? 64 : 54, height: isIpad ? 64 : 54)
                         .contentShape(Rectangle())
             }
         }

@@ -8,13 +8,14 @@ struct VideoCardView: View {
     var isSelectionMode: Bool = false
     var isSelected: Bool = false
     var onMenuAction: (() -> Void)? = nil
+    var itemSize: CGFloat = 150
     
     @State private var thumbnail: UIImage?
     @State private var resolvedTitle: String? = nil
     @State private var vlcLoader: VLCThumbnailHelper? // Retain the loader
     
     var body: some View {
-        let size = GridLayout.itemSize
+        let size = itemSize
         let padding: CGFloat = 0 // Remove internal extra padding to fit grid better
         let thumbnailSize = size // Fill the calculated grid item size
         

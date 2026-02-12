@@ -5,7 +5,7 @@ struct HomeView: View {
     @Binding var paddingBottom: CGFloat
     
     let tabs = ["Video", "Gallery"]
-    @AppStorage("isGridView") private var isGridView: Bool = true
+  
     @State private var showSortSheet: Bool = false
     @State private var showSearch: Bool = false
     
@@ -76,7 +76,10 @@ struct HomeView: View {
                         
                         Divider()
                         
-                        Picker(selection: $isGridView, label: EmptyView()) {
+                        Picker(selection: Binding(
+                            get: { viewModel.isGridView },
+                            set: { viewModel.isGridView = $0 }
+                        ), label: EmptyView()) {
                             Label("Grid", systemImage: "square.grid.2x2").tag(true)
                             Label("List", systemImage: "list.bullet").tag(false)
                         }
