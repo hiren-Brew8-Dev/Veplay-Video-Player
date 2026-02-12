@@ -120,6 +120,7 @@ class DashboardViewModel: ObservableObject {
     @Published var folders: [Folder] = []
     @Published var historyVideos: [VideoItem] = []
     @Published var importedVideos: [VideoItem] = []
+    @Published var isInitialLoading: Bool = true
     @Published var groupedImportedVideos: [VideoSection] = []
     @Published var galleryAlbums: [PHAssetCollection] = []
     @Published var allGalleryAlbums: [PHAssetCollection] = []
@@ -579,6 +580,7 @@ class DashboardViewModel: ObservableObject {
                 
                 DispatchQueue.main.async {
                     self.folders = newFolders
+                    self.isInitialLoading = false // Folders ready
                     
                     // Fetch durations for all videos in folders in background
                     let allFolderVideos = newFolders.flatMap { folder -> [VideoItem] in
@@ -591,6 +593,9 @@ class DashboardViewModel: ObservableObject {
                 }
             } catch {
                 print("Error loading folders: \(error)")
+                DispatchQueue.main.async {
+                    self.isInitialLoading = false
+                }
             }
         }
     }
@@ -641,7 +646,7 @@ class DashboardViewModel: ObservableObject {
         )
     }
     
-    private func videoItem(from url: URL) -> VideoItem? {
+    private func videoItem(from url: URL, fast: Bool = true) -> VideoItem? {
         guard DashboardViewModel.supportedVideoExtensions.contains(url.pathExtension.lowercased()) else { return nil }
         
         // 1. Initial metadata (Size and Date)
@@ -649,26 +654,29 @@ class DashboardViewModel: ObservableObject {
         let creationDate = resources?.creationDate ?? Date()
         let size = Int64(resources?.fileSize ?? 0)
         
-        // 2. Duration Extraction
-        let asset = AVURLAsset(url: url)
-        var duration = CMTimeGetSeconds(asset.duration)
-        if duration.isNaN { duration = 0 }
-        
-        // Comprehensive fallback for duration (Legacy formats or corrupt files)
-        if duration <= 0 {
-            let media = VLCMedia(url: url)
-            // Parse and poll for duration to allow VLC to index legacy formats like MPEG/RM/VOB.
-            media.parse(options: .fetchLocal, timeout: 5000)
-            // Poll for length (usually available very quickly for local files after parse)
-            var pollCount = 0
-            while media.length.intValue <= 0 && pollCount < 15 {
-                Thread.sleep(forTimeInterval: 0.1)
-                pollCount += 1
-            }
+        // 2. Duration Extraction (Skip if fast=true for instant folder loading)
+        var duration: Double = 0
+        if !fast {
+            let asset = AVURLAsset(url: url)
+            duration = CMTimeGetSeconds(asset.duration)
+            if duration.isNaN { duration = 0 }
             
-            let length = media.length.intValue
-            if length > 0 {
-                duration = Double(length) / 1000.0
+            // Comprehensive fallback for duration (Legacy formats or corrupt files)
+            if duration <= 0 {
+                let media = VLCMedia(url: url)
+                // Parse and poll for duration to allow VLC to index legacy formats like MPEG/RM/VOB.
+                media.parse(options: .fetchLocal, timeout: 5000)
+                // Poll for length (usually available very quickly for local files after parse)
+                var pollCount = 0
+                while media.length.intValue <= 0 && pollCount < 15 {
+                    Thread.sleep(forTimeInterval: 0.1)
+                    pollCount += 1
+                }
+                
+                let length = media.length.intValue
+                if length > 0 {
+                    duration = Double(length) / 1000.0
+                }
             }
         }
         
@@ -1609,10 +1617,11 @@ class DashboardViewModel: ObservableObject {
                 let videoFiles = fileURLs.filter { DashboardViewModel.supportedVideoExtensions.contains($0.pathExtension.lowercased()) }
                 
                 let loadedVideos = videoFiles.compactMap { url -> VideoItem? in
-                    return self.videoItem(from: url)
+                    return self.videoItem(from: url, fast: true)
                 }.sorted(by: { $0.creationDate > $1.creationDate })
                 
                 DispatchQueue.main.async {
+                    self.isInitialLoading = false // Videos ready
                     withAnimation {
                         self.importedVideos = loadedVideos
                         self.isImporting = false
@@ -1631,6 +1640,7 @@ class DashboardViewModel: ObservableObject {
                 print("Error loading imported videos: \(error)")
                 DispatchQueue.main.async {
                     self.isImporting = false
+                    self.isInitialLoading = false
                 }
             }
         }

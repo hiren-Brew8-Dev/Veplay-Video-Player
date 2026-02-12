@@ -52,9 +52,9 @@ struct VideoSectionView: View {
                                         .foregroundColor(.white)
                                         .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                                     
-                                    if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
+                                    if viewModel.importedVideos.isEmpty && !viewModel.isImporting && !viewModel.isInitialLoading {
                                         emptyStateView
-                                    } else {
+                                    } else if !viewModel.isInitialLoading || !viewModel.importedVideos.isEmpty {
                                         if isGridView {
                                             videosGrid(isLandscape: isLandscape, width: currentWidth)
                                         } else {
