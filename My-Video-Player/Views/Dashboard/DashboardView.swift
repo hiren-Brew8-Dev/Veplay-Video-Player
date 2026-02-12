@@ -530,7 +530,7 @@ struct DashboardView: View {
             .padding(.horizontal, 20)
         }
         .padding(.vertical, 40)
-        .padding(.horizontal, 30)
+        .frame(width: 320) // Fixed width before background to stabilize size
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: 32)
@@ -543,7 +543,6 @@ struct DashboardView: View {
             RoundedRectangle(cornerRadius: 32)
                 .stroke(Color.premiumCardBorder, lineWidth: 1.5)
         )
-        .frame(width: 320)
         .shadow(color: Color.black.opacity(0.5), radius: 40, x: 0, y: 20)
     }
 }
