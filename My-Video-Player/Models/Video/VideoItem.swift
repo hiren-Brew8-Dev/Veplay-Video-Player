@@ -105,7 +105,7 @@ class VLCThumbnailHelper: NSObject, VLCMediaThumbnailerDelegate {
         self.completion = completion
         let media = VLCMedia(url: url)
         // Wait for media to be indexed to ensure we can get a thumbnail at a specific position
-        _ = media.lengthWaitUntilDate(NSDate(timeIntervalSinceNow: 1.5))
+        _ = media.lengthWaitUntilDate(NSDate(timeIntervalSinceNow: 1.5) as Date)
         
         self.thumbnailer = VLCMediaThumbnailer(media: media, andDelegate: self)
         self.thumbnailer?.snapshotPosition = 0.1 // Try 10% into the video instead of just the start

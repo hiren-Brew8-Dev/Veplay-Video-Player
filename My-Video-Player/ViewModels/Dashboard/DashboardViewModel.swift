@@ -659,7 +659,7 @@ class DashboardViewModel: ObservableObject {
             let media = VLCMedia(url: url)
             // lengthWaitUntilDate is better because it's genuinely synchronous
             // and gives VLC time to index legacy formats like MPEG/RM/VOB.
-            if let lengthObj = media.lengthWaitUntilDate(NSDate(timeIntervalSinceNow: 2.0)) {
+            if let lengthObj = media.lengthWaitUntilDate(NSDate(timeIntervalSinceNow: 2.0) as Date) {
                 let length = lengthObj.intValue
                 if length > 0 {
                     duration = Double(length) / 1000.0
