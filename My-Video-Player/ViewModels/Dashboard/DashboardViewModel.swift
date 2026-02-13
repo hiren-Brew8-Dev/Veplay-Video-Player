@@ -12,6 +12,12 @@ struct VideoSection: Identifiable {
     var id: Date { date }
 }
 
+struct FolderSection: Identifiable {
+    let date: Date
+    let folders: [Folder]
+    var id: Date { date }
+}
+
 class DashboardViewModel: ObservableObject {
     static let supportedVideoExtensions = [
         "mp4", "mov", "m4v", "avi", "mkv", "3gp", "wmv", "flv", "webm", "ts", "mpg", "mpeg", "vob", "ogv", "divx", "asf", "m2ts", "rmvb", "rm", "mts", "swf", "dv", "m2t", "m2p", "m4p", "m4b", "flc", "f4v", "ogg", "obb", "vro", "dat",
@@ -264,6 +270,29 @@ class DashboardViewModel: ObservableObject {
             default:
                 return f1.creationDate > f2.creationDate
             }
+        }
+    }
+    
+    var groupedFolders: [FolderSection] {
+        let option = SortOption(rawValue: folderSortOptionRaw) ?? .dateDesc
+        
+        // Date sections only for Recents, Newest First, and Oldest First
+        guard option == .recents || option == .dateDesc || option == .dateAsc else {
+            return [FolderSection(date: .distantPast, folders: sortedFolders)]
+        }
+        
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: sortedFolders) { folder -> Date in
+            let date = option == .recents ? (folder.lastAccessedDate ?? folder.creationDate) : folder.creationDate
+            return calendar.startOfDay(for: date)
+        }
+        
+        let sortedDates = grouped.keys.sorted { d1, d2 in
+            return option == .dateAsc ? d1 < d2 : d1 > d2
+        }
+        
+        return sortedDates.map { date in
+            FolderSection(date: date, folders: grouped[date] ?? [])
         }
     }
     

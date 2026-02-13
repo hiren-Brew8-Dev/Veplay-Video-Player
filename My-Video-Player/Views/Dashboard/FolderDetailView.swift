@@ -361,7 +361,7 @@ struct FolderDetailView: View {
             .foregroundColor(.orange)
             .padding(.trailing, AppDesign.Icons.horizontalPadding)
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
         .padding(.bottom, 10)
         .background(Color.clear)
     
@@ -468,7 +468,7 @@ struct FolderDetailView: View {
                                 RoundedRectangle(cornerRadius: 20)
                                     .stroke(Color.premiumCardBorder, lineWidth: 1)
                             )
-                            .padding(.horizontal, 10)
+                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                         } header: {
                             sectionHeader(for: section.date)
                         }
@@ -488,7 +488,7 @@ struct FolderDetailView: View {
                                 RoundedRectangle(cornerRadius: 20)
                                     .stroke(Color.premiumCardBorder, lineWidth: 1)
                             )
-                            .padding(.horizontal, 10)
+                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                             .padding(.bottom, 20)
                         }
                     }
@@ -512,7 +512,7 @@ struct FolderDetailView: View {
                             RoundedRectangle(cornerRadius: 20)
                                 .stroke(Color.premiumCardBorder, lineWidth: 1)
                         )
-                        .padding(.horizontal, 10)
+                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                     }
                 }
             }
@@ -535,7 +535,7 @@ struct FolderDetailView: View {
             Spacer()
         }
         .padding(.vertical, 8)
-        .padding(.horizontal, 10)
+        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
     }
     
     private func gridVideoItem(_ video: VideoItem, isLandscape: Bool, width: CGFloat) -> some View {

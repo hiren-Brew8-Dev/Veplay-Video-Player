@@ -292,8 +292,7 @@ struct DashboardView: View {
         Button("Create") {
             let name = viewModel.newFolderName
             if viewModel.createFolder(name: name) {
-                viewModel.selectedTab = .home
-                viewModel.homeSelectedTab = "Video"
+                // Stay in current tab
             }
         }
     }
@@ -304,8 +303,7 @@ struct DashboardView: View {
             Task {
                 await viewModel.importVideos(from: urls)
                 await MainActor.run {
-                    viewModel.selectedTab = .home
-                    viewModel.homeSelectedTab = "Video"
+                    // Stay in current tab
                 }
             }
         case .failure(let error):
@@ -388,8 +386,6 @@ struct DashboardView: View {
             // Finalize
             await MainActor.run {
                 selectedPhotoItems.removeAll()
-                viewModel.selectedTab = .home
-                viewModel.homeSelectedTab = "Video"
                 viewModel.finalizeImportSession()
             }
         }

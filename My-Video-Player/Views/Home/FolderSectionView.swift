@@ -323,7 +323,7 @@ struct FolderSectionView: View {
                         if viewModel.isGridView {
                             foldersGrid(isLandscape: isLandscape, currentWidth: currentWidth)
                         } else {
-                            foldersList()
+                            foldersList(isLandscape: isLandscape)
                         }
                     }
                     .padding(.top, 10)
@@ -335,79 +335,122 @@ struct FolderSectionView: View {
     
     private func foldersGrid(isLandscape: Bool, currentWidth: CGFloat) -> some View {
         LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
-            ForEach(viewModel.sortedFolders) { folder in
-                Button(action: {
-                    handleFolderTap(folder)
-                }) {
-                    FolderCardView(
-                        folder: folder,
-                        viewModel: viewModel,
-                        onMenuAction: {
-                            viewModel.actionSheetTarget = .folder(folder)
-                            viewModel.actionSheetItems = folderActions(for: folder)
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                viewModel.showActionSheet = true
+            ForEach(viewModel.groupedFolders) { section in
+                Section(header: sectionHeader(for: section.date)) {
+                    ForEach(section.folders) { folder in
+                        Button(action: {
+                            handleFolderTap(folder)
+                        }) {
+                            FolderCardView(
+                                folder: folder,
+                                viewModel: viewModel,
+                                onMenuAction: {
+                                    viewModel.actionSheetTarget = .folder(folder)
+                                    viewModel.actionSheetItems = folderActions(for: folder)
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        viewModel.showActionSheet = true
+                                    }
+                                },
+                                size: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape),
+                                isSelectionMode: viewModel.isSelectionMode,
+                                isSelected: viewModel.selectedFolderIds.contains(folder.id)
+                            )
+                        }
+                        .buttonStyle(.scalable)
+                        .id(folder.id)
+                        .simultaneousGesture(TapGesture().onEnded {
+                            if !viewModel.isSelectionMode {
+                                viewModel.markFolderAsAccessed(folder)
                             }
-                        },
-                        size: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape),
-                        isSelectionMode: viewModel.isSelectionMode,
-                        isSelected: viewModel.selectedFolderIds.contains(folder.id)
-                    )
-                }
-                .buttonStyle(.scalable)
-                .id(folder.id)
-                .simultaneousGesture(TapGesture().onEnded {
-                    if !viewModel.isSelectionMode {
-                        viewModel.markFolderAsAccessed(folder)
+                        })
                     }
-                })
+                }
             }
         }
         .padding(.horizontal, GridLayout.horizontalPadding)
     }
     
-    private func foldersList() -> some View {
-        LazyVStack(spacing: 0) {
-            ForEach(Array(viewModel.sortedFolders.enumerated()), id: \.element.id) { index, folder in
-                Button(action: {
-                    handleFolderTap(folder)
-                }) {
-                    FolderRowView(
-                        folder: folder,
-                        viewModel: viewModel,
-                        onMenuAction: {
-                            viewModel.actionSheetTarget = .folder(folder)
-                            viewModel.actionSheetItems = folderActions(for: folder)
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                viewModel.showActionSheet = true
+    private func foldersList(isLandscape: Bool) -> some View {
+        LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+            ForEach(viewModel.groupedFolders) { section in
+                Section(header: sectionHeader(for: section.date)) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(section.folders.enumerated()), id: \.element.id) { index, folder in
+                            Button(action: {
+                                handleFolderTap(folder)
+                            }) {
+                                FolderRowView(
+                                    folder: folder,
+                                    viewModel: viewModel,
+                                    onMenuAction: {
+                                        viewModel.actionSheetTarget = .folder(folder)
+                                        viewModel.actionSheetItems = folderActions(for: folder)
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            viewModel.showActionSheet = true
+                                        }
+                                    },
+                                    isSelectionMode: viewModel.isSelectionMode,
+                                    isSelected: viewModel.selectedFolderIds.contains(folder.id)
+                                )
                             }
-                        },
-                        isSelectionMode: viewModel.isSelectionMode,
-                        isSelected: viewModel.selectedFolderIds.contains(folder.id)
-                    )
-                }
-                .buttonStyle(.scalable)
-                .id(folder.id)
-                .simultaneousGesture(TapGesture().onEnded {
-                    if !viewModel.isSelectionMode {
-                        viewModel.markFolderAsAccessed(folder)
+                            .buttonStyle(.scalable)
+                            .id(folder.id)
+                            .simultaneousGesture(TapGesture().onEnded {
+                                if !viewModel.isSelectionMode {
+                                    viewModel.markFolderAsAccessed(folder)
+                                }
+                            })
+                            
+                            if index < section.folders.count - 1 {
+                                Divider()
+                                    .background(Color.white.opacity(0.1))
+                                    .padding(.leading, viewModel.isSelectionMode ? 120 : 80)
+                            }
+                        }
                     }
-                })
-                
-                if index < viewModel.folders.count - 1 {
-                    Divider()
-                        .background(Color.white.opacity(0.1))
-                        .padding(.leading, viewModel.isSelectionMode ? 120 : 80)
+                    .background(Color.premiumCardBackground)
+                    .cornerRadius(20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.premiumCardBorder, lineWidth: 1)
+                    )
+                    .padding(.horizontal, GridLayout.horizontalPadding)
                 }
             }
         }
-        .background(Color.premiumCardBackground)
-        .cornerRadius(20)
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.premiumCardBorder, lineWidth: 1)
-        )
-        .padding(.horizontal, 10)
+    }
+    
+    @ViewBuilder
+    private func sectionHeader(for date: Date) -> some View {
+        if date == .distantPast {
+            EmptyView()
+        } else {
+            HStack {
+                Text(sectionHeaderTitle(for: date).uppercased())
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                Spacer()
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+        }
+    }
+    
+    func sectionHeaderTitle(for date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "d MMM"
+            return formatter.string(from: date)
+        }
     }
 
     private func handleFolderTap(_ folder: Folder) {

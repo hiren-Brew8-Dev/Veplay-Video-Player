@@ -513,7 +513,7 @@ struct VideoSectionView: View {
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(Color.premiumCardBorder, lineWidth: 1)
                     )
-                    .padding(.horizontal, isLandscape ? (isIpad ? 80 : 40) : 10)
+                    .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                 } header: {
                     sectionHeader(for: section.date)
                 }
@@ -538,7 +538,7 @@ struct VideoSectionView: View {
                 Spacer()
             }
             .padding(.vertical, 8)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
         }
     }
     
