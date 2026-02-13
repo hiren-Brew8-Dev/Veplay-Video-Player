@@ -71,9 +71,10 @@ struct Onboarding1View: View {
                         playButtonSize: 35
                     )
                     .rotationEffect(.degrees(-8))
+                    .scaleEffect(isAnimating ? 1 : 0.6)
                     .offset(x: isAnimating ? -80 : -150, y: isAnimating ? -100 : -150)
                     .opacity(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.1), value: isAnimating)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: isAnimating)
                     
                     // Right Top Card
                     OnboardingImageCard(
@@ -83,9 +84,10 @@ struct Onboarding1View: View {
                         playButtonSize: 31.34
                     )
                     .rotationEffect(.degrees(12))
+                    .scaleEffect(isAnimating ? 1 : 0.6)
                     .offset(x: isAnimating ? 85 : 150, y: isAnimating ? -80 : -130)
                     .opacity(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.2), value: isAnimating)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
                     
                     // Bottom Center Card
                     OnboardingImageCard(
@@ -94,9 +96,10 @@ struct Onboarding1View: View {
                         height: 215,
                         playButtonSize: 40
                     )
+                    .scaleEffect(isAnimating ? 1 : 0.7)
                     .offset(x: -15, y: isAnimating ? 60 : 130)
                     .opacity(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.3), value: isAnimating)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.3), value: isAnimating)
                 }
                 .responsiveHeight(iphoneHeight: 400)
                 
@@ -108,6 +111,7 @@ struct Onboarding1View: View {
                         .font(Font.custom("Figtree-Bold", size: 40))
                         .foregroundColor(.white)
                         .fixedSize(horizontal: false, vertical: true)
+                        .scaleEffect(isAnimating ? 1 : 0.95, anchor: .leading)
                     
                     Text("Open and play videos without extra steps.")
                         .font(Font.custom("Figtree-Regular", size: 16))
@@ -115,9 +119,9 @@ struct Onboarding1View: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .responsivePadding(edge: .horizontal, fraction: 30)
-                .offset(y: isAnimating ? 0 : 50)
+                .offset(y: isAnimating ? 0 : 30)
                 .opacity(isAnimating ? 1 : 0)
-                .animation(.easeOut(duration: 0.8).delay(0.4), value: isAnimating)
+                .animation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.4), value: isAnimating)
                 
                 Spacer()
                 
@@ -136,9 +140,9 @@ struct Onboarding1View: View {
                 }
                 .responsivePadding(edge: .horizontal, fraction: 30)
                 .responsivePadding(edge: .bottom, fraction: 10)
-                .offset(y: isAnimating ? 0 : 30)
+                .scaleEffect(isAnimating ? 1 : 0.9)
                 .opacity(isAnimating ? 1 : 0)
-                .animation(.easeOut(duration: 0.8).delay(0.5), value: isAnimating)
+                .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.5), value: isAnimating)
             }
         }
         .onAppear {

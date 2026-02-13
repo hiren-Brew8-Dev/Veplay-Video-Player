@@ -37,6 +37,8 @@ struct VideoPlayerApp: App {
                                     case .onboarding1: Onboarding1View()
                                     case .onboarding2: Onboarding2View()
                                     case .onboarding3: Onboarding3View()
+                                    case .onboarding4: Onboarding4View()
+                                    case .thanksForDownloading: ThanksForDownloadingView()
                                     case .rating: RatingView()
                                     case .dashboard: DashboardView()
                                     }

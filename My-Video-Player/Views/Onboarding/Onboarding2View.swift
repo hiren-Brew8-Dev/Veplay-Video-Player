@@ -57,7 +57,7 @@ struct Onboarding2View: View {
                             .background(Color.white.opacity(0.50))
                             .cornerRadius(24)
                     }
-                    .responsivePadding(edge: .top, fraction: 60)
+                    .responsivePadding(edge: .top, fraction: 30)
                     .responsivePadding(edge: .trailing, fraction: 30)
                 }
                 
@@ -65,33 +65,41 @@ struct Onboarding2View: View {
                 
                 // MARK: - Folder Cards Section (Zigzagged and Tilted)
                 VStack(spacing: 25) {
-                    // Card 1: Downloads (Tilted Left, Right Highlight, Left Offset)
+                    // Card 1: Downloads
                     OnboardingFolderRow(title: "Downloads", count: "16 Videos", gradientSide: .right)
                         .rotationEffect(.degrees(-1))
-                        .offset(x: isAnimating ? -20 : -150)
+                        .rotation3DEffect(.degrees(isAnimating ? 0 : 20), axis: (x: 0, y: 1, z: 0))
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .offset(x: isAnimating ? -20 : -100)
                         .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.1), value: isAnimating)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: isAnimating)
                     
-                    // Card 2: Vacation 2025 (Tilted Right, Left Highlight, Right Offset)
+                    // Card 2: Vacation 2025
                     OnboardingFolderRow(title: "Vacation 2025", count: "42 Videos", gradientSide: .left)
                         .rotationEffect(.degrees(2))
-                        .offset(x: isAnimating ? 20 : 150)
+                        .rotation3DEffect(.degrees(isAnimating ? 0 : -20), axis: (x: 0, y: 1, z: 0))
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .offset(x: isAnimating ? 20 : 100)
                         .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.2), value: isAnimating)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
                     
-                    // Card 3: Office Work (Tilted Left, Right Highlight, Left Offset)
+                    // Card 3: Office Work
                     OnboardingFolderRow(title: "Office Work", count: "12 Videos", gradientSide: .right)
                         .rotationEffect(.degrees(-1))
-                        .offset(x: isAnimating ? -20 : -150)
+                        .rotation3DEffect(.degrees(isAnimating ? 0 : 20), axis: (x: 0, y: 1, z: 0))
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .offset(x: isAnimating ? -20 : -100)
                         .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.3), value: isAnimating)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.3), value: isAnimating)
                     
-                    // Card 4: College Documentary (Tilted Right, Left Highlight, Right Offset)
+                    // Card 4: College Documentary
                     OnboardingFolderRow(title: "College Documentary", count: "20 Videos", gradientSide: .left)
                         .rotationEffect(.degrees(2))
-                        .offset(x: isAnimating ? 20 : 150)
+                        .rotation3DEffect(.degrees(isAnimating ? 0 : -20), axis: (x: 0, y: 1, z: 0))
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .offset(x: isAnimating ? 20 : 100)
                         .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.4), value: isAnimating)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.4), value: isAnimating)
                 }
                 .frame(height: 420)
                 
@@ -103,6 +111,7 @@ struct Onboarding2View: View {
                         .font(Font.custom("Figtree-Bold", size: 40))
                         .foregroundColor(.white)
                         .fixedSize(horizontal: false, vertical: true)
+                        .scaleEffect(isAnimating ? 1 : 0.95, anchor: .leading)
                     
                     Text("Create folders to keep your videos arranged.")
                         .font(Font.custom("Figtree-Regular", size: 16))
@@ -110,9 +119,9 @@ struct Onboarding2View: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .responsivePadding(edge: .horizontal, fraction: 30)
-                .offset(y: isAnimating ? 0 : 50)
+                .offset(y: isAnimating ? 0 : 30)
                 .opacity(isAnimating ? 1 : 0)
-                .animation(.easeOut(duration: 0.8).delay(0.5), value: isAnimating)
+                .animation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.5), value: isAnimating)
                 
                 Spacer()
                 
@@ -130,9 +139,9 @@ struct Onboarding2View: View {
                         .cornerRadius(40)
                 }
                 .responsivePadding(edge: .bottom, fraction: 10)
-                .offset(y: isAnimating ? 0 : 30)
+                .scaleEffect(isAnimating ? 1 : 0.9)
                 .opacity(isAnimating ? 1 : 0)
-                .animation(.easeOut(duration: 0.8).delay(0.6), value: isAnimating)
+                .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.6), value: isAnimating)
             }
         }
         .onAppear {

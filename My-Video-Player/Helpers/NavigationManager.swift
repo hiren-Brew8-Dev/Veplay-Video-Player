@@ -12,6 +12,8 @@ enum NavigationDestination: Hashable {
     case onboarding1
     case onboarding2
     case onboarding3
+    case onboarding4
+    case thanksForDownloading
     case rating
     case dashboard
 }
