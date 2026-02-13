@@ -37,7 +37,7 @@ struct VideoCardView: View {
             
             // Gradient Overlay
             LinearGradient(
-                colors: [.black.opacity(0), .black.opacity(0.8)],
+                colors: [.black.opacity(0), .black.opacity(0.9)],
                 startPoint: .center,
                 endPoint: .bottom
             )
@@ -68,9 +68,15 @@ struct VideoCardView: View {
                         Button(action: { onMenuAction?() }) {
                             ZStack {
                                 Circle()
-                                    .fill(Color.black.opacity(0.5))
+                                    .fill(.ultraThinMaterial)
+                                    .background(.black.opacity(0.4))
                                     .frame(width: 32, height: 32)
-                                
+                                    .clipShape(.circle)
+                                    .overlay {
+                                        Circle()
+                                            .stroke(style: StrokeStyle(lineWidth: 1))
+                                            .fill(.white.opacity(0.1))
+                                    }
                                 Image(systemName: "ellipsis")
                                     .rotationEffect(.degrees(90))
                                     .font(.system(size: 14, weight: .bold))
@@ -86,28 +92,30 @@ struct VideoCardView: View {
                 // Bottom Row: Title & Metadata + Duration
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(resolvedTitle?.truncated(ext: video.url?.pathExtension ?? "") ?? video.truncatedTitle)
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                            .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
+                        HStack {  Text(resolvedTitle?.truncated(ext: video.url?.pathExtension ?? "") ?? video.truncatedTitle)
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
+                            
+                            
+                            Spacer()
+                            
+                            // Duration Pill
+                            Text(formatDuration(video.duration))
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.black.opacity(0.9))
+                                .cornerRadius(8)
+                        }
                         
                         Text("\(formatDate(video.creationDate)) • \(formatBytes(video.fileSizeBytes))")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.white.opacity(0.8))
                             .lineLimit(1)
                     }
-                    
-                    Spacer()
-                    
-                    // Duration Pill
-                    Text(formatDuration(video.duration))
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.black.opacity(0.6))
-                        .cornerRadius(8)
                 }
                 .padding(12)
             }

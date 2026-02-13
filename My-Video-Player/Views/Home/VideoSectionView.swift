@@ -32,6 +32,9 @@ struct VideoSectionView: View {
                     if viewModel.isSelectionMode {
                         selectionHeader
                     } else if !viewModel.groupedImportedVideos.isEmpty && !viewModel.isInitialLoading {
+                         Divider()
+                             .background(Color.white.opacity(0.1))
+                         
                          // Utility Row (Sort, View Mode, Selection) - Fixed
                         utilityRow
                             .padding(.horizontal, AppDesign.Icons.horizontalPadding)
@@ -144,7 +147,7 @@ struct VideoSectionView: View {
             
             Spacer()
             
-            HStack(spacing: 16) {
+            HStack(spacing: isIpad ? 10 : 8) {
                 // View Mode Toggle (Direct Icon)
                 Button(action: {
                     withAnimation {
@@ -161,6 +164,12 @@ struct VideoSectionView: View {
                             .foregroundColor(.white)
                     }
                 }
+                
+                // Vertical Divider
+                Rectangle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 1, height: 24)
+                    
                 
                 // Selection Mode
                 Button(action: {

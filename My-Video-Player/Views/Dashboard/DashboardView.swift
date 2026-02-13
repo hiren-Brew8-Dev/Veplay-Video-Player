@@ -225,7 +225,7 @@ struct DashboardView: View {
             
             Spacer()
             
-            HStack(spacing: isIpad ? 20 : 12) {
+            HStack(spacing: isIpad ? 20 : 16) {
                 // Settings Button (Trailing, before 3-dots)
                 Button(action: {
                     viewModel.navigationPath.append("Settings")
