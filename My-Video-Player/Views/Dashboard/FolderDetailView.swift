@@ -79,12 +79,8 @@ struct FolderDetailView: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [.premiumGradientTop, .premiumGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .edgesIgnoringSafeArea(.all)
+            Color.homeBackground
+                .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 // Header
@@ -92,6 +88,13 @@ struct FolderDetailView: View {
                     selectionHeader
                 } else {
                     standardHeader
+                }
+                
+                if !viewModel.isSelectionMode && !displayVideos.isEmpty {
+                    utilityRow
+                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                        .padding(.top, 10)
+                        .padding(.bottom, 10)
                 }
                 
                 if isLoading {
@@ -201,6 +204,66 @@ struct FolderDetailView: View {
     
     // MARK: - Subviews
     
+    private var utilityRow: some View {
+        HStack {
+            // Sort Button
+            Button(action: {
+                withAnimation {
+                    showSortSheet = true
+                }
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Sort by")
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(20)
+                .foregroundColor(.white)
+            }
+            
+            Spacer()
+            
+            HStack(spacing: 16) {
+                // View Mode Toggle (Direct Icon)
+                Button(action: {
+                    withAnimation {
+                        isGridView.toggle()
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                }
+                
+                // Selection Mode
+                Button(action: {
+                    withAnimation {
+                        viewModel.isSelectionMode = true
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "pencil")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+        }
+    }
+
     var standardHeader: some View {
         HStack {
             Button(action: {
@@ -245,33 +308,6 @@ struct FolderDetailView: View {
                         }
                     }
                     
-                    Menu {
-                        Button(action: { viewModel.isSelectionMode = true }) {
-                            Label("Select", systemImage: "checkmark.circle")
-                        }
-                        Divider()
-                        Picker(selection: $isGridView, label: EmptyView()) {
-                            Label("Grid", systemImage: "square.grid.2x2").tag(true)
-                            Label("List", systemImage: "list.bullet").tag(false)
-                        }
-                        .pickerStyle(.inline)
-                        
-                        Divider()
-                        Button(action: { showSortSheet = true }) {
-                            Label("Sort", systemImage: "arrow.up.arrow.down")
-                        }
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.premiumCircleBackground)
-                                .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
-                            
-                            Image(systemName: "ellipsis")
-                                .rotationEffect(.degrees(90))
-                                .font(.system(size: isIpad ? 22 : 16, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
                 }
             }
         }
@@ -403,6 +439,7 @@ struct FolderDetailView: View {
                             }
                             .padding()
                             .background(Color.homeCardBackground.opacity(0.3))
+                            .contentShape(Rectangle())
                         }
                     }
                 }
@@ -489,15 +526,16 @@ struct FolderDetailView: View {
     private func sectionHeaderLabel(_ text: String) -> some View {
         HStack {
             Text(text.uppercased())
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.homeTextSecondary)
-                .padding(.horizontal, 4)
+                .font(.system(size: 10, weight: .black))
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
             Spacer()
         }
-        .padding(.top, 5)
-        .padding(.bottom, 5)
+        .padding(.vertical, 8)
         .padding(.horizontal, 10)
-        .background(Color.clear)
     }
     
     private func gridVideoItem(_ video: VideoItem, isLandscape: Bool, width: CGFloat) -> some View {
@@ -560,8 +598,8 @@ struct FolderDetailView: View {
 
                 selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareVideos(ids: selectedVideoIds) })
             }
-            .padding(.top, 16)
-            .padding(.bottom, 34) // Explicit safe area space
+            .padding(.top, isIpad ? 20 : 12)
+            .padding(.bottom, max(10, UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0))
             .background(
                 LinearGradient(
                     colors: [.premiumGradientTop, .premiumGradientBottom],

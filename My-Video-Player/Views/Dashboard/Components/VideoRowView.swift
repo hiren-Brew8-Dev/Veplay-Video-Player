@@ -96,6 +96,7 @@ struct VideoRowView: View {
         }
         .padding(.horizontal, AppDesign.Icons.horizontalPadding)
         .padding(.vertical, 10)
+        .background(Color.homeBackground.opacity(0.001)) // Foolproof tap capture
         .contentShape(Rectangle())
         .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.02 : 1.0)
         .animation(.spring(), value: viewModel?.highlightVideoId)

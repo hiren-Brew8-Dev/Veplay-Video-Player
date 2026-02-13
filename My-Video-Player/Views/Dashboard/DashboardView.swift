@@ -36,12 +36,12 @@ struct DashboardView: View {
     var body: some View {
         ZStack {
             TabView(selection: $viewModel.selectedTab) {
-                // MARK: Home
-                Tab("Home", systemImage: "house", value: .home) {
+                // MARK: Home (Videos)
+                Tab("Videos", systemImage: "play.circle", value: .home) {
                     NavigationStack(path: $viewModel.navigationPath) {
                         VStack(spacing: 0) {
                             if !viewModel.isSelectionMode {
-                                headerView
+                                headerView(title: "Videos")
                             }
                             VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
                         }
@@ -67,7 +67,7 @@ struct DashboardView: View {
                     NavigationStack(path: $viewModel.navigationPath) {
                         VStack(spacing: 0) {
                             if !viewModel.isSelectionMode {
-                                headerView
+                                headerView(title: "Gallery")
                             }
                             AlbumSectionView(viewModel: viewModel)
                         }
@@ -87,6 +87,25 @@ struct DashboardView: View {
                         }
                     }
                 }
+
+                // MARK: Folders
+                Tab("Folders", systemImage: "folder", value: .folders) {
+                    NavigationStack(path: $viewModel.navigationPath) {
+                        VStack(spacing: 0) {
+                             if !viewModel.isSelectionMode {
+                                headerView(title: "Folders")
+                            }
+                            FolderSectionView(viewModel: viewModel)
+                        }
+                        .background(Color.homeBackground)
+                        .navigationBarHidden(true)
+                        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+                         .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
+                            destinationView(for: destination)
+                                .toolbar(.hidden, for: .tabBar)
+                        }
+                    }
+                }
                 
                 // MARK: Search
                 Tab(value: .search, role: .search) {
@@ -97,9 +116,8 @@ struct DashboardView: View {
                 }
             }
             .accentColor(.homeAccent)
-            // .toolbar modifier removed from here
             
-            if showTabBar && viewModel.selectedTab == .home {
+            if showTabBar && (viewModel.selectedTab == .home || viewModel.selectedTab == .folders) {
                 PlusButtonOverlay(viewModel: viewModel)
             }
             
@@ -192,13 +210,15 @@ struct DashboardView: View {
     }
 
     private var headerView: some View {
+        headerView(title: "Videos")
+    }
+
+    private func headerView(title: String) -> some View {
         HStack(spacing: 0) {
-            // Logo & Title
-            HStack(spacing: AppDesign.Icons.internalSpacing) {
-                Image(systemName: "play.circle.fill")
-                    .appIconStyle(size: AppDesign.Icons.headerSize)
-                Text("PLAYER")
-                    .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
+            // Title Only (No Icon)
+            HStack(spacing: 0) {
+                Text(title)
+                    .font(.system(size: AppDesign.Icons.headerSize + 4, weight: .bold)) // Slightly larger text
                     .foregroundColor(.homeTextPrimary)
             }
             .padding(.leading, AppDesign.Icons.horizontalPadding)
@@ -221,47 +241,15 @@ struct DashboardView: View {
                     }
                 }
                 
-                // Ellipsis Menu (Shown only on Home/Video for now)
-                if viewModel.selectedTab == .home && !viewModel.importedVideos.isEmpty {
-                    Menu {
-                        Button(action: { 
-                            withAnimation { viewModel.isSelectionMode = true }
-                        }) {
-                            Label("Select", systemImage: "checkmark.circle")
-                        }
-                        
-                        Divider()
-                        
-                        Picker(selection: Binding(
-                            get: { viewModel.isGridView },
-                            set: { viewModel.isGridView = $0 }
-                        ), label: EmptyView()) {
-                            Label("Grid", systemImage: "square.grid.2x2").tag(true)
-                            Label("List", systemImage: "list.bullet").tag(false)
-                        }
-                        .pickerStyle(.inline)
-                        
-                        Divider()
-                        
-                        Button(action: { 
-                            withAnimation {
-                                viewModel.showSortSheet = true 
-                            }
-                        }) {
-                            Label("Sort by", systemImage: "arrow.up.arrow.down")
-                        }
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.premiumCircleBackground)
-                                .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
-                            
-                            Image(systemName: "ellipsis")
-                                .rotationEffect(.degrees(90))
-                                .font(.system(size: isIpad ? 22 : 16, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
+                // Premium/Crown Icon (New)
+                ZStack {
+                     Circle()
+                        .fill(Color.premiumCircleBackground)
+                        .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
+                    
+                    Image(systemName: "crown.fill")
+                        .font(.system(size: isIpad ? 20 : 14, weight: .bold))
+                        .foregroundColor(.yellow)
                 }
             }
             .padding(.trailing, AppDesign.Icons.horizontalPadding)
@@ -547,9 +535,10 @@ struct DashboardView: View {
     }
 }
 
-struct PlusButtonOverlay: View {
+private struct PlusButtonOverlay: View {
     @ObservedObject var viewModel: DashboardViewModel
-    
+    var isIpad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+
     var body: some View {
         VStack {
             Spacer()
@@ -558,59 +547,47 @@ struct PlusButtonOverlay: View {
                 Spacer()
                 
                 ZStack {
-                    // Static Background (No Glitch)
-                    ZStack {
-                        Circle()
-                            .fill(.ultraThinMaterial)
-                            .environment(\.colorScheme, .dark)
-                        
-                        Circle()
-                            .fill(Color.white.opacity(0.05))
-                    }
-                    .frame(width: isIpad ? 64 : 56, height: isIpad ? 64 : 56)
-                    .overlay(
-                        Circle()
-                            .stroke(
-                                LinearGradient(
-                                    colors: [.white.opacity(0.5), .white.opacity(0.1)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1
-                            )
-                    )
-                    .shadow(color: Color.black.opacity(0.4), radius: isIpad ? 12 : 10, x: 0, y: 5)
-                    
-                    // Interactive Menu (Overlay)
-                    Menu {
-                        Button(action: { viewModel.showCreateFolderAlert = true }) {
-                            Label("Create Folder", systemImage: "folder.badge.plus")
+                    // Interactive Menu or Direct Button
+                    if viewModel.selectedTab == .folders {
+                        // Direct Button for Folders
+                        Button(action: { 
+                            viewModel.showCreateFolderAlert = true 
+                        }) {
+                            plusButtonLabel
                         }
-                        Button(action: { viewModel.showPhotoPicker = true }) {
-                            Label("Import from Photos", systemImage: "photo.on.rectangle")
+                    } else {
+                        // Menu for Videos (Home)
+                        Menu {
+                            Button(action: { viewModel.showPhotoPicker = true }) {
+                                Label("Import from Photos", systemImage: "photo.on.rectangle")
+                            }
+                            Button(action: { viewModel.showFileImporter = true }) {
+                                Label("Add From iOS Files", systemImage: "plus.rectangle.on.folder")
+                            }
+                        } label: {
+                            plusButtonLabel
                         }
-                        Button(action: { viewModel.showFileImporter = true }) {
-                            Label("Add From iOS Files", systemImage: "plus.rectangle.on.folder")
-                        }
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.clear)
-                                .contentShape(Circle())
-                            
-                            Image(systemName: "plus")
-                                .font(.system(size: isIpad ? 28 : 24, weight: .medium))
-                                .foregroundColor(.white)
-                        }
-                        .frame(width: isIpad ? 64 : 56, height: isIpad ? 64 : 56)
                     }
                 }
             }
-            .padding(.trailing, AppDesign.Icons.horizontalPadding + (isIpad ? 16 : 0))
+            .padding(.trailing, 22 + (isIpad ? 16 : 0)) // Increased from 16 to 22 for visual center over Search icon
             .padding(.bottom, (UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0) + (isIpad ? 80 : 60))
             .ignoresSafeArea(.keyboard)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
+    }
+    
+    private var plusButtonLabel: some View {
+        ZStack {
+            Circle()
+                .fill(Color.homeAccent)
+                .contentShape(Circle())
+            
+            Image(systemName: "plus")
+                .font(.system(size: isIpad ? 28 : 24, weight: .bold))
+                .foregroundColor(.black)
+        }
+        .frame(width: isIpad ? 72 : 64, height: isIpad ? 72 : 64)
     }
 }
 

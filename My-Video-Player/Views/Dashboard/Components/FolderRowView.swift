@@ -56,7 +56,7 @@ struct FolderRowView: View {
                 if viewModel?.highlightFolderId == folder.id {
                     Color.orange.opacity(0.1)
                 } else {
-                    Color.clear
+                    Color.homeBackground.opacity(0.001) // Capture taps
                 }
             }
         )
@@ -69,5 +69,6 @@ struct FolderRowView: View {
                 }
             }
         )
+        .contentShape(Rectangle())
     }
 }

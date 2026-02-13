@@ -16,142 +16,122 @@ struct VideoCardView: View {
     
     var body: some View {
         let size = itemSize
-        let padding: CGFloat = 0 // Remove internal extra padding to fit grid better
-        let thumbnailSize = size // Fill the calculated grid item size
         
-        VStack(alignment: .leading, spacing: 12) {
-            // 1. Thumbnail Section
-            ZStack(alignment: .bottomTrailing) {
-                if let thumb = thumbnail {
-                    Image(uiImage: thumb)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
-                        .clipped()
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                        )
-                    
-                } else {
-                    ZStack {
-                        Color.white.opacity(0.05)
-                        Image(systemName: "video.fill")
-                            .font(.system(size: isIpad ? 50 : 30))
-                            .foregroundColor(.white.opacity(0.2))
-                    }
-                    .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
+        ZStack(alignment: .bottom) {
+            // 1. Thumbnail Background
+            if let thumb = thumbnail {
+                Image(uiImage: thumb)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size * 1.1) // Slightly taller aspect ratio if needed, or just square/set by grid
                     .clipped()
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
+            } else {
+                ZStack {
+                    Color.premiumCardBackground
+                    Image(systemName: "video.fill")
+                        .font(.system(size: 40))
+                        .foregroundColor(.white.opacity(0.2))
                 }
-                
-                // Duration Overlay
-                Text(formatDuration(video.duration))
-                    .font(.system(size: isIpad ? 14 : 10, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.black.opacity(0.7))
-                    .cornerRadius(4)
-                    .padding(14)
-                
-                // Selection Overlay
-                if isSelectionMode {
-                    VStack {
-                        HStack {
-                            Spacer()
+                .frame(width: size, height: size * 1.1)
+            }
+            
+            // Gradient Overlay
+            LinearGradient(
+                colors: [.black.opacity(0), .black.opacity(0.8)],
+                startPoint: .center,
+                endPoint: .bottom
+            )
+            .frame(height: size * 0.6)
+            
+            // 2. Info Overlay
+            VStack(spacing: 0) {
+                // Top Row: Menu / Selection
+                HStack {
+                    Spacer()
+                    if isSelectionMode {
+                        ZStack {
+                            Circle()
+                                .fill(isSelected ? Color.homeAccent : Color.black.opacity(0.5))
+                                .frame(width: 28, height: 28)
+                            
+                            if isSelected {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.black)
+                            } else {
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 1.5)
+                                    .frame(width: 28, height: 28)
+                            }
+                        }
+                    } else {
+                        Button(action: { onMenuAction?() }) {
                             ZStack {
                                 Circle()
-                                    .fill(isSelected ? Color.homeAccent : Color.homeBackground.opacity(0.3))
-                                    .frame(width: AppDesign.Icons.selectionIconSize, height: AppDesign.Icons.selectionIconSize)
+                                    .fill(Color.black.opacity(0.5))
+                                    .frame(width: 32, height: 32)
                                 
-                                if isSelected {
-                                    Image(systemName: "checkmark")
-                                    .font(.system(size: isIpad ? 16 : 12, weight: .bold))
-                                    .foregroundColor(.homeTextPrimary)
-                                } else {
-                                    Circle()
-                                        .stroke(Color.homeTextPrimary, lineWidth: 1.5)
-                                        .frame(width: 24, height: 24)
-                                }
+                                Image(systemName: "ellipsis")
+                                    .rotationEffect(.degrees(90))
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
                             }
-                            .padding(14) // Adjusted for thumbnail internal padding
-                        }
-                        Spacer()
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 8)
-            .padding(.horizontal, 8) // This gives equal spacing on both sides
-            
-            // 2. Info Section
-            HStack(alignment: .center, spacing: 0) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(resolvedTitle?.truncated(ext: video.url?.pathExtension ?? "") ?? video.truncatedTitle)
-                        .font(.system(size: isIpad ? 20 : 14, weight: .bold))
-                        .foregroundColor(.homeTextPrimary)
-                        .lineLimit(1)
-                    
-                    HStack(spacing: 4) {
-//                        Text(formatDuration(video.duration))
-//                        Text("•")
-                        Text(formatDate(video.creationDate))
-                        if video.asset == nil { // Only show file size for imported/local videos
-                            Text("•")
-                            Text(formatBytes(video.fileSizeBytes))
                         }
                     }
-                    .font(.system(size: isIpad ? 14 : 10, weight: .medium)) // Slightly smaller to fit time
-                    .foregroundColor(.homeTextSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
                 }
+                .padding(10)
                 
                 Spacer()
                 
-                if !isSelectionMode {
-                    Button(action: { onMenuAction?() }) {
-                        Image(systemName: "ellipsis")
-                            .rotationEffect(.degrees(90))
-                            .font(.system(size: isIpad ? 20 : 14, weight: .bold))
-                            .foregroundColor(.homeTextPrimary)
-                            .padding(8)
-                            .contentShape(Circle())
+                // Bottom Row: Title & Metadata + Duration
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(resolvedTitle?.truncated(ext: video.url?.pathExtension ?? "") ?? video.truncatedTitle)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
+                        
+                        Text("\(formatDate(video.creationDate)) • \(formatBytes(video.fileSizeBytes))")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.white.opacity(0.8))
+                            .lineLimit(1)
                     }
-                    .buttonStyle(.scalable)
+                    
+                    Spacer()
+                    
+                    // Duration Pill
+                    Text(formatDuration(video.duration))
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(8)
                 }
+                .padding(12)
             }
-            .padding(.leading, 12)
-            .padding(.trailing, 0)
-            .padding(.bottom, 8)
         }
-        .background(
-            ZStack {
-                Color.premiumCardBackground
-                if viewModel?.highlightVideoId == video.id {
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.orange, lineWidth: 2)
-                }
-            }
-        )
+        .frame(width: size, height: size * 1.1)
         .cornerRadius(20)
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.premiumCardBorder, lineWidth: 1)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
         )
-        .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.05 : 1.0)
-        .animation(.spring(), value: viewModel?.highlightVideoId)
+        // Highlight effect
+        .overlay(
+            Group {
+                if viewModel?.highlightVideoId == video.id {
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.orange, lineWidth: 3)
+                }
+            }
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 20))
         .onAppear {
             loadThumbnail()
             loadTitle()
         }
-        .contentShape(RoundedRectangle(cornerRadius: 20))
     }
     
     // MARK: - Helpers

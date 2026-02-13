@@ -31,6 +31,7 @@ class DashboardViewModel: ObservableObject {
     
     enum MainTabs: String {
         case home = "Home"
+        case folders = "Folders"
         case gallery = "Gallery"
         case search = "Search"
     }
@@ -144,6 +145,18 @@ class DashboardViewModel: ObservableObject {
     }
     @Published var folderSortOptionRaw: String = UserDefaults.standard.string(forKey: "folderSortOptionRaw") ?? "Newest First" {
         didSet { UserDefaults.standard.set(folderSortOptionRaw, forKey: "folderSortOptionRaw") }
+    }
+    
+    // Grid View Toggle for Folders
+    @Published var isFolderGridView: Bool = {
+        if UserDefaults.standard.object(forKey: "isFolderGridView") == nil {
+            return true
+        }
+        return UserDefaults.standard.bool(forKey: "isFolderGridView")
+    }() {
+        didSet {
+            UserDefaults.standard.set(isFolderGridView, forKey: "isFolderGridView")
+        }
     }
     
     // Performance

@@ -12,15 +12,16 @@ struct FolderSectionView: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [.premiumGradientTop, .premiumGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .edgesIgnoringSafeArea(.all)
+            Color.homeBackground
+                .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                headerView
+                if !viewModel.folders.isEmpty {
+                    utilityRow
+                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                        .padding(.top, 10)
+                        .padding(.bottom, 10)
+                }
                 
                 if viewModel.folders.isEmpty {
                     emptyStateView
@@ -67,76 +68,48 @@ struct FolderSectionView: View {
         .navigationBarBackButtonHidden(true)
     }
     
-    private var headerView: some View {
+    private var utilityRow: some View {
         HStack {
+            // Sort Button
             Button(action: {
-                if !viewModel.navigationPath.isEmpty {
-                    viewModel.navigationPath.removeLast()
+                withAnimation {
+                    showSortSheet = true
                 }
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.premiumCircleBackground)
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Sort by")
                 }
-            }
-            
-            Text("All Folders")
-                .font(.system(size: 18, weight: .bold))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(20)
                 .foregroundColor(.white)
+            }
             
             Spacer()
             
-            HStack(spacing: 12) {
-                if !viewModel.folders.isEmpty {
-                    Menu {
-                        Picker(selection: $viewModel.isGridView, label: EmptyView()) {
-                            Label("Grid View", systemImage: "square.grid.2x2").tag(true)
-                            Label("List View", systemImage: "list.bullet").tag(false)
-                        }
-                        .pickerStyle(.inline)
-                        
-                        Divider()
-                        
-                        Button(action: { showSortSheet = true }) {
-                            Label("Sort by", systemImage: "arrow.up.arrow.down")
-                        }
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.premiumCircleBackground)
-                                .frame(width: 40, height: 40)
-                            
-                            Image(systemName: "ellipsis")
-                                .rotationEffect(.degrees(90))
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                }
-                
+            HStack(spacing: 16) {
+                // View Mode Toggle (Direct Icon)
                 Button(action: {
-                    viewModel.showCreateFolderAlert = true
+                    withAnimation {
+                        viewModel.isFolderGridView.toggle()
+                    }
                 }) {
                     ZStack {
                         Circle()
-                            .fill(Color.premiumCircleBackground)
+                            .fill(Color.white.opacity(0.1))
                             .frame(width: 40, height: 40)
                         
-                        Image(systemName: "plus")
-                            .font(.system(size: 18, weight: .bold))
+                        Image(systemName: viewModel.isFolderGridView ? "list.bullet" : "square.grid.2x2")
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                     }
                 }
             }
         }
-        .padding(.horizontal)
-        .padding(.bottom, 10)
-        .background(Color.clear)
+        
     }
     
     private var emptyStateView: some View {
@@ -194,7 +167,7 @@ struct FolderSectionView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     Group {
-                        if viewModel.isGridView {
+                        if viewModel.isFolderGridView {
                             foldersGrid(isLandscape: isLandscape, currentWidth: currentWidth)
                         } else {
                             foldersList()

@@ -31,35 +31,29 @@ struct VideoSectionView: View {
                     // Header
                     if viewModel.isSelectionMode {
                         selectionHeader
+                    } else if !viewModel.groupedImportedVideos.isEmpty && !viewModel.isInitialLoading {
+                         // Utility Row (Sort, View Mode, Selection) - Fixed
+                        utilityRow
+                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                            .padding(.top, 10)
+                            .padding(.bottom, 10)
+                            .background(Color.homeBackground) // Ensure opaque background
                     }
                     
                     ScrollViewReader { proxy in
                         ScrollView {
                             VStack(spacing: 24) {
-                                // Folders Section
-                                if !viewModel.isSelectionMode {
-                                    foldersSection(isLandscape: isLandscape)
-                                        .transition(.asymmetric(
-                                            insertion: .move(edge: .top).combined(with: .opacity),
-                                            removal: .move(edge: .top).combined(with: .opacity)
-                                        ))
-                                }
+                                // Content Start
                                 
                                 // Imported Videos Section
-                                VStack(alignment: .leading, spacing: 15) {
-                                    Text("Imported Videos")
-                                        .font(.system(size: isIpad ? 24 : 18, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-                                    
-                                    if viewModel.importedVideos.isEmpty && !viewModel.isImporting && !viewModel.isInitialLoading {
-                                        emptyStateView
-                                    } else if !viewModel.isInitialLoading || !viewModel.importedVideos.isEmpty {
-                                        if isGridView {
-                                            videosGrid(isLandscape: isLandscape, width: currentWidth)
-                                        } else {
-                                            listView(isLandscape: isLandscape)
-                                        }
+                                if viewModel.importedVideos.isEmpty && !viewModel.isImporting && !viewModel.isInitialLoading {
+                                    emptyStateView
+                                        .frame(minHeight: geometry.size.height * 0.6)
+                                } else if !viewModel.isInitialLoading || !viewModel.importedVideos.isEmpty {
+                                    if isGridView {
+                                        videosGrid(isLandscape: isLandscape, width: currentWidth)
+                                    } else {
+                                        listView(isLandscape: isLandscape)
                                     }
                                 }
                             }
@@ -127,103 +121,68 @@ struct VideoSectionView: View {
     
     // MARK: - Headers
     
-    private func foldersSection(isLandscape: Bool) -> some View {
-        let cardSize: CGFloat = isIpad ? (isLandscape ? 180 : 200) : 150
-        
-        return VStack(alignment: .leading, spacing: 15) {
-            HStack {
-                Text("Folders")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                Button(action: {
-                    viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.allFolders)
-                }) {
-                    HStack(spacing: 4) {
-                        Text("View All")
-                        Image(systemName: "chevron.right")
-                    }
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.homeAccent)
+    private var utilityRow: some View {
+        HStack {
+            // Sort Button
+            Button(action: {
+                withAnimation {
+                    showSortSheet = true
                 }
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Sort by")
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(20)
+                .foregroundColor(.white)
             }
-            .padding(.horizontal, 16)
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    // Sticky Add Folder Card
-                    AddFolderCardView(action: {
-                        viewModel.showCreateFolderAlert = true
-                    }, size: cardSize)
-                    .padding(.leading, AppDesign.Icons.horizontalPadding)
-                    
-                    // Folder Cards
-                    ForEach(viewModel.sortedFolders) { folder in
-                        Button(action: {
-                            viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.folderDetail(folder))
-                        }) {
-                            FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
-                                triggerFolderActionSheet(for: folder)
-                            }, size: cardSize)
-                        }
+            Spacer()
+            
+            HStack(spacing: 16) {
+                // View Mode Toggle (Direct Icon)
+                Button(action: {
+                    withAnimation {
+                        isGridView.toggle()
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                }
+                
+                // Selection Mode
+                Button(action: {
+                    withAnimation {
+                        viewModel.isSelectionMode = true
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "pencil") // Using pencil as per image analysis (edit/select)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
                     }
                 }
             }
         }
-        .alert("Rename Folder", isPresented: $viewModel.showRenameFolderAlert) {
-            TextField("New Name", text: $viewModel.renameFolderName)
-            Button("Cancel", role: .cancel) {
-                viewModel.folderToRename = nil
-            }
-            Button("Rename") {
-                if let folder = viewModel.folderToRename {
-                    viewModel.renameFolder(folder, to: viewModel.renameFolderName)
-                }
-                viewModel.folderToRename = nil
-            }
-        } message: {
-            Text("Enter a new name for this folder")
-        }
-        .alert("Delete Folder", isPresented: $viewModel.showDeleteFolderAlert) {
-            Button("Cancel", role: .cancel) {
-                viewModel.folderToDelete = nil
-            }
-            Button("Delete", role: .destructive) {
-                if let folder = viewModel.folderToDelete {
-                    viewModel.deleteFolder(folder)
-                }
-                viewModel.folderToDelete = nil
-            }
-        } message: {
-            if let folder = viewModel.folderToDelete {
-                Text("Are you sure you want to delete '\(folder.name)'? All videos inside will be removed.")
-            } else {
-                Text("Are you sure you want to delete this folder?")
-            }
-        }
     }
     
-    
-    private func triggerFolderActionSheet(for folder: Folder) {
-        viewModel.actionSheetTarget = .folder(folder)
-        viewModel.actionSheetItems = [
-            CustomActionItem(title: "Rename", icon: "pencil", role: nil, action: {
-                viewModel.folderToRename = folder
-                viewModel.renameFolderName = folder.name
-                viewModel.showRenameFolderAlert = true
-            }),
-            CustomActionItem(title: "Delete", icon: "trash", role: .destructive, action: {
-                viewModel.folderToDelete = folder
-                viewModel.showDeleteFolderAlert = true
-            })
-        ]
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            viewModel.showActionSheet = true
-        }
-    }
-    
+    // Previous Folders Code Removed
+
     private var expandedHeader: some View {
         HStack {
             Text("Videos")
@@ -353,8 +312,8 @@ struct VideoSectionView: View {
                 selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareSelectedVideos() })
             }
             
-            .padding(.top, isIpad ? 24 : 16)
-            .padding(.bottom, (UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0) + (isIpad ? 40 : 34)) // Explicit safe area space
+            .padding(.top, isIpad ? 20 : 12)
+            .padding(.bottom, max(10, UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0))
             .background(
                 LinearGradient(
                     colors: [.premiumGradientTop, .premiumGradientBottom],
@@ -395,7 +354,7 @@ struct VideoSectionView: View {
                     .foregroundColor(viewModel.selectedVideoIds.isEmpty ? .white.opacity(0.3) : .white)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10) // Larger hit area
+            .padding(.vertical, 6) // Reduced from 10
         }
         .disabled(viewModel.selectedVideoIds.isEmpty)
         .opacity(viewModel.selectedVideoIds.isEmpty ? 0.5 : 1.0)
@@ -560,15 +519,16 @@ struct VideoSectionView: View {
         } else {
             HStack {
                 Text(formattedSectionDate(date).uppercased())
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.homeTextSecondary)
-                    .padding(.horizontal, 4)
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
                 Spacer()
             }
-            .padding(.top, 5)
-            .padding(.bottom, 5)
+            .padding(.vertical, 8)
             .padding(.horizontal, 10)
-            .background(Color.clear)
         }
     }
     
