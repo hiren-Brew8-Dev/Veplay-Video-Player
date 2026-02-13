@@ -27,11 +27,11 @@ struct AddVideoCardView: View {
                 
                 // Gradient Overlay
                 LinearGradient(
-                    colors: [.black.opacity(0), .black.opacity(0.9)],
-                    startPoint: .center,
+                    colors: [.black.opacity(0), .black.opacity(0.5), .black.opacity(0.95)],
+                    startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(height: size * 0.6)
+                .frame(height: size * 0.75)
                 
                 // 2. Info Overlay
                 VStack(spacing: 0) {
@@ -52,7 +52,7 @@ struct AddVideoCardView: View {
                         
                         Spacer()
                     }
-                    .padding(12)
+                    .padding(16)
                 }
             }
             .frame(width: size, height: size * 1.1)

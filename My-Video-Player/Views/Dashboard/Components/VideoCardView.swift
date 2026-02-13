@@ -37,11 +37,11 @@ struct VideoCardView: View {
             
             // Gradient Overlay
             LinearGradient(
-                colors: [.black.opacity(0), .black.opacity(0.9)],
-                startPoint: .center,
+                colors: [.black.opacity(0), .black.opacity(0.5), .black.opacity(0.95)],
+                startPoint: .top,
                 endPoint: .bottom
             )
-            .frame(height: size * 0.6)
+            .frame(height: size * 0.75)
             
             // 2. Info Overlay
             VStack(spacing: 0) {
@@ -52,16 +52,16 @@ struct VideoCardView: View {
                         ZStack {
                             Circle()
                                 .fill(isSelected ? Color.homeAccent : Color.black.opacity(0.5))
-                                .frame(width: 28, height: 28)
+                                .frame(width: 22, height: 22)
                             
                             if isSelected {
                                 Image(systemName: "checkmark")
-                                    .font(.system(size: 14, weight: .bold))
+                                    .font(.system(size: 11, weight: .bold))
                                     .foregroundColor(.black)
                             } else {
                                 Circle()
                                     .stroke(Color.white, lineWidth: 1.5)
-                                    .frame(width: 28, height: 28)
+                                    .frame(width: 22, height: 22)
                             }
                         }
                     } else {
@@ -117,7 +117,7 @@ struct VideoCardView: View {
                             .lineLimit(1)
                     }
                 }
-                .padding(12)
+                .padding(16)
             }
         }
         .frame(width: size, height: size * 1.1)

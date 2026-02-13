@@ -4,8 +4,14 @@ import LocalAuthentication
 struct SettingsView: View {
     @AppStorage("useFaceID") private var useFaceID = false
     @EnvironmentObject var viewModel: DashboardViewModel
+    @State private var webViewData: WebViewData? = nil
 
     @Environment(\.dismiss) var dismiss
+    
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
 
     var body: some View {
         VStack(spacing: 0) {
@@ -60,19 +66,33 @@ struct SettingsView: View {
                         }
                     }
 
-                    // Support Section
                     settingsSection(title: "Support") {
                         VStack(spacing: 0) {
-                            settingsLinkRow(icon: "doc.text.fill", title: "Privacy Policy", url: "https://example.com", iconColor: .blue)
+                            settingsActionRow(icon: "doc.text.fill", title: "Privacy Policy", iconColor: .blue) {
+                                webViewData = WebViewData(title: "Privacy Policy", url: "https://sites.google.com/view/shivshankarapps/privacy-policy")
+                            }
                             Divider().background(Color.sheetDivider).padding(.leading, 56)
-                            settingsLinkRow(icon: "scroll.fill", title: "Terms of Service", url: "https://example.com", iconColor: .orange)
+                            settingsActionRow(icon: "scroll.fill", title: "Terms of Service", iconColor: .orange) {
+                                webViewData = WebViewData(title: "Terms of Service", url: "https://sites.google.com/view/shivshankarapps/terms-conditions")
+                            }
+                            Divider().background(Color.sheetDivider).padding(.leading, 56)
+                            settingsActionRow(icon: "envelope.fill", title: "Contact Us", iconColor: .green) {
+                                webViewData = WebViewData(title: "Contact Us", url: "https://sites.google.com/view/shivshankarapps/support")
+                            }
+                            Divider().background(Color.sheetDivider).padding(.leading, 56)
+                            settingsActionRow(icon: "questionmark.circle.fill", title: "Support", iconColor: .blue) {
+                                webViewData = WebViewData(title: "Support", url: "https://sites.google.com/view/shivshankarapps/support")
+                            }
                             Divider().background(Color.sheetDivider).padding(.leading, 56)
                             settingsActionRow(icon: "heart.fill", title: "Rate App", iconColor: .red) {
-                                // Rate logic
+                                guard let writeReviewURL = URL(string: "https://apps.apple.com/app/id\(Global.shared.appID)?action=write-review") else { return }
+                                UIApplication.shared.open(writeReviewURL)
                             }
                             Divider().background(Color.sheetDivider).padding(.leading, 56)
                             settingsActionRow(icon: "square.and.arrow.up.fill", title: "Share with Friends", iconColor: .purple) {
-                                // Share logic
+                                let appLink = "https://apps.apple.com/app/id\(Global.shared.appID)"
+                                viewModel.activityItems = ["Check out this awesome video player app!", URL(string: appLink)!]
+                                viewModel.showShareSheetGlobal = true
                             }
                         }
                     }
@@ -85,21 +105,12 @@ struct SettingsView: View {
                                     Text("Version")
                                         .font(.system(size: 16, weight: .semibold))
                                         .foregroundColor(.homeTextPrimary)
-                                    Text("1.0.0 (Build 1)")
+                                    Text(appVersion)
                                         .font(.system(size: 14))
                                         .foregroundColor(.homeTextSecondary)
                                 }
                                 Spacer()
-                                Image(systemName: "info.circle.fill")
-                                    .foregroundColor(.homeTextSecondary)
                             }
-                            
-                            Divider().background(Color.sheetDivider)
-                            
-                            Text("The ultimate all-in-one video player experience. Built for speed and elegance.")
-                                .font(.system(size: 14))
-                                .foregroundColor(.homeTextSecondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .padding(16)
                     }
@@ -112,6 +123,9 @@ struct SettingsView: View {
             
         }
         .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
+        .fullScreenCover(item: $webViewData) { data in
+            URLWebView(titleName: data.title, urlString: data.url)
+        }
         .alert(isPresented: $showBiometricAlert) {
             Alert(
                 title: Text("Face ID Unavailable"),

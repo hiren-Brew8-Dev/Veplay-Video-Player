@@ -53,6 +53,14 @@ struct VideoSectionView: View {
                                     emptyStateView
                                         .frame(minHeight: geometry.size.height * 0.6)
                                 } else if !viewModel.isInitialLoading || !viewModel.importedVideos.isEmpty {
+                                    
+                                    // Rating Card Integration
+                                    if !AppReviewManager.shared.isRatingCardHidden && !viewModel.isSelectionMode {
+                                        RatingCardView()
+                                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                                            .transition(.move(edge: .top).combined(with: .opacity))
+                                    }
+
                                     if viewModel.isGridView {
                                         videosGrid(isLandscape: isLandscape, width: currentWidth)
                                     } else {
@@ -125,7 +133,24 @@ struct VideoSectionView: View {
     // MARK: - Headers
     
     private var utilityRow: some View {
-        HStack {
+        HStack(spacing: isIpad ? 12 : 8) {
+            // Selection Mode (Leading)
+            Button(action: {
+                withAnimation {
+                    viewModel.isSelectionMode = true
+                }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: "pencil")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+            }
+            
             // Sort Button
             Button(action: {
                 withAnimation {
@@ -147,45 +172,20 @@ struct VideoSectionView: View {
             
             Spacer()
             
-            HStack(spacing: isIpad ? 10 : 8) {
-                // View Mode Toggle (Direct Icon)
-                Button(action: {
-                    withAnimation {
-                        viewModel.isGridView.toggle()
-                    }
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: viewModel.isGridView ? "list.bullet" : "square.grid.2x2")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
+            // View Mode Toggle (Trailing)
+            Button(action: {
+                withAnimation {
+                    viewModel.isGridView.toggle()
                 }
-                
-                // Vertical Divider
-                Rectangle()
-                    .fill(Color.white.opacity(0.1))
-                    .frame(width: 1, height: 24)
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 40, height: 40)
                     
-                
-                // Selection Mode
-                Button(action: {
-                    withAnimation {
-                        viewModel.isSelectionMode = true
-                    }
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: "pencil") // Using pencil as per image analysis (edit/select)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
+                    Image(systemName: viewModel.isGridView ? "list.bullet" : "square.grid.2x2")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
                 }
             }
         }

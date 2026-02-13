@@ -110,67 +110,58 @@ struct AlbumCardView: View {
 
     var body: some View {
         let size = GridLayout.itemSize(for: availableWidth, isLandscape: isLandscape)
-        let thumbnailSize = size
         
-        VStack(alignment: .leading, spacing: 12) {
-            // 1. Thumbnail Section
-            ZStack(alignment: .bottomTrailing) {
-// ... existing thumbnail logic ...
-                if let image = thumbnail {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
-                        .clipped()
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                        )
-                } else {
-                    ZStack {
-                        Color.white.opacity(0.05)
-                        Image(systemName: "video.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.white.opacity(0.2))
-                    }
-                    .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
+        ZStack(alignment: .bottom) {
+            // 1. Thumbnail Background
+            if let image = thumbnail {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size * 1.1)
                     .clipped()
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
+            } else {
+                ZStack {
+                    Color.premiumCardBackground
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.system(size: 40))
+                        .foregroundColor(.white.opacity(0.2))
                 }
+                .frame(width: size, height: size * 1.1)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 8)
-            .padding(.horizontal, 8)
             
-            // 2. Info Section
-            HStack(alignment: .center, spacing: 0) {
+            // Gradient Overlay
+            LinearGradient(
+                colors: [.black.opacity(0), .black.opacity(0.5), .black.opacity(0.95)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: size * 0.75)
+            
+            // 2. Info Overlay
+            VStack(spacing: 0) {
+                Spacer()
+                
                 VStack(alignment: .leading, spacing: 4) {
                     Text(albumTitle)
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.homeTextPrimary)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
                         .lineLimit(1)
+                        .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
                     
                     Text("\(videoCount) Videos")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.homeTextSecondary)
+                        .foregroundColor(.white.opacity(0.8))
+                        .lineLimit(1)
                 }
-                
-                Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
             }
-            .padding(.leading, 12)
-            .padding(.trailing, 0)
-            .padding(.bottom, 8)
         }
-        .background(Color.premiumCardBackground)
+        .frame(width: size, height: size * 1.1)
         .cornerRadius(20)
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.premiumCardBorder, lineWidth: 1)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
         )
         .onAppear {
             fetchAlbumInfo()

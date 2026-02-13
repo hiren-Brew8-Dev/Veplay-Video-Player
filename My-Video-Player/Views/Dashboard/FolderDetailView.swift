@@ -205,7 +205,24 @@ struct FolderDetailView: View {
     // MARK: - Subviews
     
     private var utilityRow: some View {
-        HStack {
+        HStack(spacing: isIpad ? 12 : 8) {
+            // Selection Mode (Leading)
+            Button(action: {
+                withAnimation {
+                    viewModel.isSelectionMode = true
+                }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: "pencil")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+            }
+            
             // Sort Button
             Button(action: {
                 withAnimation {
@@ -222,43 +239,25 @@ struct FolderDetailView: View {
                 .frame(height: 40)
                 .background(Color.white.opacity(0.1))
                 .cornerRadius(20)
-                .foregroundColor(.white)            }
+                .foregroundColor(.white)
+            }
             
             Spacer()
             
-            HStack(spacing: 16) {
-                // View Mode Toggle (Direct Icon)
-                Button(action: {
-                    withAnimation {
-                        isGridView.toggle()
-                    }
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
+            // View Mode Toggle (Trailing)
+            Button(action: {
+                withAnimation {
+                    isGridView.toggle()
                 }
-                
-                // Selection Mode
-                Button(action: {
-                    withAnimation {
-                        viewModel.isSelectionMode = true
-                    }
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: "pencil")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
                 }
             }
         }

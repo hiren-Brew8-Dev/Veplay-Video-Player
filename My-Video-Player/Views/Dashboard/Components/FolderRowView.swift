@@ -31,29 +31,29 @@ struct FolderRowView: View {
             
             // 1. Icon Section
             ZStack {
-                Color.white.opacity(0.05)
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.black.opacity(0.4))
+                    .frame(width: isIpad ? 80 : 64, height: isIpad ? 80 : 64)
                 
                 Image(systemName: "folder.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(.homeAccent)
+                    .font(.system(size: isIpad ? 32 : 26))
+                    .foregroundColor(Color(hex: "F9CB8A"))
             }
-            .frame(width: 50, height: 50)
-            .cornerRadius(12)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
             )
             
             // 2. Info Section
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(folder.name)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: isIpad ? 22 : 16, weight: .semibold))
                     .foregroundColor(.homeTextPrimary)
                     .lineLimit(1)
                 
                 Text("\(folder.videos.count) Videos")
-                    .font(.system(size: 13))
-                    .foregroundColor(.homeTextSecondary)
+                    .font(.system(size: isIpad ? 16 : 12, weight: .medium))
+                    .foregroundColor(.white.opacity(0.6))
             }
             
             Spacer()
@@ -65,16 +65,16 @@ struct FolderRowView: View {
                 }) {
                     Image(systemName: "ellipsis")
                         .rotationEffect(.degrees(90))
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.homeTextPrimary)
-                        .padding(12)
+                        .font(.system(size: isIpad ? 20 : 14, weight: .bold))
+                        .foregroundColor(.homeTint)
+                        .padding(isIpad ? 12 : 8)
                         .contentShape(Circle())
                 }
                 .buttonStyle(.scalable)
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
         .background(
             ZStack {
                 if viewModel?.highlightFolderId == folder.id {
@@ -94,5 +94,47 @@ struct FolderRowView: View {
             }
         )
         .contentShape(Rectangle())
+    }
+}
+
+#Preview {
+    ZStack {
+        Color.homeBackground.ignoresSafeArea()
+        
+        VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 0) {
+                FolderRowView(
+                    folder: Folder(
+                        name: "Downloads",
+                        videoCount: 16,
+                        videos: []
+                    ),
+                    viewModel: nil
+                )
+                
+                Divider()
+                    .background(Color.white.opacity(0.1))
+                    .padding(.leading, 96) // Align divider past the icon
+                
+                FolderRowView(
+                    folder: Folder(
+                        name: "Movies",
+                        videoCount: 24,
+                        videos: []
+                    ),
+                    viewModel: nil
+                )
+            }
+            .background(Color.premiumCardBackground)
+            .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.premiumCardBorder, lineWidth: 1)
+            )
+            .padding(.horizontal, 16)
+            
+            Spacer()
+        }
+        .padding(.top, 40)
     }
 }

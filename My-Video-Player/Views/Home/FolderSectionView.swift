@@ -199,7 +199,24 @@ struct FolderSectionView: View {
     }
     
     private var utilityRow: some View {
-        HStack {
+        HStack(spacing: isIpad ? 12 : 8) {
+            // Selection Mode (Leading)
+            Button(action: {
+                withAnimation {
+                    viewModel.isSelectionMode = true
+                }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: "pencil")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+            }
+            
             // Sort Button
             Button(action: {
                 withAnimation {
@@ -221,48 +238,23 @@ struct FolderSectionView: View {
             
             Spacer()
             
-            HStack(spacing: isIpad ? 10 : 8) {
-                // View Mode Toggle (Direct Icon)
-                Button(action: {
-                    withAnimation {
-                        viewModel.isGridView.toggle()
-                    }
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: viewModel.isGridView ? "list.bullet" : "square.grid.2x2")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
+            // View Mode Toggle (Trailing)
+            Button(action: {
+                withAnimation {
+                    viewModel.isGridView.toggle()
                 }
-                
-                // Vertical Divider
-                Rectangle()
-                    .fill(Color.white.opacity(0.1))
-                    .frame(width: 1, height: 24)
-                
-                // Selection Mode
-                Button(action: {
-                    withAnimation {
-                        viewModel.isSelectionMode = true
-                    }
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.1))
-                            .frame(width: 40, height: 40)
-                        
-                        Image(systemName: "pencil")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
+            }) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: viewModel.isGridView ? "list.bullet" : "square.grid.2x2")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
                 }
             }
         }
-        
     }
     
     private var emptyStateView: some View {
@@ -326,7 +318,7 @@ struct FolderSectionView: View {
                             foldersList(isLandscape: isLandscape)
                         }
                     }
-                    .padding(.top, 10)
+                    .padding(.top, 0)
                 }
                 .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
             }

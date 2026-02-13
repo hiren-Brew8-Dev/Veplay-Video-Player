@@ -10,36 +10,62 @@ struct VideoPlayerApp: App {
     let cdManager = CDManager.shared
     
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("isOnboardingCompleted") private var isOnboardingCompleted = false
     @AppStorage("useFaceID") private var useFaceID = false
     @StateObject private var authService = BiometricAuthService.shared
+    @StateObject private var navigationManager = NavigationManager()
+    @StateObject private var ratingViewModel = RatingFlowViewModel.shared
     
     init() {
         configureAudioSession()
     }
     
+    @State private var showSplash = true
+    
     var body: some Scene {
         WindowGroup {
             ZStack {
-                DashboardView()
-                    .preferredColorScheme(.dark)
-                    .environment(\.managedObjectContext, cdManager.container.viewContext)
-                    .blur(radius: (useFaceID && !authService.isUnlocked) ? 15 : 0) // Blur content when locked
-                
-                if useFaceID && !authService.isUnlocked {
-                    AppLockView(onUnlock: authenticate)
+                if showSplash {
+                    SplashView()
                         .transition(.opacity)
-                        .zIndex(100)
+                } else {
+                    if !isOnboardingCompleted {
+                        NavigationStack(path: $navigationManager.path) {
+                            Onboarding1View()
+                                .navigationDestination(for: NavigationDestination.self) { destination in
+                                    switch destination {
+                                    case .onboarding1: Onboarding1View()
+                                    case .onboarding2: Onboarding2View()
+                                    case .onboarding3: Onboarding3View()
+                                    case .rating: RatingView()
+                                    case .dashboard: DashboardView()
+                                    }
+                                }
+                        }
+                    } else {
+                        DashboardView()
+                    }
                 }
             }
+            .preferredColorScheme(.dark)
+            .environment(\.managedObjectContext, cdManager.container.viewContext)
+            .environmentObject(navigationManager)
+            .environmentObject(ratingViewModel)
+            .blur(radius: (useFaceID && !authService.isUnlocked) ? 15 : 0)
             .animation(.spring(), value: authService.isUnlocked)
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        showSplash = false
+                    }
+                }
+            }
             .onChange(of: scenePhase) { oldPhase, newPhase in
                 if newPhase == .active {
-                     // Try to auth if needed
                      if useFaceID && !authService.isUnlocked {
                          authenticate()
                      }
                 } else if newPhase == .background {
-                    // Lock on background
                     if useFaceID {
                         authService.isUnlocked = false
                     }

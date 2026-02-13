@@ -104,7 +104,15 @@ struct DashboardView: View {
                             destinationView(for: destination)
                                 .toolbar(.hidden, for: .tabBar)
                         }
+                        .navigationDestination(for: String.self) { value in
+                            if value == "Settings" {
+                                SettingsView()
+                                    .toolbar(.hidden, for: .tabBar)
+                                    .navigationBarHidden(true)
+                            }
+                        }
                     }
+                    
                 }
                 
                 // MARK: Search

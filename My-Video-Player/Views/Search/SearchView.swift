@@ -194,24 +194,28 @@ struct SearchView: View {
     
     @ViewBuilder
     private func resultsSection(isLandscape: Bool, currentWidth: CGFloat) -> some View {
+        // Always show video results, even for Folders tab
+        videoResultsSection(isLandscape: isLandscape, currentWidth: currentWidth)
+    }
+
+    @ViewBuilder
+    private func videoResultsSection(isLandscape: Bool, currentWidth: CGFloat) -> some View {
         let baseVideos: [VideoItem] = {
-            let candidates: [VideoItem] = {
-                if let initialVideos = initialVideos {
-                    return initialVideos
-                }
-                
-                if viewModel.lastActiveDataTab == .home {
-                    return viewModel.allLocalSearchableVideos
-                } else {
-                    return viewModel.allGallerySearchableVideos
-                }
-            }()
+            if let initialVideos = initialVideos {
+                return initialVideos
+            }
             
-            // Filter to only include videos currently in the master lists (handles background deletion)
-            let masterIds = Set(viewModel.allLocalSearchableVideos.map { $0.id })
-                .union(viewModel.allGallerySearchableVideos.map { $0.id })
-            
-            return candidates.filter { masterIds.contains($0.id) }
+            // STRICT Context Filtering
+            if viewModel.lastActiveDataTab == .home {
+                return viewModel.importedVideos // Only Imported Videos
+            } else if viewModel.lastActiveDataTab == .gallery {
+                return viewModel.allGallerySearchableVideos // Only Gallery
+            } else if viewModel.lastActiveDataTab == .folders {
+                 // Flatten all folders to get all videos
+                 return viewModel.folders.flatMap { $0.videos }
+            } else {
+                 return []
+            }
         }()
         
         let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -221,23 +225,7 @@ struct SearchView: View {
         
         VStack(alignment: .leading, spacing: 16) {
             if filtered.isEmpty {
-                VStack(spacing: 20) {
-                    Spacer().frame(height: 100)
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.05))
-                            .frame(width: 100, height: 100)
-                        
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 44))
-                            .foregroundColor(.white.opacity(0.2))
-                    }
-                    
-                    Text("No results found for \"\(viewModel.searchText)\"")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white.opacity(0.5))
-                }
-                .frame(maxWidth: .infinity)
+                emptyResultsView
             } else {
                 if isIpad {
                     LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
@@ -301,6 +289,26 @@ struct SearchView: View {
                 }
             }
         }
+    }
+    
+    private var emptyResultsView: some View {
+        VStack(spacing: 20) {
+            Spacer().frame(height: 100)
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.05))
+                    .frame(width: 100, height: 100)
+                
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 44))
+                    .foregroundColor(.white.opacity(0.2))
+            }
+            
+            Text("No results found for \"\(viewModel.searchText)\"")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.white.opacity(0.5))
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
