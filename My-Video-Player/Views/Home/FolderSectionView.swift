@@ -80,9 +80,10 @@ struct FolderSectionView: View {
                     Image(systemName: "arrow.up.arrow.down")
                         .font(.system(size: 14, weight: .semibold))
                     Text("Sort by")
+                        .font(.system(size: 14, weight: .medium))
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .frame(height: 40)
                 .background(Color.white.opacity(0.1))
                 .cornerRadius(20)
                 .foregroundColor(.white)
@@ -161,7 +162,7 @@ struct FolderSectionView: View {
     
     private var foldersScrollView: some View {
         GeometryReader { geometry in
-            let isLandscape = geometry.size.width > geometry.size.height
+            let isLandscape = isIpad ? (geometry.size.width > geometry.size.height) : (geometry.size.width > 500)
             let currentWidth = geometry.size.width
             
             ScrollView {

@@ -163,7 +163,13 @@ class DashboardViewModel: ObservableObject {
     let imageManager = PHCachingImageManager()
     
     // Global UI State
-    @Published var showCreateFolderAlert = false
+    @Published var showCreateFolderAlert = false {
+        didSet {
+            if showCreateFolderAlert {
+                newFolderName = ""
+            }
+        }
+    }
     @Published var showPhotoPicker = false
     @Published var selectedVideoIds = Set<UUID>()
     @Published var isSharing: Bool = false
