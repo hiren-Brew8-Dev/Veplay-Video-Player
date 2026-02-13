@@ -6,8 +6,10 @@ struct FolderCardView: View {
     var onMenuAction: (() -> Void)? = nil
     var size: CGFloat = 160
     
+    var isSelectionMode: Bool = false
+    var isSelected: Bool = false
+    
     var body: some View {
-        let padding: CGFloat = 8 // Internal padding to match VideoCardView logic
         let thumbnailSize = size // Fill the calculated grid item size
         
         VStack(alignment: .leading, spacing: 12) {
@@ -22,6 +24,31 @@ struct FolderCardView: View {
                     Text("\(folder.videos.count) Videos")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.homeTextSecondary)
+                }
+                
+                if isSelectionMode {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            ZStack {
+                                Circle()
+                                    .fill(isSelected ? Color.homeAccent : Color.black.opacity(0.5))
+                                    .frame(width: 28, height: 28)
+                                
+                                if isSelected {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.black)
+                                } else {
+                                    Circle()
+                                        .stroke(Color.white, lineWidth: 1.5)
+                                        .frame(width: 28, height: 28)
+                                }
+                            }
+                            .padding(10)
+                        }
+                        Spacer()
+                    }
                 }
             }
             .frame(width: thumbnailSize - 16, height: thumbnailSize - 16)
@@ -43,17 +70,19 @@ struct FolderCardView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    onMenuAction?()
-                }) {
-                    Image(systemName: "ellipsis")
-                        .rotationEffect(.degrees(90))
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.homeTextPrimary)
-                        .padding(8)
-                        .contentShape(Circle())
+                if !isSelectionMode {
+                    Button(action: {
+                        onMenuAction?()
+                    }) {
+                        Image(systemName: "ellipsis")
+                            .rotationEffect(.degrees(90))
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.homeTextPrimary)
+                            .padding(8)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.scalable)
                 }
-                .buttonStyle(.scalable)
             }
             .padding(.leading, 12)
             .padding(.trailing, 0)

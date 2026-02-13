@@ -10,13 +10,17 @@ struct FolderSectionView: View {
     @State private var showSortSheet = false
     @Environment(\.presentationMode) var presentationMode
     
+    @State private var showDeleteSelectedAlert = false
+    
     var body: some View {
         ZStack {
             Color.homeBackground
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                if !viewModel.folders.isEmpty {
+                if viewModel.isSelectionMode {
+                    selectionHeader
+                } else if !viewModel.folders.isEmpty {
                     utilityRow
                         .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                         .padding(.top, 10)
@@ -28,6 +32,10 @@ struct FolderSectionView: View {
                 } else {
                     foldersScrollView
                 }
+            }
+            
+            if viewModel.isSelectionMode {
+                selectionActionBar
             }
         }
         .alert("Rename Folder", isPresented: $viewModel.showRenameFolderAlert) {
@@ -61,11 +69,130 @@ struct FolderSectionView: View {
                 Text("Are you sure you want to delete this folder?")
             }
         }
+        .alert("Delete Selected Folders", isPresented: $showDeleteSelectedAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                let foldersToDelete = viewModel.folders.filter { viewModel.selectedFolderIds.contains($0.id) }
+                for folder in foldersToDelete {
+                    viewModel.deleteFolder(folder)
+                }
+                viewModel.isSelectionMode = false
+                viewModel.selectedFolderIds.removeAll()
+            }
+        } message: {
+            Text("Are you sure you want to delete \(viewModel.selectedFolderIds.count) folders? This will remove all videos inside them.")
+        }
         .sheet(isPresented: $showSortSheet) {
             CustomSortingView(sortOptionRaw: $viewModel.folderSortOptionRaw, title: "All Folders")
         }
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
+        .onChange(of: viewModel.isSelectionMode) { _, isSelectionMode in
+            if !isSelectionMode {
+                viewModel.selectedFolderIds.removeAll()
+            }
+        }
+    }
+    
+    private var isAllSelected: Bool {
+        return !viewModel.folders.isEmpty && viewModel.selectedFolderIds.count == viewModel.folders.count
+    }
+    
+    private var selectionHeader: some View {
+        HStack {
+            Button(action: {
+                if isAllSelected {
+                    viewModel.selectedFolderIds.removeAll()
+                } else {
+                    viewModel.selectedFolderIds = Set(viewModel.folders.map { $0.id })
+                }
+            }) {
+                ZStack {
+                    Circle()
+                        .stroke(isAllSelected ? Color.orange : Color.white.opacity(0.3), lineWidth: 1.5)
+                        .frame(width: 24, height: 24)
+                    
+                    if isAllSelected {
+                        Circle()
+                            .fill(Color.orange)
+                            .frame(width: 14, height: 14)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+                .padding(10)
+            }
+            
+            Spacer()
+            
+            Text("Selected (\(viewModel.selectedFolderIds.count)/\(viewModel.folders.count))")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundColor(.white)
+            
+            Spacer()
+            
+            Button("Done") {
+                viewModel.isSelectionMode = false
+                viewModel.selectedFolderIds.removeAll()
+            }
+            .font(.system(size: 15, weight: .bold))
+            .foregroundColor(.orange)
+            .padding(.trailing, 10 + (isIpad ? 10 : 0))
+        }
+        .padding(.horizontal, AppDesign.Icons.horizontalPadding / 2)
+        .padding(.vertical, isIpad ? 16 : 8)
+        .background(Color.clear)
+    }
+
+    private var selectionActionBar: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            HStack(spacing: 0) {
+                Button(action: { showDeleteSelectedAlert = true }) {
+                    VStack(spacing: 8) {
+                        ZStack {
+                            Circle()
+                                .fill(viewModel.selectedFolderIds.isEmpty ? Color.white.opacity(0.05) : Color.orange.opacity(0.1))
+                                .frame(width: isIpad ? 60 : 44, height: isIpad ? 60 : 44)
+                            
+                            Image(systemName: "trash")
+                                .font(.system(size: isIpad ? 28 : 20, weight: .semibold))
+                                .foregroundColor(viewModel.selectedFolderIds.isEmpty ? .white.opacity(0.3) : .orange)
+                        }
+                        
+                        Text("Delete")
+                            .font(.system(size: isIpad ? 14 : 11, weight: .bold))
+                            .foregroundColor(viewModel.selectedFolderIds.isEmpty ? .white.opacity(0.3) : .white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                }
+                .disabled(viewModel.selectedFolderIds.isEmpty)
+                .opacity(viewModel.selectedFolderIds.isEmpty ? 0.5 : 1.0)
+            }
+            .padding(.top, isIpad ? 20 : 12)
+            .padding(.bottom, max(10, UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0))
+            .background(
+                LinearGradient(
+                    colors: [.premiumGradientTop, .premiumGradientBottom],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay(
+                VStack {
+                    Rectangle()
+                        .fill(Color.premiumCardBorder)
+                        .frame(height: 1)
+                    Spacer()
+                }
+            )
+            .clipShape(RoundedCorner(radius: 32, corners: [.topLeft, .topRight]))
+            .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: -5)
+        }
+        .ignoresSafeArea(.all, edges: .bottom)
+        .transition(.move(edge: .bottom))
     }
     
     private var utilityRow: some View {
@@ -104,6 +231,23 @@ struct FolderSectionView: View {
                             .frame(width: 40, height: 40)
                         
                         Image(systemName: viewModel.isFolderGridView ? "list.bullet" : "square.grid.2x2")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                }
+                
+                // Selection Mode
+                Button(action: {
+                    withAnimation {
+                        viewModel.isSelectionMode = true
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        
+                        Image(systemName: "pencil")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                     }
@@ -176,7 +320,7 @@ struct FolderSectionView: View {
                     }
                     .padding(.top, 10)
                 }
-                .padding(.bottom, 100)
+                .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
             }
         }
     }
@@ -185,20 +329,29 @@ struct FolderSectionView: View {
         LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
             ForEach(viewModel.sortedFolders) { folder in
                 Button(action: {
-                    viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.folderDetail(folder))
+                    handleFolderTap(folder)
                 }) {
-                    FolderCardView(folder: folder, viewModel: viewModel, onMenuAction: {
-                        viewModel.actionSheetTarget = .folder(folder)
-                        viewModel.actionSheetItems = folderActions(for: folder)
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            viewModel.showActionSheet = true
-                        }
-                    }, size: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape))
+                    FolderCardView(
+                        folder: folder,
+                        viewModel: viewModel,
+                        onMenuAction: {
+                            viewModel.actionSheetTarget = .folder(folder)
+                            viewModel.actionSheetItems = folderActions(for: folder)
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                viewModel.showActionSheet = true
+                            }
+                        },
+                        size: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape),
+                        isSelectionMode: viewModel.isSelectionMode,
+                        isSelected: viewModel.selectedFolderIds.contains(folder.id)
+                    )
                 }
                 .buttonStyle(.scalable)
                 .id(folder.id)
                 .simultaneousGesture(TapGesture().onEnded {
-                    viewModel.markFolderAsAccessed(folder)
+                    if !viewModel.isSelectionMode {
+                        viewModel.markFolderAsAccessed(folder)
+                    }
                 })
             }
         }
@@ -209,26 +362,34 @@ struct FolderSectionView: View {
         LazyVStack(spacing: 0) {
             ForEach(Array(viewModel.sortedFolders.enumerated()), id: \.element.id) { index, folder in
                 Button(action: {
-                    viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.folderDetail(folder))
+                    handleFolderTap(folder)
                 }) {
-                    FolderRowView(folder: folder, viewModel: viewModel, onMenuAction: {
-                        viewModel.actionSheetTarget = .folder(folder)
-                        viewModel.actionSheetItems = folderActions(for: folder)
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            viewModel.showActionSheet = true
-                        }
-                    })
+                    FolderRowView(
+                        folder: folder,
+                        viewModel: viewModel,
+                        onMenuAction: {
+                            viewModel.actionSheetTarget = .folder(folder)
+                            viewModel.actionSheetItems = folderActions(for: folder)
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                viewModel.showActionSheet = true
+                            }
+                        },
+                        isSelectionMode: viewModel.isSelectionMode,
+                        isSelected: viewModel.selectedFolderIds.contains(folder.id)
+                    )
                 }
                 .buttonStyle(.scalable)
                 .id(folder.id)
                 .simultaneousGesture(TapGesture().onEnded {
-                    viewModel.markFolderAsAccessed(folder)
+                    if !viewModel.isSelectionMode {
+                        viewModel.markFolderAsAccessed(folder)
+                    }
                 })
                 
                 if index < viewModel.folders.count - 1 {
                     Divider()
                         .background(Color.white.opacity(0.1))
-                        .padding(.leading, 80)
+                        .padding(.leading, viewModel.isSelectionMode ? 120 : 80)
                 }
             }
         }
@@ -239,6 +400,18 @@ struct FolderSectionView: View {
                 .stroke(Color.premiumCardBorder, lineWidth: 1)
         )
         .padding(.horizontal, 10)
+    }
+
+    private func handleFolderTap(_ folder: Folder) {
+        if viewModel.isSelectionMode {
+            if viewModel.selectedFolderIds.contains(folder.id) {
+                viewModel.selectedFolderIds.remove(folder.id)
+            } else {
+                viewModel.selectedFolderIds.insert(folder.id)
+            }
+        } else {
+            viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.folderDetail(folder))
+        }
     }
 
     private func folderActions(for folder: Folder) -> [CustomActionItem] {

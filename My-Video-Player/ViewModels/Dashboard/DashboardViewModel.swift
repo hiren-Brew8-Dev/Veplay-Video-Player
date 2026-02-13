@@ -172,6 +172,7 @@ class DashboardViewModel: ObservableObject {
     }
     @Published var showPhotoPicker = false
     @Published var selectedVideoIds = Set<UUID>()
+    @Published var selectedFolderIds = Set<UUID>()
     @Published var isSharing: Bool = false
     @Published var showFileImporter = false
     @Published var newFolderName = ""
