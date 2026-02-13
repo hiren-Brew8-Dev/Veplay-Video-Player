@@ -222,7 +222,7 @@ struct FolderSectionView: View {
                 // View Mode Toggle (Direct Icon)
                 Button(action: {
                     withAnimation {
-                        viewModel.isFolderGridView.toggle()
+                        viewModel.isGridView.toggle()
                     }
                 }) {
                     ZStack {
@@ -230,7 +230,7 @@ struct FolderSectionView: View {
                             .fill(Color.white.opacity(0.1))
                             .frame(width: 40, height: 40)
                         
-                        Image(systemName: viewModel.isFolderGridView ? "list.bullet" : "square.grid.2x2")
+                        Image(systemName: viewModel.isGridView ? "list.bullet" : "square.grid.2x2")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                     }
@@ -312,7 +312,7 @@ struct FolderSectionView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     Group {
-                        if viewModel.isFolderGridView {
+                        if viewModel.isGridView {
                             foldersGrid(isLandscape: isLandscape, currentWidth: currentWidth)
                         } else {
                             foldersList()

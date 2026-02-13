@@ -14,7 +14,7 @@ struct VideoSectionView: View {
     @State private var showDeleteSelectedAlert = false
     @State private var newVideoName = ""
     
-    @AppStorage("isGridView") private var isGridView: Bool = true
+
     @State private var showSortSheet: Bool = false
     @State private var showSearch = false
     @State private var showImportOptions = false
@@ -50,7 +50,7 @@ struct VideoSectionView: View {
                                     emptyStateView
                                         .frame(minHeight: geometry.size.height * 0.6)
                                 } else if !viewModel.isInitialLoading || !viewModel.importedVideos.isEmpty {
-                                    if isGridView {
+                                    if viewModel.isGridView {
                                         videosGrid(isLandscape: isLandscape, width: currentWidth)
                                     } else {
                                         listView(isLandscape: isLandscape)
@@ -148,7 +148,7 @@ struct VideoSectionView: View {
                 // View Mode Toggle (Direct Icon)
                 Button(action: {
                     withAnimation {
-                        isGridView.toggle()
+                        viewModel.isGridView.toggle()
                     }
                 }) {
                     ZStack {
@@ -156,7 +156,7 @@ struct VideoSectionView: View {
                             .fill(Color.white.opacity(0.1))
                             .frame(width: 40, height: 40)
                         
-                        Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
+                        Image(systemName: viewModel.isGridView ? "list.bullet" : "square.grid.2x2")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                     }
@@ -214,7 +214,7 @@ struct VideoSectionView: View {
                     
                     Divider()
                     
-                    Picker(selection: $isGridView, label: EmptyView()) {
+                    Picker(selection: $viewModel.isGridView, label: EmptyView()) {
                         Label("Grid", systemImage: "square.grid.2x2").tag(true)
                         Label("List", systemImage: "list.bullet").tag(false)
                     }
