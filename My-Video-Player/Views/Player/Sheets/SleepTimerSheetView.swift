@@ -233,32 +233,24 @@ struct SleepTimerSheetView: View {
     // MARK: - Premium Overlay
     
     private var premiumOverlay: some View {
-        Button {
-            withAnimation {
-                isPresented = false
-                viewModel.showPaywall = true
-            }
-        } label: {
-            VStack(spacing: 16) {
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 40))
-                    .foregroundColor(.premiumAccent)
+        VStack(spacing: 16) {
+            Image(systemName: "crown.fill")
+                .font(.system(size: 40))
+                .foregroundColor(.premiumAccent)
+            
+            VStack(spacing: 8) {
+                Text("Premium Feature")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
                 
-                VStack(spacing: 8) {
-                    Text("Premium Feature")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Text("Unlock Sleep Timer and more with Premium")
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                }
+                Text("Unlock Sleep Timer and more with Premium")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
             }
-            .padding(32)
-            .background(Color.black.opacity(0.4))
-            .cornerRadius(24)
         }
-        .buttonStyle(.plain)
+        .padding(32)
+        .background(Color.black.opacity(0.4))
+        .cornerRadius(24)
     }
 }
