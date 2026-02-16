@@ -99,11 +99,7 @@ struct CustomActionSheet: View {
             .padding(.bottom, 40) // Extra padding for safe area
         }
         .background(
-            LinearGradient(
-                colors: [.premiumGradientTop, .premiumGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            AppGlobalBackground().ignoresSafeArea()
         )
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .applyIf(!isIpad) { $0.cornerRadiusLocal(28, corners: [.topLeft, .topRight]) }

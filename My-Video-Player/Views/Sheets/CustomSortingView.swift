@@ -130,11 +130,7 @@ struct CustomSortingView: View {
             }
         }
         .background(
-            LinearGradient(
-                colors: [.premiumGradientTop, .premiumGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            AppGlobalBackground().ignoresSafeArea()
         )
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .applyIf(!isIpad) { view in

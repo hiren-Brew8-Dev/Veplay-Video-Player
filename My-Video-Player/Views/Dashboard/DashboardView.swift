@@ -36,8 +36,6 @@ struct DashboardView: View {
 
     var body: some View {
         ZStack {
-            AppGlobalBackground()
-            
             TabView(selection: $viewModel.selectedTab) {
                 // MARK: Home (Videos)
                 Tab("Videos", systemImage: "play.circle", value: .home) {
@@ -46,6 +44,10 @@ struct DashboardView: View {
                             headerView(title: "Videos")
                         }
                         VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
+                            .background {
+                                AppGlobalBackground()
+                                    .allowsHitTesting(false)
+                            }
                     }
                     .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
@@ -57,6 +59,10 @@ struct DashboardView: View {
                             headerView(title: "Gallery")
                         }
                         AlbumSectionView(viewModel: viewModel)
+                            .background {
+                                AppGlobalBackground()
+                                    .allowsHitTesting(false)
+                            }
                     }
                     .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
@@ -68,6 +74,10 @@ struct DashboardView: View {
                             headerView(title: "Folders")
                         }
                         FolderSectionView(viewModel: viewModel)
+                            .background {
+                                AppGlobalBackground()
+                                    .allowsHitTesting(false)
+                            }
                     }
                     .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
@@ -79,6 +89,9 @@ struct DashboardView: View {
                 }
             }
             .accentColor(.homeAccent)
+            .background(Color.clear)
+            
+            
             
             if showTabBar && (viewModel.selectedTab == .home || viewModel.selectedTab == .folders) {
                 PlusButtonOverlay(viewModel: viewModel)
@@ -139,6 +152,7 @@ struct DashboardView: View {
         .onAppear {
             viewModel.loadData()
         }
+        
     }
 
     @ViewBuilder
