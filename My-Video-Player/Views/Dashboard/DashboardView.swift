@@ -36,6 +36,8 @@ struct DashboardView: View {
 
     var body: some View {
         ZStack {
+            AppGlobalBackground()
+            
             TabView(selection: $viewModel.selectedTab) {
                 // MARK: Home (Videos)
                 Tab("Videos", systemImage: "play.circle", value: .home) {
@@ -88,7 +90,6 @@ struct DashboardView: View {
                 UnsupportedFormatAlert(video: viewModel.unsupportedVideoForAlbum, isPresented: $viewModel.showUnsupportedFormatAlert)
             }
         }
-        .background(AppGlobalBackground())
         .ignoresSafeArea(edges: .bottom)
         .fullScreenCover(item: $viewModel.playingVideo) { video in
             PlayerView(

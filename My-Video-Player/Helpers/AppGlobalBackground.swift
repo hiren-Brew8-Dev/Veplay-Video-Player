@@ -6,7 +6,7 @@ struct AppGlobalBackground: View {
     var body: some View {
         ZStack {
             // MARK: - Dark Base
-            Color(red: 0.05, green: 0.05, blue: 0.06)
+            Color.black
                 .ignoresSafeArea()
             
             // MARK: - Decorative Blurred Circles
@@ -15,15 +15,15 @@ struct AppGlobalBackground: View {
             Group {
                 Circle()
                     .foregroundColor(.bgBlurOrange1.opacity(0.12))
-                    .frame(width: isIpad ? 450 : 300, height: isIpad ? 450 : 300)
+                    .frame(width: isIpad ? 400 : 256, height: isIpad ? 400 : 256)
                     .blur(radius: isIpad ? 120 : 80)
-                    .offset(x: isIpad ? -280 : -180, y: isIpad ? 500 : 350)
+                    .offset(x: isIpad ? -250 : -164.50, y: isIpad ? 600 : 410)
                 
                 Circle()
                     .foregroundColor(.bgBlurOrange2.opacity(0.12))
-                    .frame(width: isIpad ? 450 : 300, height: isIpad ? 450 : 300)
+                    .frame(width: isIpad ? 400 : 256, height: isIpad ? 400 : 256)
                     .blur(radius: isIpad ? 120 : 80)
-                    .offset(x: isIpad ? 280 : 180, y: isIpad ? -500 : -350)
+                    .offset(x: isIpad ? 250 : 161.50, y: isIpad ? -600 : -410)
             }
             .ignoresSafeArea()
         }
