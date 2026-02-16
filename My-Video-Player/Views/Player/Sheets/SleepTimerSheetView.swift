@@ -254,14 +254,6 @@ struct SleepTimerSheetView: View {
                         .foregroundColor(.white.opacity(0.7))
                         .multilineTextAlignment(.center)
                 }
-                
-                Text("GET PREMIUM")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.black)
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 32)
-                    .background(Color.premiumAccent)
-                    .cornerRadius(24)
             }
             .padding(32)
             .background(Color.black.opacity(0.4))
