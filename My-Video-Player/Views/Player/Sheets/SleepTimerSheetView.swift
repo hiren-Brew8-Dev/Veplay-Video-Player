@@ -38,11 +38,11 @@ struct SleepTimerSheetView: View {
                 .padding(.bottom, isIpad ? 40 : 30)
             }
         }
-        .background(
-        .background(
+        
+        .background{
             AppGlobalBackground().ignoresSafeArea()
-        )
-        )
+        }
+        
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .applyIf(isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(24, corners: [.topLeft, .bottomLeft])
