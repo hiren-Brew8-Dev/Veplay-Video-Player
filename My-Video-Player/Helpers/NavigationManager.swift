@@ -1,11 +1,11 @@
 //
 //  NavigationManager.swift
-//  My-Video-Player
+// 
 //
-//  Created by Shivshankar T Tiwari on 13/02/26.
+//  Created by Shivshankar T Tiwari on 04/11/25.
 //
 
-import SwiftUI
+import Foundation
 import Combine
 
 enum NavigationDestination: Hashable {
@@ -16,20 +16,55 @@ enum NavigationDestination: Hashable {
     case thanksForDownloading
     case rating
     case dashboard
+    case paywall
+    case settings
+    case allFolders
+    case folderDetail(Folder)
+    case search(contextTitle: String, initialVideos: [VideoItem]?)
 }
 
-class NavigationManager: ObservableObject {
-    @Published var path = NavigationPath()
+
+
+final class NavigationManager: ObservableObject {
+    @Published var path: [NavigationDestination] = []
+    
+    // MARK: - Standard navigation helpers
     
     func push(_ destination: NavigationDestination) {
+        print("🧭 push called:", destination)
+        HapticsManager.shared.generate(.light)
+        guard path.last != destination else { return }
         path.append(destination)
+        print("🧭 path now:", path)
+    }
+
+    func push(_ destinations: [NavigationDestination]) {
+        path.append(contentsOf: destinations)
     }
     
     func pop() {
-        path.removeLast()
+        if !path.isEmpty {
+            path.removeLast()
+        }
     }
     
     func popToRoot() {
-        path.removeLast(path.count)
+        path.removeAll()
+    }
+    
+    func setPath(_ destinations: [NavigationDestination]) {
+        path = destinations
+    }
+    
+    func pop(to destination: NavigationDestination) {
+        guard let index = path.firstIndex(of: destination) else {
+            return
+        }
+        path = Array(path.prefix(index + 1))
+    }
+    
+    // MARK: - Debug
+    func debugPrintPath() {
+        print("🧭 Current Path: \(path)")
     }
 }

@@ -17,6 +17,7 @@ struct FolderDetailView: View {
         return initialFolder
     }
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var navigationManager: NavigationManager
     
     // States
     @AppStorage("isGridView") private var isGridView: Bool = true
@@ -266,11 +267,7 @@ struct FolderDetailView: View {
     var standardHeader: some View {
         HStack {
             Button(action: {
-                if !viewModel.navigationPath.isEmpty {
-                    viewModel.navigationPath.removeLast()
-                } else {
-                    presentationMode.wrappedValue.dismiss()
-                }
+                navigationManager.pop()
             }) {
                 ZStack {
                     Circle()
@@ -294,7 +291,7 @@ struct FolderDetailView: View {
                 HStack(spacing: 12) {
                     Button(action: { 
                         let updatedVideos = displayVideos.map { liveVideo($0) }
-                        viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.search(contextTitle: folder.name, initialVideos: updatedVideos))
+                        navigationManager.push(.search(contextTitle: folder.name, initialVideos: updatedVideos))
                     }) {
                         ZStack {
                             Circle()
@@ -377,7 +374,9 @@ struct FolderDetailView: View {
                     if !folder.subfolders.isEmpty {
                         Section(header: sectionHeaderLabel("Folders")) {
                             ForEach(folder.subfolders) { subfolder in
-                                NavigationLink(value: DashboardViewModel.NavigationDestination.folderDetail(subfolder)) {
+                                Button(action: {
+                                    navigationManager.push(.folderDetail(subfolder))
+                                }) {
                                     FolderCardView(folder: subfolder, viewModel: viewModel, onMenuAction: {
                                         activeActionItem = .folder(subfolder)
                                         showActionSheet = true
@@ -422,7 +421,9 @@ struct FolderDetailView: View {
             if !folder.subfolders.isEmpty {
                 Section(header: sectionHeaderLabel("Folders")) {
                     ForEach(folder.subfolders) { subfolder in
-                        NavigationLink(value: DashboardViewModel.NavigationDestination.folderDetail(subfolder)) {
+                        Button(action: {
+                            navigationManager.push(.folderDetail(subfolder))
+                        }) {
                             HStack {
                                 Image(systemName: "folder.fill")
                                     .foregroundColor(.homeTint)

@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
     @AppStorage("isDarkMode") private var isDarkMode = true
+    @EnvironmentObject var navigationManager: NavigationManager
     
     @State private var selectedPhotoItems = [PhotosPickerItem]()
     
@@ -38,89 +39,44 @@ struct DashboardView: View {
             TabView(selection: $viewModel.selectedTab) {
                 // MARK: Home (Videos)
                 Tab("Videos", systemImage: "play.circle", value: .home) {
-                    NavigationStack(path: $viewModel.navigationPath) {
-                        VStack(spacing: 0) {
-                            if !viewModel.isSelectionMode {
-                                headerView(title: "Videos")
-                            }
-                            VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
+                    VStack(spacing: 0) {
+                        if !viewModel.isSelectionMode {
+                            headerView(title: "Videos")
                         }
-                        .background(Color.homeBackground)
-                        .navigationBarHidden(true)
-                        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
-                        .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
-                            destinationView(for: destination)
-                                .toolbar(.hidden, for: .tabBar)
-                        }
-                        .navigationDestination(for: String.self) { value in
-                            if value == "Settings" {
-                                SettingsView()
-                                    .toolbar(.hidden, for: .tabBar)
-                                    .navigationBarHidden(true)
-                            }
-                        }
+                        VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
                     }
+                    .background(Color.homeBackground)
+                    .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
                 
                 // MARK: Gallery
                 Tab("Gallery", systemImage: "photo.on.rectangle", value: .gallery) {
-                    NavigationStack(path: $viewModel.navigationPath) {
-                        VStack(spacing: 0) {
-                            if !viewModel.isSelectionMode {
-                                headerView(title: "Gallery")
-                            }
-                            AlbumSectionView(viewModel: viewModel)
+                    VStack(spacing: 0) {
+                        if !viewModel.isSelectionMode {
+                            headerView(title: "Gallery")
                         }
-                        .background(Color.homeBackground)
-                        .navigationBarHidden(true)
-                        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
-                        .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
-                            destinationView(for: destination)
-                                .toolbar(.hidden, for: .tabBar)
-                        }
-                        .navigationDestination(for: String.self) { value in
-                            if value == "Settings" {
-                                SettingsView()
-                                    .toolbar(.hidden, for: .tabBar)
-                                    .navigationBarHidden(true)
-                            }
-                        }
+                        AlbumSectionView(viewModel: viewModel)
                     }
+                    .background(Color.homeBackground)
+                    .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
 
                 // MARK: Folders
                 Tab("Folders", systemImage: "folder", value: .folders) {
-                    NavigationStack(path: $viewModel.navigationPath) {
-                        VStack(spacing: 0) {
-                             if !viewModel.isSelectionMode {
-                                headerView(title: "Folders")
-                            }
-                            FolderSectionView(viewModel: viewModel)
+                    VStack(spacing: 0) {
+                         if !viewModel.isSelectionMode {
+                            headerView(title: "Folders")
                         }
-                        .background(Color.homeBackground)
-                        .navigationBarHidden(true)
-                        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
-                         .navigationDestination(for: DashboardViewModel.NavigationDestination.self) { destination in
-                            destinationView(for: destination)
-                                .toolbar(.hidden, for: .tabBar)
-                        }
-                        .navigationDestination(for: String.self) { value in
-                            if value == "Settings" {
-                                SettingsView()
-                                    .toolbar(.hidden, for: .tabBar)
-                                    .navigationBarHidden(true)
-                            }
-                        }
+                        FolderSectionView(viewModel: viewModel)
                     }
-                    
+                    .background(Color.homeBackground)
+                    .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
                 
                 // MARK: Search
                 Tab(value: .search, role: .search) {
-                    NavigationStack {
-                        SearchView(viewModel: viewModel)
-                            .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
-                    }
+                    SearchView(viewModel: viewModel)
+                        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
             }
             .accentColor(.homeAccent)
@@ -236,7 +192,7 @@ struct DashboardView: View {
             HStack(spacing: isIpad ? 20 : 16) {
                 // Settings Button (Trailing, before 3-dots)
                 Button(action: {
-                    viewModel.navigationPath.append("Settings")
+                    navigationManager.push(.settings)
                 }) {
                     ZStack {
                         Circle()
@@ -250,14 +206,18 @@ struct DashboardView: View {
                 }
                 
                 // Premium/Crown Icon (New)
-                ZStack {
-                     Circle()
-                        .fill(Color.premiumCircleBackground)
-                        .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
-                    
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: isIpad ? 20 : 14, weight: .bold))
-                        .foregroundColor(.yellow)
+                Button {
+                    navigationManager.push(.paywall)
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color.premiumCircleBackground)
+                            .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
+                        
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: isIpad ? 20 : 14, weight: .bold))
+                            .foregroundColor(.yellow)
+                    }
                 }
             }
             .padding(.trailing, AppDesign.Icons.horizontalPadding)

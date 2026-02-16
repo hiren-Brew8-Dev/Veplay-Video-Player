@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 import CoreData
 import GoogleCast
+import Firebase
 
 @main
 struct VideoPlayerApp: App {
@@ -9,45 +10,40 @@ struct VideoPlayerApp: App {
     // Use CDManager shared instance
     let cdManager = CDManager.shared
     
-    @Environment(\.scenePhase) private var scenePhase
-    @AppStorage("isOnboardingCompleted") private var isOnboardingCompleted = false
-    @AppStorage("useFaceID") private var useFaceID = false
-    @StateObject private var authService = BiometricAuthService.shared
-    @StateObject private var navigationManager = NavigationManager()
-    @StateObject private var ratingViewModel = RatingFlowViewModel.shared
-    
     init() {
+        FirebaseApp.configure()
         configureAudioSession()
     }
     
-    @State private var showSplash = true
-    
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var dashboardViewModel = DashboardViewModel()
+    @StateObject private var navigationManager = NavigationManager()
+    @StateObject private var ratingViewModel = RatingFlowViewModel.shared
+    @StateObject private var authService = BiometricAuthService.shared
+    @AppStorage("useFaceID") private var useFaceID = false
+
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                if showSplash {
-                    SplashView()
-                        .transition(.opacity)
-                } else {
-                    if !isOnboardingCompleted {
-                        NavigationStack(path: $navigationManager.path) {
-                            Onboarding1View()
-                                .navigationDestination(for: NavigationDestination.self) { destination in
-                                    switch destination {
-                                    case .onboarding1: Onboarding1View()
-                                    case .onboarding2: Onboarding2View()
-                                    case .onboarding3: Onboarding3View()
-                                    case .onboarding4: Onboarding4View()
-                                    case .thanksForDownloading: ThanksForDownloadingView()
-                                    case .rating: RatingView()
-                                    case .dashboard: DashboardView()
-                                    }
-                                }
+            NavigationStack(path: $navigationManager.path) {
+                SplashView()
+                    .navigationDestination(for: NavigationDestination.self) { destination in
+                        switch destination {
+                        case .onboarding1: Onboarding1View()
+                        case .onboarding2: Onboarding2View()
+                        case .onboarding3: Onboarding3View()
+                        case .onboarding4: Onboarding4View()
+                        case .thanksForDownloading: ThanksForDownloadingView()
+                        case .paywall: PaywallView()
+                            .navigationBarHidden(true)
+                        case .rating: RatingView()
+                        case .dashboard: DashboardView()
+                        case .settings: SettingsView()
+                            .navigationBarHidden(true)
+                        case .allFolders: FolderSectionView(viewModel: DashboardViewModel()) // Note: FolderSectionView needs a viewModel
+                        case .folderDetail(let folder): FolderDetailView(initialFolder: folder, viewModel: DashboardViewModel())
+                        case .search(let title, let videos): SearchView(viewModel: DashboardViewModel(), contextTitle: title, initialVideos: videos)
                         }
-                    } else {
-                        DashboardView()
                     }
-                }
             }
             .preferredColorScheme(.dark)
             .environment(\.managedObjectContext, cdManager.container.viewContext)
@@ -55,13 +51,6 @@ struct VideoPlayerApp: App {
             .environmentObject(ratingViewModel)
             .blur(radius: (useFaceID && !authService.isUnlocked) ? 15 : 0)
             .animation(.spring(), value: authService.isUnlocked)
-            .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                    withAnimation(.easeInOut(duration: 0.5)) {
-                        showSplash = false
-                    }
-                }
-            }
             .onChange(of: scenePhase) { oldPhase, newPhase in
                 if newPhase == .active {
                      if useFaceID && !authService.isUnlocked {
@@ -78,7 +67,7 @@ struct VideoPlayerApp: App {
     
     private func authenticate() {
         authService.authenticate { success in
-            // Handle result if needed, currently service updates published property
+            // Handle result if needed
         }
     }
     
@@ -101,7 +90,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, GCKLoggerDelegate {
         let options = GCKCastOptions(discoveryCriteria: criteria)
         GCKCastContext.setSharedInstanceWith(options)
         
-        // Enable logging for debug
         GCKLogger.sharedInstance().delegate = self
         
         return true
@@ -111,8 +99,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, GCKLoggerDelegate {
         return AppDelegate.orientationLock
     }
     
-    // MARK: - GCKLoggerDelegate
     func logMessage(_ message: String, at level: GCKLoggerLevel, fromFunction function: String, location: String) {
-        // print("GCK: \(message)")
     }
 }

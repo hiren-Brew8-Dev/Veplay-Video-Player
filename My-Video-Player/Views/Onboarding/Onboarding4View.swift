@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Photos
 
 struct Onboarding4View: View {
     @EnvironmentObject var navManager: NavigationManager
@@ -13,6 +14,7 @@ struct Onboarding4View: View {
     
     var body: some View {
         ZStack {
+            // ... (rest of the view)
             // MARK: - Background
             Color(red: 0.05, green: 0.05, blue: 0.06)
                 .ignoresSafeArea()
@@ -124,7 +126,12 @@ struct Onboarding4View: View {
                 // MARK: - Action Button
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    navManager.push(.thanksForDownloading)
+                    
+                    PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+                        DispatchQueue.main.async {
+                            navManager.push(.thanksForDownloading)
+                        }
+                    }
                 }) {
                     Text("Continue")
                         .font(Font.custom("Figtree-Bold", size: 20))
@@ -141,6 +148,7 @@ struct Onboarding4View: View {
             }
             .responsivePadding(edge: .horizontal, fraction: 30)
         }
+        .hideNavigationBar()
         .onAppear {
             isAnimating = true
         }

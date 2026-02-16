@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SearchView: View {
     @ObservedObject var viewModel: DashboardViewModel
+    @EnvironmentObject var navigationManager: NavigationManager
     @Environment(\.presentationMode) var presentationMode
     @FocusState private var isSearchFocused: Bool
     
@@ -74,12 +75,7 @@ struct SearchView: View {
                     // If in Search Tab, switch back to the previous tab
                     viewModel.selectedTab = viewModel.lastActiveDataTab
                 } else {
-                    // If pushed via Navigation, pop
-                    if !viewModel.navigationPath.isEmpty {
-                        viewModel.navigationPath.removeLast()
-                    } else {
-                        presentationMode.wrappedValue.dismiss()
-                    }
+                    navigationManager.pop()
                 }
             }) {
                 ZStack {

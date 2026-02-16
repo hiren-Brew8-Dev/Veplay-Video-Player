@@ -6,8 +6,12 @@
 //
 
 import SwiftUI
-
-struct SplashView: View {
+struct SplashView : View {
+    
+    
+    @EnvironmentObject var navigationManager: NavigationManager
+    @AppStorage("isOnboardingCompleted") private var isOnboardingCompleted = false
+    
     @State private var logoScale: CGFloat = 0.8
     @State private var logoOpacity: Double = 0.0
     @State private var textOffset: CGFloat = 20
@@ -50,6 +54,23 @@ struct SplashView: View {
         }
         .onAppear {
             animateIn()
+            
+            // Route to next screen after animation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                routeNext()
+            }
+        }
+    }
+    
+    
+    private func routeNext() {
+        if !isOnboardingCompleted {
+            navigationManager.push(.onboarding1)
+        } else {
+            // After splash, show paywall then dashboard
+            navigationManager.push(.dashboard)
+            // Note: If we want Splash -> Paywall -> Home, we push paywall ON TOP of dashboard
+            navigationManager.push(.paywall)
         }
     }
     
@@ -70,6 +91,7 @@ struct SplashView: View {
         }
     }
 }
+
 
 #Preview {
     SplashView()

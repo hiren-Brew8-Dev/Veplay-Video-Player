@@ -3,6 +3,7 @@ import PhotosUI
 
 struct VideoSectionView: View {
     @ObservedObject var viewModel: DashboardViewModel
+    @EnvironmentObject var navigationManager: NavigationManager
     @Binding var paddingBottom: CGFloat
     
     // Local State for Actions
@@ -202,13 +203,12 @@ struct VideoSectionView: View {
             Spacer()
             
             HStack(spacing: 20) {
-                Button(action: { showSearch = true }) {
+                Button(action: { 
+                    navigationManager.push(.search(contextTitle: "Videos", initialVideos: viewModel.importedVideos))
+                }) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 20))
                         .foregroundColor(.homeTint)
-                }
-                .navigationDestination(isPresented: $showSearch) {
-                    SearchView(viewModel: viewModel, contextTitle: "Videos", initialVideos: viewModel.importedVideos)
                 }
                 
                 Button(action: { showImportOptions = true }) {

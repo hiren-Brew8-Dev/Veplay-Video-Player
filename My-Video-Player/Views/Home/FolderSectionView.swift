@@ -8,6 +8,7 @@ struct FolderSectionView: View {
     @State private var showSearch = false
     
     @State private var showSortSheet = false
+    @EnvironmentObject var navigationManager: NavigationManager
     @Environment(\.presentationMode) var presentationMode
     
     @State private var showDeleteSelectedAlert = false
@@ -453,7 +454,7 @@ struct FolderSectionView: View {
                 viewModel.selectedFolderIds.insert(folder.id)
             }
         } else {
-            viewModel.navigationPath.append(DashboardViewModel.NavigationDestination.folderDetail(folder))
+            navigationManager.push(.folderDetail(folder))
         }
     }
 
