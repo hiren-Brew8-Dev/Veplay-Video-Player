@@ -444,13 +444,14 @@ struct PlayerControlsView: View {
                 // Mirror the TopBar placeholder position when locked
                 Color.clear
                     .frame(width: 35, height: 44)
-                    .padding(.trailing, isLandscape ? 50 : 8)
+                    .padding(.trailing, isLandscape ? 60 : 20)
                     .padding(.top, isLandscape ? 20 : 40)
                     .matchedGeometryEffect(id: "lockIcon", in: lockNamespace, isSource: viewModel.isLocked)
             }
             Spacer()
         }
-        .ignoresSafeArea()
+        .padding(.trailing, isLandscape ? 60 : 20)
+//        .ignoresSafeArea()
         .allowsHitTesting(false)
     }
     

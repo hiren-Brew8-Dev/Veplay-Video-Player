@@ -10,89 +10,92 @@ struct AudioCaptionsSheet: View {
     @State private var showingFileImporter = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Drag Handle
-            if !isLandscape && !isIpad {
-                Capsule()
-                    .fill(Color.white.opacity(0.3))
-                    .frame(width: 40, height: 5)
-                    .padding(.top, 12)
-                    .padding(.bottom, 20)
-            }
-            
-            // Header
-            HStack {
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        isPresented = false
-                    }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
-                        .background(Color.premiumCircleBackground)
-                        .clipShape(Circle())
-                }
-                
-                Spacer()
-                
-                Text("Audio & CC")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                // Invisible spacer to balance
-                Color.clear
-                    .frame(width: 44, height: 44)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, (isLandscape || isIpad) ? 16 : 0)
-            .padding(.bottom, 20)
-            
-            // Content
-            if isLandscape && !isIpad {
-                // Landscape (iPhone): Side by side layout
-                HStack(alignment: .top, spacing: 20) {
-                    // Left Column: Audio Track + Audio Delay
-                    VStack(spacing: 20) {
-                        audioTrackSection
-                        audioDelaySection
-                    }
-                    .frame(maxWidth: .infinity)
-                    
-                    // Right Column: Subtitles
-                    subtitlesSection
-                        .frame(maxWidth: .infinity)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 30)
-            } else {
-                // Portrait (iPhone) OR iPad (Centered): Stacked layout
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 20) {
-                        // Audio Track Section
-                        audioTrackSection
-                        
-                        // Audio Delay Section
-                        audioDelaySection
-                        
-                        // Subtitles Section
-                        subtitlesSection
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 30)
-                }
-            }
-        }
-        .background(
+        ZStack(alignment: .bottom) {
+            // Background Gradient with Blur
             LinearGradient(
                 colors: [.premiumGradientTop, .premiumGradientBottom],
                 startPoint: .top,
                 endPoint: .bottom
             )
-        )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Drag Handle
+                if !isLandscape && !isIpad {
+                    Capsule()
+                        .fill(Color.white.opacity(0.3))
+                        .frame(width: 40, height: 5)
+                        .padding(.top, 10)
+                        .padding(.bottom, 16)
+                }
+                
+                // Header
+                HStack {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isPresented = false
+                        }
+                    }) {
+                        headerButton(icon: "chevron.left")
+                    }
+                    
+                    Spacer()
+                    
+                    Text("Audio & CC")
+                        .font(.system(size: isIpad ? 24 : 19, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    // Balanced Spacer
+                    headerButton(icon: "chevron.left", isHidden: true)
+                }
+                .padding(.horizontal, isLandscape ? 44 : 20) // Initial horizontal padding for notch
+                .padding(.top, (isLandscape || isIpad) ? 16 : 0)
+                .padding(.bottom, 16)
+                
+                Divider()
+                    .background(Color.white.opacity(0.1))
+                    .padding(.bottom, 16)
+                
+                GeometryReader { geometry in
+                    let sidePadding = isLandscape ? max(44, geometry.safeAreaInsets.leading) : 20
+                    
+                    Group {
+                        if isLandscape && !isIpad {
+                            // Landscape (iPhone): Side by side layout
+                            HStack(alignment: .top, spacing: 24) { // Increased spacing for better separation
+                                // Left Column: Audio Track + Audio Delay
+                                VStack(spacing: 16) {
+                                    audioTrackSection
+                                        .frame(maxHeight: geometry.size.height * 0.55)
+                                    audioDelaySection
+                                }
+                                .frame(maxWidth: .infinity)
+                                
+                                // Right Column: Subtitles
+                                subtitlesSection
+                                    .frame(maxWidth: .infinity)
+                                    .frame(maxHeight: .infinity)
+                            }
+                            .padding(.horizontal, sidePadding)
+                            .padding(.bottom, geometry.safeAreaInsets.bottom + 20)
+                        } else {
+                            // Portrait (iPhone) OR iPad (Centered): Stacked layout
+                            ScrollView(showsIndicators: false) {
+                                VStack(spacing: 20) {
+                                    audioTrackSection
+                                    audioDelaySection
+                                    subtitlesSection
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, geometry.safeAreaInsets.bottom + 30)
+                            }
+                        }
+                    }
+                }
+            }
+        }
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .applyIf(isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(24, corners: [.topLeft, .topRight])
@@ -100,7 +103,20 @@ struct AudioCaptionsSheet: View {
         .applyIf(!isLandscape && !isIpad) { view in
             view.cornerRadiusLocal(24, corners: [.topLeft, .topRight])
         }
-        .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: (isLandscape || isIpad) ? 10 : -10)
+        .shadow(color: Color.black.opacity(0.4), radius: 25, x: 0, y: -10)
+    }
+    
+    private func headerButton(icon: String, isHidden: Bool = false) -> some View {
+        Image(systemName: icon)
+            .font(.system(size: 16, weight: .bold))
+            .foregroundColor(isHidden ? .clear : .white)
+            .frame(width: 40, height: 40)
+            .background(isHidden ? Color.clear : Color.white.opacity(0.1))
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .stroke(isHidden ? Color.clear : Color.white.opacity(0.15), lineWidth: 1)
+            )
     }
     
     // MARK: - Audio Track Section
@@ -126,7 +142,8 @@ struct AudioCaptionsSheet: View {
                 Spacer()
             }
             .padding(.horizontal, 16)
-            .padding(.top, 4)
+            .padding(.top, 12)
+            .padding(.bottom, 4)
             
             // Track List
             ScrollView(showsIndicators: false) {
@@ -229,7 +246,8 @@ struct AudioCaptionsSheet: View {
                     )
             }
             .padding(.horizontal, 16)
-            .padding(.top, 4)
+            .padding(.top, 12)
+            .padding(.bottom, 4)
             
             // Slider Control
             HStack(spacing: 16) {
@@ -324,7 +342,8 @@ struct AudioCaptionsSheet: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 4)
+            .padding(.top, 12)
+            .padding(.bottom, 4)
             
             // Subtitle List
             ScrollView(showsIndicators: false) {
