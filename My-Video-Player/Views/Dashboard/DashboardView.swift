@@ -4,7 +4,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 struct DashboardView: View {
-    @StateObject private var viewModel = DashboardViewModel()
+    @EnvironmentObject var viewModel: DashboardViewModel
     @AppStorage("isDarkMode") private var isDarkMode = true
     @EnvironmentObject var navigationManager: NavigationManager
     

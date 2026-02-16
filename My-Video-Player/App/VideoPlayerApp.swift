@@ -37,6 +37,7 @@ struct VideoPlayerApp: App {
                             .hideNavigationBar()
                         case .rating: RatingView()
                         case .dashboard: DashboardView()
+                            .environmentObject(dashboardViewModel)
                             .hideNavigationBar()
                         case .settings: SettingsView()
                             .environmentObject(dashboardViewModel)
