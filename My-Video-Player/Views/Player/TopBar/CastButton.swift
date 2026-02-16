@@ -7,13 +7,34 @@ struct CastButton: View {
     var action: () -> Void
     
     var body: some View {
-        Button(action: action) {
-            Image(systemName: "airplayvideo")
-                .font(.system(size: 20))
-                .foregroundColor(viewModel.isExternalPlaybackActive ? .blue : .white)
+        ZStack {
+            // Visual button
+            Button(action: {}) { // Empty action, the picker handles it
+                Image(systemName: "airplayaudio")
+                    .font(.system(size: 20))
+                    .foregroundColor(viewModel.isExternalPlaybackActive ? .blue : .white)
+            }
+            .frame(width: 40, height: 44)
+            .allowsHitTesting(false) // Let taps pass through to the picker
+            
+            // Invisible native AirPlay picker overlay
+            NativeAirPlayPicker()
+                .frame(width: 40, height: 44)
         }
-        .frame(width: 40, height: 44)
     }
+}
+
+// Native AirPlay picker that opens the menu directly
+struct NativeAirPlayPicker: UIViewRepresentable {
+    func makeUIView(context: Context) -> AVRoutePickerView {
+        let picker = AVRoutePickerView()
+        picker.activeTintColor = .clear
+        picker.tintColor = .clear
+        picker.prioritizesVideoDevices = true
+        return picker
+    }
+    
+    func updateUIView(_ uiView: AVRoutePickerView, context: Context) {}
 }
 
 // Native route picker that triggers on tap
