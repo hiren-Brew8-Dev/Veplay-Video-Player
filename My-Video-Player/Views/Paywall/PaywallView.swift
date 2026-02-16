@@ -42,6 +42,7 @@ struct PaywallView: View {
     let numberOfImages = 3
     
     @State private var featureVisibility: [Bool] = [false, false, false, false]
+    @State private var isAnimating = false
     
     
     var body: some View {
@@ -72,8 +73,11 @@ struct PaywallView: View {
                     .responsiveWidth(iphoneWidth: 300)
                     .blur(radius: 80)
                     .offset(x: 161.5, y: -451.5)
+                
             }
             .ignoresSafeArea()
+            .opacity(isAnimating ? 1 : 0)
+            .animation(.easeIn(duration: 0.6), value: isAnimating)
             
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
@@ -108,6 +112,8 @@ struct PaywallView: View {
                         }
                       
                     }
+                    .opacity(isAnimating ? 1 : 0)
+                    .animation(.easeIn(duration: 0.3).delay(0.6), value: isAnimating)
                        
                     // MARK: - Header "Unlock Premium"
                     HStack(spacing: 12) {
@@ -122,12 +128,26 @@ struct PaywallView: View {
                             .background(Color.premiumAccent)
                     }
                     .responsivePadding(edge: .top, fraction: 15)
+                    .offset(y: isAnimating ? 0 : 20)
+                    .opacity(isAnimating ? 1 : 0)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.05), value: isAnimating)
                     
                     // MARK: - Features
                     VStack(alignment: .leading, spacing: 16) {
                         FeatureRow(icon: "feature_1_paywall", text: "Unlimited Folders")
+                            .offset(x: isAnimating ? 0 : -30)
+                            .opacity(isAnimating ? 1 : 0)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.1), value: isAnimating)
+                        
                         FeatureRow(icon: "feature_2_paywall", text: "Background Playback")
+                            .offset(x: isAnimating ? 0 : -30)
+                            .opacity(isAnimating ? 1 : 0)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.15), value: isAnimating)
+                        
                         FeatureRow(icon: "feature_3_paywall", text: "Ad-Free Experience")
+                            .offset(x: isAnimating ? 0 : -30)
+                            .opacity(isAnimating ? 1 : 0)
+                            .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.2), value: isAnimating)
                     }
                     .responsivePadding(edge: .top, fraction: 40)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -169,6 +189,9 @@ struct PaywallView: View {
                         .padding(.horizontal)
                         
                         .responsivePadding(edge: .top, fraction: 40)
+                        .offset(y: isAnimating ? 0 : 20)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.25), value: isAnimating)
                     }
                     
                     // MARK: - Subscription Plans
@@ -185,6 +208,9 @@ struct PaywallView: View {
                             description: remoteConfigManager.weekly_plan_description,
                             onSelect: { selectPlan(0) }
                         )
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.3), value: isAnimating)
                         
                         SubscriptionOption(
                             title: "Yearly",
@@ -194,6 +220,9 @@ struct PaywallView: View {
                             description: remoteConfigManager.yearly_plan_description,
                             onSelect: { selectPlan(1) }
                         )
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.35), value: isAnimating)
                         
                         SubscriptionOption(
                             title: "Lifetime",
@@ -203,6 +232,9 @@ struct PaywallView: View {
                             description: remoteConfigManager.lifetime_plan_description,
                             onSelect: { selectPlan(2) }
                         )
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.4), value: isAnimating)
                     }
                     
                     .responsivePadding(edge: .top, fraction: 30)
@@ -216,6 +248,8 @@ struct PaywallView: View {
                             .multilineTextAlignment(.center)
                             .responsivePadding(edge: .top, fraction: 25)
                     }
+                    .opacity(isAnimating ? 1 : 0)
+                    .animation(.easeIn(duration: 0.3).delay(0.45), value: isAnimating)
                 
                     
                     // MARK: - Main Button
@@ -245,11 +279,16 @@ struct PaywallView: View {
                     .responsivePadding(edge: .horizontal, fraction: 20)
                     .responsivePadding(edge: .top, fraction: 30)
                     .disabled(isProccesing)
+                    .scaleEffect(isAnimating ? 1 : 0.9)
+                    .opacity(isAnimating ? 1 : 0)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.5), value: isAnimating)
                     
                     Text("🔒 Secured with iTunes. Cancel anytime")
                         .appFont(.figtreeMedium, size: 11)
                         .foregroundColor(.white.opacity(0.6))
                         .responsivePadding(edge: .top, fraction: 15)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.easeIn(duration: 0.3).delay(0.55), value: isAnimating)
                         
                     
                     // MARK: - Footer Links
@@ -268,6 +307,8 @@ struct PaywallView: View {
                         }
                     }
                     .responsivePadding(edge: .top, fraction: 15)
+                    .opacity(isAnimating ? 1 : 0)
+                    .animation(.easeIn(duration: 0.3).delay(0.6), value: isAnimating)
                     
                     Text("Premium membership unlocks all the packs and content. This is an auto-renew subscription. Subscriptions will automatically renew and you will be charged for renewal within 24 hours prior to end of each period unless auto renew is tuned off at least 24-hours before the end of each period. You can manage your subscription settings and auto-renewal may turned off by going to Apple ID Account Settings after purchase.")
                         .appFont(.figtreeRegular, size: 8)
@@ -275,6 +316,8 @@ struct PaywallView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
                         .padding(.vertical, 20)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.easeIn(duration: 0.3).delay(0.65), value: isAnimating)
                     
                     Spacer(minLength: 50)
                 }
@@ -296,6 +339,7 @@ struct PaywallView: View {
         }
         .onAppear {
             checkPaywallXTypes()
+            isAnimating = true
         }
     }
     
@@ -452,9 +496,6 @@ struct PaywallView: View {
                     if let transaction = try await subscriptionStore.purchase(product) {
                         AnalyticsManager.shared.log(.paywallPlanSubscribed(planDetails: PlanDetails(planName: transaction.productID, planPrice: "\(transaction.price ?? 0.0)", planExpiry: "\(String(describing: transaction.expirationDate))")))
                         
-                        if purchaseProduct?.id == "com.video.player.veeplay.app.weekly" {
-                            AppReviewManager.submitReview(isShowAppleReviewScreen: false)
-                        }
                         if isFromOnboarding {
                             navigationManager.push(.dashboard)
                         } else {

@@ -1047,9 +1047,16 @@ import UIKit
     }
     
     @objc private func appDidEnterBackground() {
-        // We want audio to continue, so we don't pause here.
-        // The .playback category handles this.
-        print("App entered background - continuing audio")
+        // Check user setting for background play (Default: true)
+        let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? true
+        
+        if !isBgEnabled {
+            print("Background Play disabled in settings - pausing playback")
+            self.pause()
+        } else {
+            print("App entered background - continuing audio (Background Play enabled)")
+        }
+        
         handleSleepTimerBackground()
     }
     
@@ -1088,6 +1095,11 @@ import UIKit
         
         commandCenter.playCommand.addTarget { [weak self] _ in
             guard let self = self else { return .commandFailed }
+            // Check background play restriction
+            if UIApplication.shared.applicationState == .background {
+                let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? true
+                if !isBgEnabled { return .commandFailed }
+            }
             Task { @MainActor in self.play() }
             return .success
         }
@@ -1101,6 +1113,11 @@ import UIKit
         commandCenter.skipForwardCommand.preferredIntervals = [10]
         commandCenter.skipForwardCommand.addTarget { [weak self] _ in
              guard let self = self else { return .commandFailed }
+             // Check background play restriction
+             if UIApplication.shared.applicationState == .background {
+                 let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? true
+                 if !isBgEnabled { return .commandFailed }
+             }
              Task { @MainActor in self.seek(to: self.currentTime + 10) }
              return .success
         }
@@ -1108,6 +1125,11 @@ import UIKit
         commandCenter.skipBackwardCommand.preferredIntervals = [10]
         commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
              guard let self = self else { return .commandFailed }
+             // Check background play restriction
+             if UIApplication.shared.applicationState == .background {
+                 let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? true
+                 if !isBgEnabled { return .commandFailed }
+             }
              Task { @MainActor in self.seek(to: self.currentTime - 10) }
              return .success
         }

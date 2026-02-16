@@ -3,6 +3,7 @@ import LocalAuthentication
 
 struct SettingsView: View {
     @AppStorage("useFaceID") private var useFaceID = false
+    @AppStorage("isBackgroundPlayEnabled") private var isBackgroundPlayEnabled = true
     @EnvironmentObject var viewModel: DashboardViewModel
     @EnvironmentObject var navigationManager: NavigationManager
     @State private var webViewData: WebViewData? = nil
@@ -57,6 +58,19 @@ struct SettingsView: View {
                                     }
                                 ),
                                 iconColor: .green
+                            )
+                        }
+                    }
+                    
+                    // Playback Section
+                    settingsSection(title: "Playback") {
+                        VStack(spacing: 0) {
+                            settingsToggleRow(
+                                icon: "music.note.list",
+                                title: "Background Play",
+                                subtitle: "Keep playing audio when app is in background",
+                                isOn: $isBackgroundPlayEnabled,
+                                iconColor: .purple
                             )
                         }
                     }
