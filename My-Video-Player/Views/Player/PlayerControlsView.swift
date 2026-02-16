@@ -223,10 +223,14 @@ struct PlayerControlsView: View {
                             }
                         },
                         onTimer: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                returnToSettings = false
-                                viewModel.showSleepTimerSheet = true
-                                viewModel.isControlsVisible = false
+                            if Global.shared.getIsUserPro() {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    returnToSettings = false
+                                    viewModel.showSleepTimerSheet = true
+                                    viewModel.isControlsVisible = false
+                                }
+                            } else {
+                                viewModel.showPaywall = true
                             }
                         },
                         onCast: {
@@ -572,10 +576,14 @@ struct PlayerControlsView: View {
                 }
             },
             onSleepTimer: { 
-                 withAnimation(.easeInOut(duration: 0.3)) {
-                     returnToSettings = true
-                     viewModel.showSettingsSheet = false
-                     viewModel.showSleepTimerSheet = true
+                 if Global.shared.getIsUserPro() {
+                     withAnimation(.easeInOut(duration: 0.3)) {
+                         returnToSettings = true
+                         viewModel.showSettingsSheet = false
+                         viewModel.showSleepTimerSheet = true
+                     }
+                 } else {
+                     viewModel.showPaywall = true
                  }
             },
             onScreenshot: { 

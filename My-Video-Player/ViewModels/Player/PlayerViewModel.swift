@@ -111,6 +111,7 @@ import UIKit
     @MainActor @Published var showSubtitleSettingsSheet: Bool = false
     @MainActor @Published var showTrackSelectionSheet: Bool = false
     @MainActor @Published var showSleepTimerToast: Bool = false
+    @MainActor @Published var showPaywall: Bool = false
     
     @MainActor var isAnySheetVisible: Bool {
         showSettingsSheet || showAudioCaptionsSheet || showSleepTimerSheet ||
@@ -2436,6 +2437,10 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
     
     @MainActor
     func startSleepTimer(minutes: Int) {
+        if !Global.shared.getIsUserPro() {
+            self.showPaywall = true
+            return
+        }
         let duration = TimeInterval(minutes * 60)
         startSleepTimer(duration: duration)
         sleepTimerOriginalDuration = duration // Store original only when starting new
@@ -2470,6 +2475,10 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
     
     @MainActor
     func setSleepTimerEndOfTrack() {
+        if !Global.shared.getIsUserPro() {
+            self.showPaywall = true
+            return
+        }
         cancelSleepTimer()
         sleepTimerMode = .endOfTrack
         sleepTimerRemainingString = "End of track"

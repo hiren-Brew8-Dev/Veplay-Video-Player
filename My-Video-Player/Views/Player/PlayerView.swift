@@ -102,6 +102,9 @@ struct PlayerView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $viewModel.showPaywall) {
+            PaywallView(isFromOnboarding: false)
+        }
     }
     
     // MARK: - Subviews
