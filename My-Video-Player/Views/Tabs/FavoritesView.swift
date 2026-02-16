@@ -43,6 +43,7 @@ struct FavoritesView: View {
                             }
                             .padding(.horizontal)
                         }
+                        .scrollBounceBehavior(.basedOnSize)
                     }
                 }
             }

@@ -61,6 +61,7 @@ struct PrivateFolderView: View {
                             }
                             .padding(.horizontal)
                         }
+                        .scrollBounceBehavior(.basedOnSize)
                     }
                 }
             } else {

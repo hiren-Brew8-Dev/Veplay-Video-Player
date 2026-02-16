@@ -63,6 +63,7 @@ struct VideoSectionView: View {
                             }
                             .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
                         }
+                        .scrollBounceBehavior(.basedOnSize)
                         .onChange(of: viewModel.highlightVideoId) { oldId, newId in
                             if let id = newId {
                                 withAnimation(.spring()) {
@@ -330,13 +331,9 @@ struct VideoSectionView: View {
             
             .padding(.top, isIpad ? 20 : 12)
             .padding(.bottom, max(10, UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0))
-            .background(
-                LinearGradient(
-                    colors: [.premiumGradientTop, .premiumGradientBottom],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
+            
+            .background(Color.homeSheetBackground)
+            
             .overlay(
                 VStack {
                     Rectangle()
@@ -459,7 +456,7 @@ struct VideoSectionView: View {
                     .padding(40)
                     .frame(maxWidth: .infinity)
                     .frame(height: 150)
-                    .background(Color.homeCardBackground)
+                    .background(Color.homeSheetBackground)
                     .overlay(Color.homeBackground.opacity(0.3))
                     .overlay(
                         VStack {

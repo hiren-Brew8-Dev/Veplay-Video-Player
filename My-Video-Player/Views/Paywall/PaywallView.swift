@@ -328,6 +328,7 @@ struct PaywallView: View {
                     Spacer(minLength: 50)
                 }
             }
+            .scrollBounceBehavior(.basedOnSize)
             .responsiveWidth(iphoneWidth: 393, ipadWidth: 280)
             
             

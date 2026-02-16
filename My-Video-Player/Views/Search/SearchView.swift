@@ -42,6 +42,7 @@ struct SearchView: View {
                         }
                         .padding(.top, 10)
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
             }
             .navigationBarHidden(true)

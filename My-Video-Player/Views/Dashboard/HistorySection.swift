@@ -42,6 +42,7 @@ struct HistorySection: View {
                     }
                     .padding(.horizontal)
                 }
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             }
         }
     }

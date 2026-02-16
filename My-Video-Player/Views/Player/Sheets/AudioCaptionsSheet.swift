@@ -13,8 +13,21 @@ struct AudioCaptionsSheet: View {
         ZStack(alignment: .bottom) {
             // Background Gradient with Blur
             // Background Gradient with Blur
-            AppGlobalBackground().ignoresSafeArea()
-            .ignoresSafeArea()
+            Color.homeSheetBackground.ignoresSafeArea()
+            .overlay(
+                Group {
+                    if isIpad {
+                        RoundedRectangle(cornerRadius: 28)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    } else if isLandscape {
+                        RoundedCorner(radius: 24, corners: [.topLeft, .topRight])
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    } else {
+                        RoundedCorner(radius: 24, corners: [.topLeft, .topRight])
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    }
+                }
+            )
             
             VStack(spacing: 0) {
                 // Drag Handle
@@ -89,6 +102,7 @@ struct AudioCaptionsSheet: View {
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, geometry.safeAreaInsets.bottom + 30)
                             }
+                            .scrollBounceBehavior(.basedOnSize)
                         }
                     }
                 }
@@ -166,6 +180,7 @@ struct AudioCaptionsSheet: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 12)
             }
+            .scrollBounceBehavior(.basedOnSize)
             .frame(maxHeight: isLandscape ? 200 : 300)
         }
         .background(
@@ -381,6 +396,7 @@ struct AudioCaptionsSheet: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 12)
             }
+            .scrollBounceBehavior(.basedOnSize)
             .frame(maxHeight: isLandscape ? 300 : 400)
         }
         .background(

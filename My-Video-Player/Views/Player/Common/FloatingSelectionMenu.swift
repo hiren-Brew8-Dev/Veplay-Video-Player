@@ -75,6 +75,7 @@ struct FloatingSelectionMenu<T: Hashable>: View {
                         }
                     }
                 }
+                .scrollBounceBehavior(.basedOnSize)
                 .frame(maxHeight: 300)
             }
             .background(Color(UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0)))

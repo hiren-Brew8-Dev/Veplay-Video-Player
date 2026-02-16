@@ -66,6 +66,7 @@ struct PhotoAlbumDetailView: View {
                             }
                         }
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
             }
         }

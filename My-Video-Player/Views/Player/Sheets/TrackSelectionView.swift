@@ -93,6 +93,7 @@ struct AudioTrackSettingsView: View {
                     }
                 }
             }
+            .scrollBounceBehavior(.basedOnSize)
             .frame(maxHeight: (isLandscape || isIpad) ? .infinity : 250) // Allow full height in landscape/iPad
             
             Divider()
@@ -136,14 +137,21 @@ struct AudioTrackSettingsView: View {
             .opacity(viewModel.selectedAudioTrackIndex == -1 ? 0.5 : 1.0)
             .allowsHitTesting(viewModel.selectedAudioTrackIndex != -1)
         }
-        .background(Color.sheetBackground)
-        .applyIf(isIpad) { $0.cornerRadius(28) }
-        .applyIf(isLandscape && !isIpad) { view in
-            view.cornerRadiusLocal(20, corners: [.topLeft, .bottomLeft])
-        }
-        .applyIf(!isLandscape && !isIpad) { view in
-            view.cornerRadiusLocal(20, corners: [.topLeft, .topRight])
-        }
+        .background(Color.homeSheetBackground.ignoresSafeArea())
+        .overlay(
+            Group {
+                if isIpad {
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                } else if isLandscape {
+                    RoundedCorner(radius: 20, corners: [.topLeft, .bottomLeft])
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                } else {
+                    RoundedCorner(radius: 20, corners: [.topLeft, .topRight])
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                }
+            }
+        )
         .shadow(color: Color.black.opacity(0.6), radius: 20, x: 0, y: (isLandscape || isIpad) ? 10 : -10)
     }
     

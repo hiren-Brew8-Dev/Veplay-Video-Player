@@ -12,6 +12,7 @@ extension Color {
     // Home Screen specific
     static let homeBackground = Color(red: 0.05, green: 0.05, blue: 0.07)
     static let homeCardBackground = Color(red: 0.12, green: 0.12, blue: 0.15)
+    static let homeSheetBackground = Color(red: 0.05, green: 0.05, blue: 0.07)
     static let homeTextPrimary = Color.white
     static let homeTextSecondary = Color.gray.opacity(0.8)
     static let homeTint = Color.white 

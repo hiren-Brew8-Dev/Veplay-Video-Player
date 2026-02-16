@@ -130,6 +130,7 @@ struct FoldersView: View {
                         }
                         .padding(.bottom, 80)
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
             }
         }

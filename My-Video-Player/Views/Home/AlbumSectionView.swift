@@ -91,6 +91,7 @@ struct AlbumSectionView: View {
                         .padding(.horizontal, GridLayout.horizontalPadding)
                         .padding(.bottom, 100)
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)

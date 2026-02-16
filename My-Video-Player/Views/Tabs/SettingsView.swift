@@ -134,6 +134,7 @@ struct SettingsView: View {
                 .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                 .padding(.bottom, 100) // Space for tab bar
             }
+            .scrollBounceBehavior(.basedOnSize)
             .iPad { $0.frame(maxWidth: .infinity, alignment: .center) }
             
         }

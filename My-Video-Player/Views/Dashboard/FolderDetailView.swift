@@ -103,6 +103,7 @@ struct FolderDetailView: View {
                         listView
                             .padding(.bottom, viewModel.isSelectionMode ? 140 : 90)
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
             }
             
@@ -415,6 +416,7 @@ struct FolderDetailView: View {
                 .padding(.horizontal, GridLayout.horizontalPadding)
                 .padding(.bottom, viewModel.isSelectionMode ? 140 : 90)
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
     }
     

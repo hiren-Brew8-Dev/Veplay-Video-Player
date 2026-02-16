@@ -108,7 +108,7 @@ struct SubtitleEditView: View {
                 }
             }
         }
-        .background(Color(UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1.0)).edgesIgnoringSafeArea(.all))
+        .background(Color.homeSheetBackground.ignoresSafeArea())
         .preferredColorScheme(.dark)
     }
     
@@ -153,6 +153,7 @@ struct SubtitleEditView: View {
                 }
                 .padding(.horizontal, 2) // inset slightly for scroll clip
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
     }
     

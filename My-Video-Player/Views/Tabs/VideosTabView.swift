@@ -77,6 +77,7 @@ struct VideosTabView: View {
                                         }
                                         .padding(.horizontal)
                                     }
+                                    .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
                                 }
                             }
                             
@@ -106,6 +107,7 @@ struct VideosTabView: View {
                                     }
                                     .padding(.horizontal)
                                 }
+                                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
                             }
                             
                                 VStack(alignment: .leading) {
@@ -145,6 +147,7 @@ struct VideosTabView: View {
                         }
                         .padding(.bottom, 80)
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
                 
                 // FAB

@@ -16,7 +16,7 @@ struct ThanksForDownloadingView: View {
     var body: some View {
         ZStack {
             // MARK: - Background
-            Color(red: 0.05, green: 0.05, blue: 0.06)
+            Color.black
                 .ignoresSafeArea()
             
             // Decorative Blurred Circles

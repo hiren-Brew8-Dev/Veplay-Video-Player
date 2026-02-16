@@ -37,8 +37,20 @@ struct SettingsSheetView: View {
                 portraitBody
             }
         }
-        .background(
-            AppGlobalBackground().ignoresSafeArea()
+        .background(Color.homeSheetBackground.ignoresSafeArea())
+        .overlay(
+            Group {
+                if isIpad {
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                } else if isLandscape {
+                    RoundedCorner(radius: 24, corners: [.topLeft, .bottomLeft])
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                } else {
+                    RoundedCorner(radius: 24, corners: [.topLeft, .topRight])
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                }
+            }
         )
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .applyIf(isLandscape && !isIpad) { view in
@@ -114,6 +126,7 @@ struct SettingsSheetView: View {
             .padding(.horizontal, isIpad ? 32 : 20)
             .padding(.bottom, isIpad ? 40 : 30)
         }
+        .scrollBounceBehavior(.basedOnSize)
     }
     
     private var landscapeBody: some View {
@@ -126,6 +139,7 @@ struct SettingsSheetView: View {
             .padding(.horizontal, isIpad ? 32 : 20)
             .padding(.bottom, isIpad ? 40 : 30)
         }
+        .scrollBounceBehavior(.basedOnSize)
     }
     
     private var queueList: some View {

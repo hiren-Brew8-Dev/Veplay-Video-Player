@@ -246,6 +246,7 @@ struct CastDevicePickerView: View {
             .padding(.top, 16)
             .padding(.bottom, 20)
         }
+        .scrollBounceBehavior(.basedOnSize)
     }
     
     private var deviceList: some View {

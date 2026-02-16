@@ -78,9 +78,20 @@ struct LanguagePickerSheet: View {
                     }
                 }
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .background(
-            AppGlobalBackground().ignoresSafeArea()
+        .background(Color.homeSheetBackground.ignoresSafeArea())
+        .overlay(
+            Group {
+                if isIpad {
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                } else {
+                    // LanguagePickerSheet seems to be full screen or sheet presented, usually portrait on iPhone or centered on iPad
+                     RoundedCorner(radius: 28, corners: [.topLeft, .topRight])
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                }
+            }
         )
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .shadow(color: isIpad ? Color.black.opacity(0.5) : .clear, radius: isIpad ? 20 : 0)

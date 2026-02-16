@@ -16,7 +16,7 @@ struct Onboarding4View: View {
         ZStack {
             // ... (rest of the view)
             // MARK: - Background
-            Color(red: 0.05, green: 0.05, blue: 0.06)
+            Color.black
                 .ignoresSafeArea()
             
             // MARK: - Decorative Background Accents

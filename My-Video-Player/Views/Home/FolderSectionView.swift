@@ -179,13 +179,9 @@ struct FolderSectionView: View {
             }
             .padding(.top, isIpad ? 20 : 12)
             .padding(.bottom, max(10, UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0))
-            .background(
-                LinearGradient(
-                    colors: [.premiumGradientTop, .premiumGradientBottom],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
+            
+            .background(Color.homeSheetBackground)
+            
             .overlay(
                 VStack {
                     Rectangle()
@@ -329,6 +325,7 @@ struct FolderSectionView: View {
                 }
                 .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
     }
     

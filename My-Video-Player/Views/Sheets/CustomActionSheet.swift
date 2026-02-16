@@ -90,7 +90,7 @@ struct CustomActionSheet: View {
                     }
                 }
             }
-            .background(Color.premiumCardBackground)
+            .background(Color.homeSheetBackground.blendMode(.darken))
             .cornerRadius(20)
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
@@ -100,7 +100,7 @@ struct CustomActionSheet: View {
             .padding(.bottom, 40) // Extra padding for safe area
         }
         .background(
-            AppGlobalBackground().ignoresSafeArea()
+            Color.homeSheetBackground.opacity(1.0).ignoresSafeArea()
         )
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .applyIf(!isIpad) { $0.cornerRadiusLocal(28, corners: [.topLeft, .topRight]) }
