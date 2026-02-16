@@ -222,7 +222,7 @@ struct PaywallView: View {
                         ZStack {
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.premiumAccent)
-                                .aspectRatio(355/64, contentMode: .fit)
+                                .aspectRatio(321/52, contentMode: .fit)
                                 .shadow(radius: 4)
                                 .cornerRadius(60)
                             
