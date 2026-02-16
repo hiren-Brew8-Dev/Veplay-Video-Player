@@ -289,28 +289,26 @@ extension View {
         maxHeight: CGFloat? = nil,
         alignment: Alignment = .center
     ) -> some View {
-
-        self
-            // --- WIDTHS ---
-            .if(minWidth != nil) {
-                $0.responsiveWidth(iphoneWidth: minWidth)
-                    .frame(minWidth: nil)
-            }
-            .if(maxWidth != nil) {
-                $0.responsiveWidth(iphoneWidth: maxWidth)
-                    .frame(maxWidth: nil)
-            }
-
-            // --- HEIGHTS ---
-            .if(minHeight != nil) {
-                $0.responsiveHeight(iphoneHeight: minHeight)
-                    .frame(minHeight: nil)
-            }
-            .if(maxHeight != nil) {
-                $0.responsiveHeight(iphoneHeight: maxHeight)
-                    .frame(maxHeight: nil)
-            }
-
-            .frame(alignment: alignment)
+        
+        let screenWidth = UIScreen.main.bounds.width
+        let screenHeight = UIScreen.main.bounds.height
+        let isPad = UIDevice.current.userInterfaceIdiom == .pad
+        
+        // Calculate responsive widths
+        let calculatedMinWidth: CGFloat? = minWidth != nil ? (screenWidth / figmaBaseWidth) * minWidth! : nil
+        let calculatedMaxWidth: CGFloat? = maxWidth != nil ? (screenWidth / figmaBaseWidth) * maxWidth! : nil
+        
+        // Calculate responsive heights
+        let calculatedMinHeight: CGFloat? = minHeight != nil ? (screenHeight / figmaBaseHeight) * minHeight! : nil
+        let calculatedMaxHeight: CGFloat? = maxHeight != nil ? (screenHeight / figmaBaseHeight) * maxHeight! : nil
+        
+        return self
+            .frame(
+                minWidth: calculatedMinWidth,
+                maxWidth: calculatedMaxWidth,
+                minHeight: calculatedMinHeight,
+                maxHeight: calculatedMaxHeight,
+                alignment: alignment
+            )
     }
 }

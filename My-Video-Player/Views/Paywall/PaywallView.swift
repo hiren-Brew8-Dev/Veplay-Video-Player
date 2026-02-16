@@ -66,9 +66,6 @@ struct PaywallView: View {
                     .blur(radius: 80)
                     .offset(x: -164.5, y: 368.5)
                 
-             
-                    
-                
                 Circle()
                     .foregroundColor(.bgBlurOrange2.opacity(0.15))
                     .aspectRatio(1.0, contentMode: .fit)
@@ -109,7 +106,6 @@ struct PaywallView: View {
                                 
                             }
                         }
-                        .responsivePadding(edge: .trailing, fraction: 10)
                       
                     }
                        
@@ -159,8 +155,9 @@ struct PaywallView: View {
                     }
                     .padding(isIpad ? 25 : 16)
                     .background(Color.white.opacity(0.08))
-                    .cornerRadius(isIpad ? 40 : 20)
-                    .padding(.horizontal, 25)
+                    .cornerRadius(isIpad ? 30 : 20)
+                    
+                    
                     .responsivePadding(edge: .top, fraction: 40)
                     
                     // MARK: - Subscription Plans
@@ -196,6 +193,7 @@ struct PaywallView: View {
                             onSelect: { selectPlan(2) }
                         )
                     }
+                    
                     .responsivePadding(edge: .top, fraction: 30)
                     .padding(.horizontal)
                     
@@ -230,9 +228,9 @@ struct PaywallView: View {
                                 .appFont(.figtreeExtraBold, size: 20)
                                 .foregroundStyle(.black)
                         }
-                        .responsiveWidth(iphoneWidth: 355, ipadWidth: 0.6)
+                        
                     }
-                    .responsiveWidth(iphoneWidth: 345)
+                   
                     .responsivePadding(edge: .top, fraction: 30)
                     .disabled(isProccesing)
                     
@@ -268,13 +266,15 @@ struct PaywallView: View {
                     Spacer(minLength: 50)
                 }
             }
-            
+            .responsiveWidth(iphoneWidth: 360, ipadWidth: 280)
             
             
             if !subscriptionStore.isReady || isProccesing {
                 loaderOverlay()
             }
         }
+       
+        
         .navigationBarBackButtonHidden()
         
         .fullScreenCover(item: $webViewData) { data in
@@ -481,7 +481,7 @@ struct PaywallView: View {
             RoundedRectangle(cornerRadius: 10)
                 .fill(.white.opacity(0.2))
                 .aspectRatio(1.0, contentMode: .fit)
-                .responsiveWidth(iphoneWidth: 100)
+                .responsiveWidth(iphoneWidth: 100, ipadWidth: 70)
                 
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -521,7 +521,7 @@ struct FeatureRow: View {
             Image(icon)
                 .font(.system(size: 20))
                 .foregroundColor(.white)
-                .frame(width: 24, height: 24)
+                .frame(width: isIpad ? 40 : 24, height: isIpad ? 40 : 24)
             
             Text(text)
                 .appFont(.figtreeSemiBold, size: 18)
@@ -584,11 +584,14 @@ struct SubscriptionOption: View {
                     .appFont(isSelected ? .figtreeBold : .figtreeMedium, size: 15)
                     .foregroundColor(isSelected ? .white : .white.opacity(0.4))
                     .multilineTextAlignment(.center)
-                    .padding([.leading, .trailing], 6)
+                    .padding([.leading, .trailing], 10)
+                   
             }
+            .responsivePadding(edge: .bottom, fraction: isIpad ? 5 : 5)
         }
-        .responsiveWidth(iphoneWidth: 110)
-        .responsiveHeight(iphoneHeight: 154)
+        .aspectRatio(110/154, contentMode: .fit)
+//        .responsiveWidth(iphoneWidth: 110, ipadWidth: 80)
+        
         .background(isSelected ? Color.premiumAccent : Color.clear)
         .cornerRadius(16)
         .overlay(

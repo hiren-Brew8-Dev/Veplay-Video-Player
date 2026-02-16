@@ -99,23 +99,15 @@ struct ThanksForDownloadingView: View {
                 
                 .responsivePadding(edge: .all, fraction: 20)
                 .aspectRatio(321/365, contentMode: .fit)
-                .responsiveWidth(iphoneWidth: 321)
+                .responsiveWidth(iphoneWidth: 321, ipadWidth : 230)
                 .background(
                     ZStack {
                         Color(red: 1, green: 1, blue: 1).opacity(0.10)
                         
-                        // Internal Accent Glow - Using Extensions
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .responsiveWidth(iphoneWidth: 26.98)
-                            .responsiveHeight(iphoneHeight: 24.09)
-                            .background(Color.premiumAccent.opacity(0.20))
-                            .offset(x: 119.70 * (UIScreen.main.bounds.width / 393), 
-                                    y: -154.45 * (UIScreen.main.bounds.height / 852))
-                            .blur(radius: 10.83)
+    
                     }
                 )
-                .cornerRadius(24)
+                .cornerRadius(isIpad ? 27 : 24)
                 .offset(y: isAnimating ? 0 : 50)
                 .opacity(isAnimating ? 1 : 0)
                 .animation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.3), value: isAnimating)

@@ -21,42 +21,42 @@ struct Onboarding1View: View {
             Group {
                 Circle()
                     .foregroundColor(.bgBlurOrange1.opacity(0.08))
-                    .frame(width: 256, height: 256)
-                    .blur(radius: 80)
-                    .offset(x: -164.50, y: 410)
+                    .frame(width: isIpad ? 400 : 256, height: isIpad ? 400 : 256)
+                    .blur(radius: isIpad ? 120 : 80)
+                    .offset(x: isIpad ? -250 : -164.50, y: isIpad ? 600 : 410)
                 
                 Circle()
                     .foregroundColor(.bgBlurOrange2.opacity(0.08))
-                    .frame(width: 256, height: 256)
-                    .blur(radius: 80)
-                    .offset(x: 161.50, y: -410)
+                    .frame(width: isIpad ? 400 : 256, height: isIpad ? 400 : 256)
+                    .blur(radius: isIpad ? 120 : 80)
+                    .offset(x: isIpad ? 250 : 161.50, y: isIpad ? -600 : -410)
             }
             
             VStack(spacing: 0) {
                 // MARK: - Header (Pagination Dots)
                 HStack {
                     Spacer()
-                    HStack(spacing: 4) {
+                    HStack(spacing: isIpad ? 6 : 4) {
                         Rectangle()
                             .foregroundColor(.clear)
-                            .frame(width: 32, height: 7)
+                            .frame(width: isIpad ? 48 : 32, height: isIpad ? 10 : 7)
                             .background(Color.premiumAccent)
                             .cornerRadius(24)
                         
                         Rectangle()
                             .foregroundColor(.clear)
-                            .frame(width: 7, height: 7)
+                            .frame(width: isIpad ? 10 : 7, height: isIpad ? 10 : 7)
                             .background(Color.white.opacity(0.50))
                             .cornerRadius(24)
                         
                         Rectangle()
                             .foregroundColor(.clear)
-                            .frame(width: 7, height: 7)
+                            .frame(width: isIpad ? 10 : 7, height: isIpad ? 10 : 7)
                             .background(Color.white.opacity(0.50))
                             .cornerRadius(24)
                     }
-                    .responsivePadding(edge: .top, fraction: 30)
-                    .responsivePadding(edge: .trailing, fraction: 30)
+                    .responsivePadding(edge: .top, fraction: isIpad ? 50 : 30)
+                    .responsivePadding(edge: .trailing, fraction: isIpad ? 50 : 30)
                 }
                 
                 Spacer()
@@ -66,59 +66,65 @@ struct Onboarding1View: View {
                     // Left Top Card
                     OnboardingImageCard(
                         imageName: "Image_1_left_top_onb_1",
-                        width: 171,
-                        height: 213,
-                        playButtonSize: 35
+                        width: isIpad ? 131 : 171,
+                        height: isIpad ? 163 : 213,
+                        playButtonSize: isIpad ? 25 : 35
                     )
                     .rotationEffect(.degrees(-8))
                     .scaleEffect(isAnimating ? 1 : 0.6)
-                    .offset(x: isAnimating ? -80 : -150, y: isAnimating ? -100 : -150)
+                    .offset(
+                        x: isAnimating ? (isIpad ? -80 : -80) : (isIpad ? -150 : -150),
+                        y: isAnimating ? (isIpad ? -100 : -100) : (isIpad ? -150 : -150)
+                    )
                     .opacity(isAnimating ? 1 : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: isAnimating)
                     
                     // Right Top Card
                     OnboardingImageCard(
                         imageName: "Image_2_right_top_onb_1",
-                        width: 171,
-                        height: 189,
-                        playButtonSize: 31.34
+                        width: isIpad ? 121 : 171,
+                        height: isIpad ? 139 : 189,
+                        playButtonSize: isIpad ? 21.34 : 31.34
                     )
                     .rotationEffect(.degrees(12))
                     .scaleEffect(isAnimating ? 1 : 0.6)
-                    .offset(x: isAnimating ? 85 : 150, y: isAnimating ? -80 : -130)
+                    .offset(
+                        x: isAnimating ? (isIpad ? 85 : 85) : (isIpad ? 150 : 150),
+                        y: isAnimating ? (isIpad ? -80 : -80) : (isIpad ? -130 : -130)
+                    )
                     .opacity(isAnimating ? 1 : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
                     
                     // Bottom Center Card
                     OnboardingImageCard(
                         imageName: "Image_3_bottom_center_onb_1",
-                        width: 201,
-                        height: 215,
-                        playButtonSize: 40
+                        width: isIpad ? 141: 201,
+                        height: isIpad ? 125 : 215,
+                        playButtonSize: isIpad ? 30 : 40
                     )
                     .scaleEffect(isAnimating ? 1 : 0.7)
-                    .offset(x: -15, y: isAnimating ? 60 : 130)
+                    .offset(x: isIpad ? -30 : -15, y: isAnimating ? (isIpad ? 140 : 60) : (isIpad ? 300 : 130))
                     .opacity(isAnimating ? 1 : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.3), value: isAnimating)
                 }
-                .responsiveHeight(iphoneHeight: 400)
+                .frame(height: isIpad ? 500 : 400)
                 
                 Spacer()
                 
                 // MARK: - Text Content
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: isIpad ? 18 : 12) {
                     Text("Play Any Video\nEffortlessly")
-                        .appFont(.figtreeBold, size: 40)
+                        .appFont(.figtreeBold, size: isIpad ? 40 : 40)
                         .foregroundColor(.white)
                         .fixedSize(horizontal: false, vertical: true)
                         .scaleEffect(isAnimating ? 1 : 0.95, anchor: .leading)
                     
                     Text("Open and play videos without extra steps.")
-                        .appFont(.figtreeRegular, size: 16)
+                        .appFont(.figtreeRegular, size: isIpad ? 16 : 16)
                         .foregroundColor(Color.white.opacity(0.80))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .responsivePadding(edge: .horizontal, fraction: 30)
+                .responsivePadding(edge: .horizontal, fraction: isIpad ? 60 : 30)
                 .offset(y: isAnimating ? 0 : 30)
                 .opacity(isAnimating ? 1 : 0)
                 .animation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.4), value: isAnimating)
@@ -131,15 +137,16 @@ struct Onboarding1View: View {
                     navManager.push(.onboarding2)
                 }) {
                     Text("Continue")
-                        .appFont(.figtreeBold, size: 20)
+                        .appFont(.figtreeBold, size: isIpad ? 26 : 20)
                         .foregroundColor(Color(red: 0.05, green: 0.05, blue: 0.06))
-                        .responsiveWidth(iphoneWidth: 321)
-                        .responsiveHeight(iphoneHeight: 52)
+                        .aspectRatio(321/52, contentMode: .fit)
+                        .responsiveWidth(iphoneWidth: 321, ipadWidth: 321)
+                        .responsiveHeight(iphoneHeight: 52, ipadHeight: 52)
                         .background(Color.premiumAccent)
-                        .cornerRadius(40)
+                        .cornerRadius(isIpad ? 50 : 40)
                 }
-                .responsivePadding(edge: .horizontal, fraction: 30)
-                .responsivePadding(edge: .bottom, fraction: 10)
+                .responsivePadding(edge: .horizontal, fraction: isIpad ? 60 : 30)
+                .responsivePadding(edge: .bottom, fraction: isIpad ? 30 : 10)
                 .scaleEffect(isAnimating ? 1 : 0.9)
                 .opacity(isAnimating ? 1 : 0)
                 .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.5), value: isAnimating)
@@ -163,17 +170,19 @@ struct OnboardingImageCard: View {
             Image(imageName)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .responsiveFrame(minWidth: width, minHeight: height)
+                .responsiveWidth(iphoneWidth: width)
+               
                 .clipped()
             
             // Play Button Overlay
             Circle()
                 .fill(Color.black.opacity(0.50))
-                .responsiveFrame(minWidth: playButtonSize, minHeight: playButtonSize)
+                .responsiveWidth(iphoneWidth: playButtonSize)
+                
                 .overlay(
                     Image(systemName: "play.fill")
                         .foregroundColor(.white)
-                        .font(.system(size: playButtonSize * 0.4))
+                        .font(.system(size: playButtonSize * ( isIpad ? 0.7 : 0.4)))
                 )
                 .overlay(
                     Circle()
