@@ -8,7 +8,7 @@ struct DashboardView: View {
     @AppStorage("isDarkMode") private var isDarkMode = true
     @EnvironmentObject var navigationManager: NavigationManager
     
-    @State private var selectedPhotoItems = [PhotosPickerItem]()
+
     
     init() {
         // Configure system tab bar appearance
@@ -123,21 +123,7 @@ struct DashboardView: View {
         .sheet(isPresented: $viewModel.showMovePicker) {
             MoveDestinationPickerView(viewModel: viewModel, videosToMove: viewModel.videosToMove, isCutOperation: viewModel.isCutMode)
         }
-        .fileImporter(
-            isPresented: $viewModel.showFileImporter,
-            allowedContentTypes: [.movie, .video, .quickTimeMovie, .mpeg4Movie, .mpeg, .avi, .item],
-            allowsMultipleSelection: true
-        ) { result in
-            handleFileImport(result)
-        }
-        .photosPicker(
-            isPresented: $viewModel.showPhotoPicker,
-            selection: $selectedPhotoItems,
-            matching: .videos
-        )
-        .onChange(of: selectedPhotoItems) { oldItems, newItems in
-            handlePhotoImport(newItems)
-        }
+
         .sheet(isPresented: $viewModel.showShareSheetGlobal) {
             shareSheetContent
         }
@@ -238,99 +224,7 @@ struct DashboardView: View {
         }
     }
 
-    private func handleFileImport(_ result: Result<[URL], Error>) {
-        switch result {
-        case .success(let urls):
-            Task {
-                await viewModel.importVideos(from: urls)
-                await MainActor.run {
-                    // Stay in current tab
-                }
-            }
-        case .failure(let error):
-            print("File import failed: \(error.localizedDescription)")
-        }
-    }
 
-    private func handlePhotoImport(_ items: [PhotosPickerItem]) {
-        guard !items.isEmpty else { return }
-        
-        let totalCount = items.count
-        
-        Task.detached(priority: .userInitiated) {
-            await MainActor.run {
-                viewModel.startImportSession(count: totalCount)
-            }
-            
-            for (index, item) in items.enumerated() {
-                // 1. Resolve Filename (Background)
-                var fileName: String?
-                if let localID = item.itemIdentifier {
-                    let result = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil)
-                    if let asset = result.firstObject {
-                        let resources = PHAssetResource.assetResources(for: asset)
-                        fileName = resources.first?.originalFilename
-                    }
-                }
-                
-                // 2. Setup Live Progress Reporting (Simulated for PhotosPickerItem)
-                await MainActor.run {
-                    viewModel.importCurrentIndex = index + 1
-                    viewModel.importStatusMessage = "Preparing inputs..."
-                    viewModel.importProgress = Double(index) / Double(totalCount)
-                }
-                
-                // Start a background task to simulate progress for the download/export phase
-                let progressTask = Task {
-                    var simulatedProgress = 0.0
-                    // Increment progress every 100ms
-                    while !Task.isCancelled && simulatedProgress < 0.9 {
-                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
-                        simulatedProgress += 0.01 // +1%
-                        
-                        // Update UI on MainActor
-                        await MainActor.run {
-                            // Calculate global progress
-                            // Base = index/total.
-                            // Current item contribution = simulated * (1/total)
-                            let base = Double(index) / Double(totalCount)
-                            let currentItemContribution = simulatedProgress * (1.0 / Double(totalCount))
-                            viewModel.importProgress = min(base + currentItemContribution, Double(index + 1) / Double(totalCount) - 0.01)
-                            viewModel.importStatusMessage = "Downloading: \(Int(simulatedProgress * 100))%"
-                        }
-                    }
-                }
-                
-                // 3. Load Transferable (Heavy I/O)
-                // We use standard loadTransferable. The progressTask above gives visual feedback.
-                if let movie = try? await item.loadTransferable(type: VideoTransferable.self) {
-                    progressTask.cancel() // Stop the simulator
-                    
-                    // 4. Update UI: Finalizing
-                    await MainActor.run {
-                        viewModel.importStatusMessage = "Finalizing: \(fileName ?? movie.url.lastPathComponent)"
-                    }
-                    
-                    // 5. Perform Import
-                    await viewModel.importSingleVideo(from: movie.url, name: fileName ?? movie.url.lastPathComponent)
-                    
-                    // 6. Item Complete
-                    await MainActor.run {
-                        viewModel.importProgress = Double(index + 1) / Double(totalCount)
-                    }
-                } else {
-                    progressTask.cancel()
-                    print("Failed to load transferable for item \(index)")
-                }
-            }
-            
-            // Finalize
-            await MainActor.run {
-                selectedPhotoItems.removeAll()
-                viewModel.finalizeImportSession()
-            }
-        }
-    }
 
     @ViewBuilder
     private var shareSheetContent: some View {

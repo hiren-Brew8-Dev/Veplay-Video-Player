@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import SwiftUI
 import Photos
+import PhotosUI
 import AVFoundation
 import CoreData
 import MobileVLCKit
@@ -2215,6 +2216,97 @@ class VLCDurationHelper: NSObject, VLCMediaDelegate {
         let duration = Double(length.intValue) / 1000.0
         Task { @MainActor in
             completion?(duration)
+        }
+    }
+}
+
+// MARK: - Centralized Import Handlers
+extension DashboardViewModel {
+    @MainActor
+    func handleFileImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            Task {
+                await self.importVideos(from: urls)
+            }
+        case .failure(let error):
+            print("File import failed: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    func handlePhotoImport(_ items: [PhotosPickerItem]) {
+        guard !items.isEmpty else { return }
+        
+        let totalCount = items.count
+        
+        // Start session immediately
+        self.startImportSession(count: totalCount)
+        
+        Task.detached(priority: .userInitiated) {
+            
+            for (index, item) in items.enumerated() {
+                // 1. Resolve Filename (Background)
+                var fileName: String?
+                if let localID = item.itemIdentifier {
+                    let result = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil)
+                    if let asset = result.firstObject {
+                        let resources = PHAssetResource.assetResources(for: asset)
+                        fileName = resources.first?.originalFilename
+                    }
+                }
+                
+                // 2. Setup Live Progress Reporting (Simulated)
+                await MainActor.run {
+                    self.importCurrentIndex = index + 1
+                    self.importStatusMessage = "Preparing inputs..."
+                    self.importProgress = Double(index) / Double(totalCount)
+                }
+                
+                // Start a background task to simulate progress for the download/export phase
+                let progressTask = Task {
+                    var simulatedProgress = 0.0
+                    // Increment progress every 100ms
+                    while !Task.isCancelled && simulatedProgress < 0.9 {
+                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+                        simulatedProgress += 0.01 // +1%
+                        
+                        // Update UI on MainActor
+                        await MainActor.run {
+                            let base = Double(index) / Double(totalCount)
+                            let currentItemContribution = simulatedProgress * (1.0 / Double(totalCount))
+                            self.importProgress = min(base + currentItemContribution, Double(index + 1) / Double(totalCount) - 0.01)
+                            self.importStatusMessage = "Downloading: \(Int(simulatedProgress * 100))%"
+                        }
+                    }
+                }
+                
+                // 3. Load Transferable (Heavy I/O)
+                if let movie = try? await item.loadTransferable(type: VideoTransferable.self) {
+                    progressTask.cancel() // Stop the simulator
+                    
+                    // 4. Update UI: Finalizing
+                    await MainActor.run {
+                        self.importStatusMessage = "Finalizing: \(fileName ?? movie.url.lastPathComponent)"
+                    }
+                    
+                    // 5. Perform Import
+                    await self.importSingleVideo(from: movie.url, name: fileName ?? movie.url.lastPathComponent)
+                    
+                    // 6. Item Complete
+                    await MainActor.run {
+                        self.importProgress = Double(index + 1) / Double(totalCount)
+                    }
+                } else {
+                    progressTask.cancel()
+                    print("Failed to load transferable for item \(index)")
+                }
+            }
+            
+            // Finalize
+            await MainActor.run {
+                self.finalizeImportSession()
+            }
         }
     }
 }

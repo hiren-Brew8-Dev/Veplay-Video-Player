@@ -2,7 +2,9 @@ import SwiftUI
 import AVFoundation
 import CoreData
 import GoogleCast
+import GoogleCast
 import Firebase
+import PhotosUI
 
 @main
 struct VideoPlayerApp: App {
@@ -20,6 +22,7 @@ struct VideoPlayerApp: App {
     @StateObject private var navigationManager = NavigationManager()
     @StateObject private var ratingViewModel = RatingFlowViewModel.shared
     @StateObject private var authService = BiometricAuthService.shared
+    @State private var selectedPhotoItems = [PhotosPickerItem]()
 
     @AppStorage("useFaceID") private var useFaceID = false
     
@@ -85,6 +88,22 @@ struct VideoPlayerApp: App {
                         authService.isUnlocked = false
                     }
                 }
+            }
+            // MARK: - Global Import Handlers
+            .fileImporter(
+                isPresented: $dashboardViewModel.showFileImporter,
+                allowedContentTypes: [.movie, .video, .quickTimeMovie, .mpeg4Movie, .mpeg, .avi, .item],
+                allowsMultipleSelection: true
+            ) { result in
+                dashboardViewModel.handleFileImport(result)
+            }
+            .photosPicker(
+                isPresented: $dashboardViewModel.showPhotoPicker,
+                selection: $selectedPhotoItems,
+                matching: .videos
+            )
+            .onChange(of: selectedPhotoItems) { oldItems, newItems in
+                dashboardViewModel.handlePhotoImport(newItems)
             }
         }
     }
