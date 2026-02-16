@@ -67,11 +67,7 @@ struct CastDevicePickerView: View {
         .applyIf(isLandscape && !isIpad) { $0.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top) }
         .applyIf(!isLandscape && !isIpad) { $0.padding(.bottom, 20) }
         .background(
-            LinearGradient(
-                colors: [.premiumGradientTop, .premiumGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            AppGlobalBackground().ignoresSafeArea()
         )
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .applyIf(isLandscape && !isIpad) { view in

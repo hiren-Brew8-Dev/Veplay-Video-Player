@@ -39,11 +39,9 @@ struct SleepTimerSheetView: View {
             }
         }
         .background(
-            LinearGradient(
-                colors: [.premiumGradientTop, .premiumGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+        .background(
+            AppGlobalBackground().ignoresSafeArea()
+        )
         )
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .applyIf(isLandscape && !isIpad) { view in

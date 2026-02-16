@@ -10,11 +10,8 @@ struct MoveDestinationPickerView: View {
     var body: some View {
         ZStack {
             // Background Gradient
-            LinearGradient(
-                colors: [.premiumGradientTop, .premiumGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            // Background Gradient
+            AppGlobalBackground().ignoresSafeArea()
             .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {

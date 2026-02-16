@@ -126,11 +126,7 @@ struct ConflictResolutionView: View {
         }
         .padding(24)
         .background(
-            LinearGradient(
-                colors: [.premiumGradientTop, .premiumGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            AppGlobalBackground().ignoresSafeArea()
         )
         .cornerRadius(28)
         .overlay(

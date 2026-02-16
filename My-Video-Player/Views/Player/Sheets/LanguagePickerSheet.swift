@@ -34,7 +34,7 @@ struct LanguagePickerSheet: View {
                 .foregroundColor(.homeAccent)
             }
             .padding()
-            .background(Color.sheetSurface)
+            .background(Color.premiumCardBackground)
             
             // Search Bar (Visual only for now)
             HStack {
@@ -43,7 +43,7 @@ struct LanguagePickerSheet: View {
                 Spacer()
             }
             .padding(10)
-            .background(Color.homeCardBackground)
+            .background(Color.premiumCardBackground)
             .cornerRadius(8)
             .padding()
             
@@ -57,7 +57,7 @@ struct LanguagePickerSheet: View {
                         }) {
                             HStack {
                                 Text(lang.0)
-                                    .foregroundColor(.homeTextPrimary)
+                                    .foregroundColor(.white) // Ensure text is white
                                     .font(.system(size: 16))
                                 Spacer()
                                 if selectedLanguageCode == lang.1 {
@@ -66,18 +66,20 @@ struct LanguagePickerSheet: View {
                                         .frame(width: 8, height: 8)
                                 } else {
                                     Circle()
-                                        .fill(Color.sheetDivider)
+                                        .fill(Color.white.opacity(0.3)) // Lighter divider
                                         .frame(width: 8, height: 8)
                                 }
                             }
                             .padding()
-                            .background(Color.sheetBackground) // List item bg
+                            .background(Color.clear) // Transparent list item bg
                         }
                     }
                 }
             }
         }
-        .background(Color.sheetBackground)
+        .background(
+            AppGlobalBackground().ignoresSafeArea()
+        )
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .shadow(color: isIpad ? Color.black.opacity(0.5) : .clear, radius: isIpad ? 20 : 0)
     }

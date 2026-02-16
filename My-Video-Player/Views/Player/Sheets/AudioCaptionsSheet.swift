@@ -12,11 +12,8 @@ struct AudioCaptionsSheet: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             // Background Gradient with Blur
-            LinearGradient(
-                colors: [.premiumGradientTop, .premiumGradientBottom],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            // Background Gradient with Blur
+            AppGlobalBackground().ignoresSafeArea()
             .ignoresSafeArea()
             
             VStack(spacing: 0) {

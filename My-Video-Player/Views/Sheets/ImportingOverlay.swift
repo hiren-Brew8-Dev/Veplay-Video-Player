@@ -88,12 +88,8 @@ struct ImportingOverlay: View {
         .padding(.vertical, 40)
         .frame(width: 320) // Fixed width before background to stabilize size
         .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 32)
-                    .fill(.ultraThinMaterial)
-                RoundedRectangle(cornerRadius: 32)
-                    .fill(Color.premiumCardBackground.opacity(0.5))
-            }
+            AppGlobalBackground()
+                .clipShape(RoundedRectangle(cornerRadius: 32))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 32)
