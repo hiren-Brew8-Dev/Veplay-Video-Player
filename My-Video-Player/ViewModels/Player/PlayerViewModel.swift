@@ -1047,11 +1047,12 @@ import UIKit
     }
     
     @objc private func appDidEnterBackground() {
-        // Check user setting for background play (Default: true)
-        let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? true
+        // Check user setting for background play (Default: false)
+        let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? false
+        let isUserPro = Global.shared.getIsUserPro()
         
-        if !isBgEnabled {
-            print("Background Play disabled in settings - pausing playback")
+        if !isBgEnabled || !isUserPro {
+            print("Background Play disabled (Setting: \(isBgEnabled), Pro: \(isUserPro)) - pausing playback")
             self.pause()
         } else {
             print("App entered background - continuing audio (Background Play enabled)")
@@ -1097,8 +1098,9 @@ import UIKit
             guard let self = self else { return .commandFailed }
             // Check background play restriction
             if UIApplication.shared.applicationState == .background {
-                let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? true
-                if !isBgEnabled { return .commandFailed }
+                let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? false
+                let isUserPro = Global.shared.getIsUserPro()
+                if !isBgEnabled || !isUserPro { return .commandFailed }
             }
             Task { @MainActor in self.play() }
             return .success
@@ -1115,8 +1117,9 @@ import UIKit
              guard let self = self else { return .commandFailed }
              // Check background play restriction
              if UIApplication.shared.applicationState == .background {
-                 let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? true
-                 if !isBgEnabled { return .commandFailed }
+                 let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? false
+                 let isUserPro = Global.shared.getIsUserPro()
+                 if !isBgEnabled || !isUserPro { return .commandFailed }
              }
              Task { @MainActor in self.seek(to: self.currentTime + 10) }
              return .success
@@ -1127,8 +1130,9 @@ import UIKit
              guard let self = self else { return .commandFailed }
              // Check background play restriction
              if UIApplication.shared.applicationState == .background {
-                 let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? true
-                 if !isBgEnabled { return .commandFailed }
+                 let isBgEnabled = UserDefaults.standard.object(forKey: "isBackgroundPlayEnabled") as? Bool ?? false
+                 let isUserPro = Global.shared.getIsUserPro()
+                 if !isBgEnabled || !isUserPro { return .commandFailed }
              }
              Task { @MainActor in self.seek(to: self.currentTime - 10) }
              return .success

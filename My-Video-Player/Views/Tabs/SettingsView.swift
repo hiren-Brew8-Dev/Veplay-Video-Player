@@ -3,7 +3,7 @@ import LocalAuthentication
 
 struct SettingsView: View {
     @AppStorage("useFaceID") private var useFaceID = false
-    @AppStorage("isBackgroundPlayEnabled") private var isBackgroundPlayEnabled = true
+    @AppStorage("isBackgroundPlayEnabled") private var isBackgroundPlayEnabled = false
     @EnvironmentObject var viewModel: DashboardViewModel
     @EnvironmentObject var navigationManager: NavigationManager
     @State private var webViewData: WebViewData? = nil
@@ -69,7 +69,12 @@ struct SettingsView: View {
                                 icon: "music.note.list",
                                 title: "Background Play",
                                 subtitle: "Keep playing audio when app is in background",
-                                isOn: $isBackgroundPlayEnabled,
+                                isOn: Binding(
+                                    get: { isBackgroundPlayEnabled },
+                                    set: { newValue in
+                                        handleBackgroundPlayToggle(newValue)
+                                    }
+                                ),
                                 iconColor: .purple
                             )
                         }
@@ -142,12 +147,33 @@ struct SettingsView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+        .onAppear {
+            if !Global.shared.getIsUserPro() {
+                isBackgroundPlayEnabled = false
+            }
+        }
     }
 
     // MARK: - FaceID Handling
     
     @State private var showBiometricAlert = false
     @State private var biometricAlertMessage = ""
+    
+    // MARK: - Background Play Handling
+    
+    private func handleBackgroundPlayToggle(_ newValue: Bool) {
+        if newValue {
+            if Global.shared.getIsUserPro() {
+                isBackgroundPlayEnabled = true
+            } else {
+                // Not a pro user - show paywall and reset toggle
+                isBackgroundPlayEnabled = false
+                navigationManager.push(.paywall(isFromOnboarding: false))
+            }
+        } else {
+            isBackgroundPlayEnabled = false
+        }
+    }
 
     private func handleFaceIDToggle(_ newValue: Bool) {
         if newValue {
