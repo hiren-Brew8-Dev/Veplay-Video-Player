@@ -89,7 +89,7 @@ struct RatingView: View {
         withAnimation(.spring(response: 0.6, dampingFraction: 0.75).delay(0.5)) { showButton = true }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            AppReviewManager.shared.submitReview()
+            AppReviewManager.submitReview(isShowAppleReviewScreen: false)
         }
     }
 }

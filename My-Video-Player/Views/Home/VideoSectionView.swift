@@ -54,14 +54,7 @@ struct VideoSectionView: View {
                                     emptyStateView
                                         .frame(minHeight: geometry.size.height * 0.6)
                                 } else if !viewModel.isInitialLoading || !viewModel.importedVideos.isEmpty {
-                                    
-                                    // Rating Card Integration
-                                    if !AppReviewManager.shared.isRatingCardHidden && !viewModel.isSelectionMode {
-                                        RatingCardView()
-                                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-                                            .transition(.move(edge: .top).combined(with: .opacity))
-                                    }
-
+                                   
                                     if viewModel.isGridView {
                                         videosGrid(isLandscape: isLandscape, width: currentWidth)
                                     } else {

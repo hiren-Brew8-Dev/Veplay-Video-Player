@@ -14,13 +14,13 @@ final class RatingFlowViewModel: ObservableObject {
     // MARK: - Singleton
     static let shared = RatingFlowViewModel()
     private init() {
+        
         loadValue()
         observeICloudChanges()
     }
 
     // MARK: - Keys
     private let ratingKey = "is_already_show_rating_popup"
-    private let snoozeDateKey = "ratingFlowSnoozeDate"
 
     // MARK: - Storage
     private let userDefaults = UserDefaults.standard
@@ -51,32 +51,6 @@ final class RatingFlowViewModel: ObservableObject {
         updateLocal(value)
         updateCloud(value)
         isAlreadyShown = value
-        // If set to true (forever), clear snooze
-        if value {
-             userDefaults.removeObject(forKey: snoozeDateKey)
-        }
-    }
-    
-    func snoozeRatingPopup() {
-        let calendar = Calendar.current
-        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: Date()),
-           let nextMidnight = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: tomorrow) {
-            
-            userDefaults.set(nextMidnight, forKey: snoozeDateKey)
-            customRatingDismiss()
-        }
-    }
-    
-    var isSnoozed: Bool {
-        if let snoozeDate = userDefaults.object(forKey: snoozeDateKey) as? Date {
-            if Date() < snoozeDate {
-                return true
-            } else {
-                userDefaults.removeObject(forKey: snoozeDateKey)
-                return false
-            }
-        }
-        return false
     }
 
     // MARK: - Reset
@@ -85,8 +59,6 @@ final class RatingFlowViewModel: ObservableObject {
         updateLocal(false)
         updateCloud(false)
         isAlreadyShown = false
-        userDefaults.removeObject(forKey: snoozeDateKey)
-        AppReviewManager.shared.resetForTesting()
     }
 
     // MARK: - Private Helpers
@@ -124,20 +96,18 @@ extension RatingFlowViewModel {
     // MARK: - Submit Review (button tap)
     func submitReview(isShowAppleReviewScreen : Bool = false) {
         setValue(true)
-        AppReviewManager.shared.submitReview(isShowAppleReviewScreen: isShowAppleReviewScreen)
+        AppReviewManager.submitReview(isShowAppleReviewScreen: isShowAppleReviewScreen)
         showUnlockCategoryPopup = false
         isAlreadyShown = true
     }
 
     // MARK: - Submit Stars
     func submitStars(stars: Int) {
-        
         if stars > 3 {
-            AppReviewManager.shared.submitReview(isShowAppleReviewScreen: true)
+            AppReviewManager.submitReview(isShowAppleReviewScreen: true)
         } else {
             openFeedbackMail()
         }
-        AppReviewManager.shared.hideRatingCardForever()
         setValue(true)
         showCustomRatingPopup = false
         isAlreadyShown = true
@@ -152,7 +122,7 @@ extension RatingFlowViewModel {
 
     func openFeedbackMail() {
         let email = "ishivshankartiwari70@gmail.com"
-        let subject = "Feedback"
+        let subject = "App Feedback"
         let body = ""
 
         let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""

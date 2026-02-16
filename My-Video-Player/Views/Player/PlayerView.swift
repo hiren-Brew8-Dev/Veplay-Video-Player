@@ -267,11 +267,14 @@ struct PlayerView: View {
                 let resistance: CGFloat = 0.6
                 let dampedTranslation = max(0, value.translation.height) * resistance
                 
-                var transaction = Transaction(animation: nil)
+                var transaction = SwiftUI.Transaction(animation: nil)
                 transaction.disablesAnimations = true
+
                 withTransaction(transaction) {
                     dismissOffset = dampedTranslation
                 }
+
+               
             }
             .onEnded { value in
                 guard isDismissGestureActive else { return }
