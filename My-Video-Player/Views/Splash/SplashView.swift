@@ -52,6 +52,7 @@ struct SplashView : View {
                 .opacity(textOpacity)
             }
         }
+        .hideNavigationBar()
         .onAppear {
             animateIn()
             
@@ -67,10 +68,8 @@ struct SplashView : View {
         if !isOnboardingCompleted {
             navigationManager.push(.onboarding1)
         } else {
-            // After splash, show paywall then dashboard
-            navigationManager.push(.dashboard)
-            // Note: If we want Splash -> Paywall -> Home, we push paywall ON TOP of dashboard
-            navigationManager.push(.paywall)
+            // Onboarding done → show paywall first, it will navigate to dashboard on dismiss
+            navigationManager.push(.paywall(isFromOnboarding: true))
         }
     }
     

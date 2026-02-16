@@ -159,6 +159,7 @@ struct DashboardView: View {
         .sheet(isPresented: $viewModel.showSortSheet) {
             CustomSortingView(sortOptionRaw: $viewModel.videoSortOptionRaw, title: "Videos")
         }
+        
     }
 
     @ViewBuilder
@@ -207,16 +208,17 @@ struct DashboardView: View {
                 
                 // Premium/Crown Icon (New)
                 Button {
-                    navigationManager.push(.paywall)
+                    navigationManager.push(.paywall(isFromOnboarding: false))
                 } label: {
                     ZStack {
                         Circle()
-                            .fill(Color.premiumCircleBackground)
+                            .fill(Color.premiumIconBackground)
                             .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
                         
                         Image(systemName: "crown.fill")
                             .font(.system(size: isIpad ? 20 : 14, weight: .bold))
-                            .foregroundColor(.yellow)
+                            .foregroundColor(.black)
+                        
                     }
                 }
             }

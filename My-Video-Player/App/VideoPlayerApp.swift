@@ -33,15 +33,20 @@ struct VideoPlayerApp: App {
                         case .onboarding3: Onboarding3View()
                         case .onboarding4: Onboarding4View()
                         case .thanksForDownloading: ThanksForDownloadingView()
-                        case .paywall: PaywallView()
-                            .navigationBarHidden(true)
+                        case .paywall(let isFromOnboarding): PaywallView(isFromOnboarding: isFromOnboarding)
+                            .hideNavigationBar()
                         case .rating: RatingView()
                         case .dashboard: DashboardView()
+                            .hideNavigationBar()
                         case .settings: SettingsView()
-                            .navigationBarHidden(true)
-                        case .allFolders: FolderSectionView(viewModel: DashboardViewModel()) // Note: FolderSectionView needs a viewModel
-                        case .folderDetail(let folder): FolderDetailView(initialFolder: folder, viewModel: DashboardViewModel())
-                        case .search(let title, let videos): SearchView(viewModel: DashboardViewModel(), contextTitle: title, initialVideos: videos)
+                            .environmentObject(dashboardViewModel)
+                            .hideNavigationBar()
+                        case .allFolders: FolderSectionView(viewModel: dashboardViewModel)
+                            .hideNavigationBar()
+                        case .folderDetail(let folder): FolderDetailView(initialFolder: folder, viewModel: dashboardViewModel)
+                            .hideNavigationBar()
+                        case .search(let title, let videos): SearchView(viewModel: dashboardViewModel, contextTitle: title, initialVideos: videos)
+                            .hideNavigationBar()
                         }
                     }
             }

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ThanksForDownloadingView: View {
     @EnvironmentObject var navManager: NavigationManager
+    @AppStorage("isOnboardingCompleted") private var isOnboardingCompleted = false
     @State private var isAnimating = false
     
     var body: some View {
@@ -124,7 +125,8 @@ struct ThanksForDownloadingView: View {
                 // MARK: - Action Button
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    navManager.push(.paywall)
+                    isOnboardingCompleted = true
+                    navManager.push(.paywall(isFromOnboarding: true))
                 }) {
                     Text("Continue")
                         .appFont(.figtreeBold, size: 20)

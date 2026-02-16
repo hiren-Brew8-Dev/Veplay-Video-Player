@@ -16,6 +16,7 @@ enum AppReviewManager {
     // MARK: - Storage
     private static let userDefaults = UserDefaults.standard
     private static let iCloudStore = NSUbiquitousKeyValueStore.default
+    
 
     // MARK: - Public API
     static func submitReview(isShowAppleReviewScreen : Bool = false) {

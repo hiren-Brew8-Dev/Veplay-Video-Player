@@ -4,10 +4,9 @@ import LocalAuthentication
 struct SettingsView: View {
     @AppStorage("useFaceID") private var useFaceID = false
     @EnvironmentObject var viewModel: DashboardViewModel
+    @EnvironmentObject var navigationManager: NavigationManager
     @State private var webViewData: WebViewData? = nil
 
-    @Environment(\.dismiss) var dismiss
-    
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
@@ -18,11 +17,7 @@ struct SettingsView: View {
             // Header (Matching FolderDetailView style)
             HStack(spacing: 12) {
                 Button(action: {
-                    if !viewModel.navigationPath.isEmpty {
-                        viewModel.navigationPath.removeLast()
-                    } else {
-                        dismiss()
-                    }
+                    navigationManager.pop()
                 }) {
                     ZStack {
                         Circle()

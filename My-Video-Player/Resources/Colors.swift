@@ -30,6 +30,6 @@ extension Color {
     static let premiumCardBackground = Color.white.opacity(0.05)
     static let premiumCardBorder = Color.white.opacity(0.1)
     static let premiumCircleBackground = Color.white.opacity(0.1)
-    
+    static let premiumIconBackground = Color(hex: "#5DBCFF")
     
 }

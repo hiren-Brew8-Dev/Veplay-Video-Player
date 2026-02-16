@@ -1561,6 +1561,10 @@ class DashboardViewModel: ObservableObject {
                 self.showPermissionDenied = true
             }
         case .notDetermined:
+            // Don't request permission during onboarding — Onboarding4View handles it
+            let isOnboardingCompleted = UserDefaults.standard.bool(forKey: "isOnboardingCompleted")
+            guard isOnboardingCompleted else { return }
+            
             PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] newStatus in
                 DispatchQueue.main.async {
                     if newStatus == .authorized || newStatus == .limited {

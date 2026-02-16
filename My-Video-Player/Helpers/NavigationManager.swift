@@ -16,7 +16,7 @@ enum NavigationDestination: Hashable {
     case thanksForDownloading
     case rating
     case dashboard
-    case paywall
+    case paywall(isFromOnboarding: Bool)
     case settings
     case allFolders
     case folderDetail(Folder)

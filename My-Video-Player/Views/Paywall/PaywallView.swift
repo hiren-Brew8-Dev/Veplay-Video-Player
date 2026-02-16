@@ -90,14 +90,10 @@ struct PaywallView: View {
                                 .responsiveWidth(iphoneWidth: 35)
                             Button {
                                 HapticsManager.shared.generateOnboardingVibrate()
-                                if isFromIntialPaywall {
-                                    isNeedToMoveToInitialDetails.toggle()
+                                if isFromOnboarding {
+                                    navigationManager.push(.dashboard)
                                 } else {
-                                    if isFromOnboarding {
-                                        navigationManager.push(.dashboard)
-                                    } else {
-                                        navigationManager.pop()
-                                    }
+                                    navigationManager.pop()
                                 }
                             } label: {
                                 if isNeedToShowCross {
@@ -442,10 +438,7 @@ struct PaywallView: View {
                         if purchaseProduct?.id == "com.wildrr.app.weekly" {
                             AppReviewManager.submitReview(isShowAppleReviewScreen: false)
                         }
-                        if isFromIntialPaywall {
-                            
-                            navigationManager.push(.onboarding1)
-                        } else if isFromOnboarding {
+                        if isFromOnboarding {
                             navigationManager.push(.dashboard)
                         } else {
                             navigationManager.pop()
@@ -471,9 +464,7 @@ struct PaywallView: View {
             do {
                 try await subscriptionStore.restorePurchases()
                 //  AnalyticsManager.shared.log(.userClickedRestore)
-                if isFromIntialPaywall {
-                    navigationManager.push(.onboarding1)
-                } else if isFromOnboarding {
+                if isFromOnboarding {
                     navigationManager.push(.dashboard)
                 } else {
                     navigationManager.pop()

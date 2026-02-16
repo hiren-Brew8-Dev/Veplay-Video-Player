@@ -145,6 +145,7 @@ struct Onboarding1View: View {
                 .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.5), value: isAnimating)
             }
         }
+        .hideNavigationBar()
         .onAppear {
             isAnimating = true
         }
