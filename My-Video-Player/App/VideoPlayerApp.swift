@@ -103,7 +103,10 @@ struct VideoPlayerApp: App {
                 matching: .videos
             )
             .onChange(of: selectedPhotoItems) { oldItems, newItems in
-                dashboardViewModel.handlePhotoImport(newItems)
+                if !newItems.isEmpty {
+                    dashboardViewModel.handlePhotoImport(newItems)
+                    selectedPhotoItems.removeAll()
+                }
             }
         }
     }
