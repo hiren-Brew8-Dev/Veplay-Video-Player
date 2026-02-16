@@ -187,19 +187,20 @@ struct DashboardView: View {
                     }
                 }
                 
-                // Premium/Crown Icon (New)
-                Button {
-                    navigationManager.push(.paywall(isFromOnboarding: false))
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(Color.premiumIconBackground)
-                            .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
-                        
-                        Image(systemName: "crown.fill")
-                            .font(.system(size: isIpad ? 20 : 14, weight: .bold))
-                            .foregroundColor(.black)
-                        
+                if !Global.shared.getIsUserPro() {
+                    Button {
+                        navigationManager.push(.paywall(isFromOnboarding: false))
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(Color.premiumIconBackground)
+                                .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
+                            
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: isIpad ? 20 : 14, weight: .bold))
+                                .foregroundColor(.black)
+                            
+                        }
                     }
                 }
             }
