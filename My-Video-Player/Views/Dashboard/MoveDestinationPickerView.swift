@@ -163,7 +163,10 @@ struct MoveDestinationPickerView: View {
             
             Spacer()
             
-            Button(action: { dismiss() }) {
+            Button(action: {
+                HapticsManager.shared.generate(.medium)
+                dismiss()
+            }) {
                 Circle()
                     .fill(Color.white.opacity(0.1))
                     .frame(width: 32, height: 32)
@@ -197,7 +200,10 @@ struct MoveDestinationPickerView: View {
     }
     
     private func destinationRow(title: String, subtitle: String?, icon: String, iconColor: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.selection)
+            action()
+        }) {
             HStack(spacing: 16) {
                 ZStack {
                     Circle()
@@ -235,7 +241,10 @@ struct MoveDestinationPickerView: View {
     }
     
     private func albumRow(album: PHAssetCollection, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.selection)
+            action()
+        }) {
             HStack(spacing: 16) {
                 AlbumThumbnailView(album: album)
                     .frame(width: 32, height: 32)

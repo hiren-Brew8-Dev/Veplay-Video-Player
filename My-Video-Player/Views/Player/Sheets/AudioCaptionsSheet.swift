@@ -29,6 +29,7 @@ struct AudioCaptionsSheet: View {
                 // Header
                 HStack {
                     Button(action: {
+                        HapticsManager.shared.generate(.medium)
                         withAnimation(.easeInOut(duration: 0.3)) {
                             isPresented = false
                         }
@@ -154,6 +155,7 @@ struct AudioCaptionsSheet: View {
                                 isSelected: index == viewModel.selectedAudioTrackIndex,
                                 isDisabled: false
                             ) {
+                                HapticsManager.shared.generate(.selection)
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     viewModel.selectAudioTrack(at: index)
                                 }
@@ -249,6 +251,7 @@ struct AudioCaptionsSheet: View {
             // Slider Control
             HStack(spacing: 16) {
                 Button(action: {
+                    HapticsManager.shared.generate(.selection)
                     withAnimation(.easeInOut(duration: 0.15)) {
                         viewModel.audioDelay -= 0.05
                     }
@@ -270,6 +273,7 @@ struct AudioCaptionsSheet: View {
                     .accentColor(.orange)
                 
                 Button(action: {
+                    HapticsManager.shared.generate(.selection)
                     withAnimation(.easeInOut(duration: 0.15)) {
                         viewModel.audioDelay += 0.05
                     }
@@ -322,7 +326,10 @@ struct AudioCaptionsSheet: View {
                 
                 Spacer()
                 
-                Button(action: { showingFileImporter = true }) {
+                Button(action: {
+                    HapticsManager.shared.generate(.medium)
+                    showingFileImporter = true
+                }) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 16, weight: .semibold))
@@ -351,6 +358,7 @@ struct AudioCaptionsSheet: View {
                         isSelected: !viewModel.subtitleManager.isEnabled,
                         isOff: true
                     ) {
+                        HapticsManager.shared.generate(.selection)
                         withAnimation(.easeInOut(duration: 0.2)) {
                             viewModel.selectSubtitleTrack(at: -1)
                         }
@@ -363,6 +371,7 @@ struct AudioCaptionsSheet: View {
                             isSelected: viewModel.subtitleManager.isEnabled && viewModel.subtitleManager.selectedTrackIndex == index,
                             isOff: false
                         ) {
+                            HapticsManager.shared.generate(.selection)
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 viewModel.selectSubtitleTrack(at: index)
                             }

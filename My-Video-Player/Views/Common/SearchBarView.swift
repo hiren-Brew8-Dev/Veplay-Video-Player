@@ -14,6 +14,7 @@ struct SearchBarView: View {
             
             if !text.isEmpty {
                 Button(action: {
+                    HapticsManager.shared.generate(.light)
                     text = ""
                 }) {
                     Image(systemName: "xmark.circle.fill")

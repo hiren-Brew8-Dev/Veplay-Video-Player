@@ -14,6 +14,7 @@ struct FloatingSelectionMenu<T: Hashable>: View {
             Color.black.opacity(0.5)
                 .edgesIgnoringSafeArea(.all)
                 .onTapGesture {
+                    HapticsManager.shared.generate(.medium)
                     onClose()
                 }
             
@@ -27,7 +28,10 @@ struct FloatingSelectionMenu<T: Hashable>: View {
                     
                     Spacer()
                     
-                    Button(action: onClose) {
+                    Button(action: {
+                        HapticsManager.shared.generate(.medium)
+                        onClose()
+                    }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 24))
                             .foregroundColor(.white.opacity(0.8))
@@ -44,6 +48,7 @@ struct FloatingSelectionMenu<T: Hashable>: View {
                     VStack(spacing: 0) {
                         ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                             Button(action: {
+                                HapticsManager.shared.generate(.selection)
                                 onSelect(item)
                             }) {
                                 HStack {

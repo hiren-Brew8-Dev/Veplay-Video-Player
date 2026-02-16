@@ -56,6 +56,7 @@ struct SleepTimerSheetView: View {
     private var header: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 if let onBack = onBack {
                     onBack()
                 } else {
@@ -125,6 +126,7 @@ struct SleepTimerSheetView: View {
     
     private var turnOffCard: some View {
         Button(action: {
+            HapticsManager.shared.generate(.medium)
             viewModel.cancelSleepTimer()
             withAnimation(.easeInOut(duration: 0.3)) {
                 isPresented = false
@@ -156,6 +158,7 @@ struct SleepTimerSheetView: View {
         let isSelected = isTimerSet(minutes: minutes)
         
         return Button(action: {
+            HapticsManager.shared.generate(.selection)
             viewModel.startSleepTimer(minutes: minutes)
             withAnimation(.easeInOut(duration: 0.3)) {
                 isPresented = false
@@ -180,6 +183,7 @@ struct SleepTimerSheetView: View {
         let isSelected = (viewModel.sleepTimerMode == .endOfTrack)
         
         return Button(action: {
+            HapticsManager.shared.generate(.selection)
             viewModel.setSleepTimerEndOfTrack()
             withAnimation(.easeInOut(duration: 0.3)) {
                 isPresented = false

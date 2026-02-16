@@ -87,6 +87,7 @@ struct CastingModeSheet: View {
     private var header: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 withAnimation(.easeInOut(duration: 0.3)) {
                     isPresented = false
                 }
@@ -118,9 +119,13 @@ struct CastingModeSheet: View {
 
     private var optionsCard: some View {
         VStack(spacing: 0) {
-            castingOptionItem(title: "AirPlay & Bluetooth", icon: "airplayvideo", action: { airPlayTrigger += 1 })
+            castingOptionItem(title: "AirPlay & Bluetooth", icon: "airplayvideo", action: {
+                HapticsManager.shared.generate(.selection)
+                airPlayTrigger += 1
+            })
             divider
             castingOptionItem(title: "Casting Device", icon: "airplayvideo", action: {
+                HapticsManager.shared.generate(.selection)
                 withAnimation(.easeInOut(duration: 0.3)) {
                     showDiscovery = true
                 }

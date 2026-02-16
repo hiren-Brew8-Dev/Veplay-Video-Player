@@ -4,7 +4,10 @@ struct FloatingActionButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.medium)
+            action()
+        }) {
             Image(systemName: "plus")
                 .appIconStyle(size: 24, weight: .bold, color: .homeTextPrimary)
                 .frame(width: 56, height: 56)

@@ -64,6 +64,7 @@ struct CustomSortingView: View {
                 Spacer()
                 
                 Button(action: {
+                    HapticsManager.shared.generate(.medium)
                     applySort()
                     presentationMode.wrappedValue.dismiss()
                 }) {
@@ -89,6 +90,7 @@ struct CustomSortingView: View {
                     VStack(spacing: 0) {
                         ForEach(Array(availableCriteria.enumerated()), id: \.element.self) { index, criteria in
                             sortRow(title: criteria.rawValue, isSelected: selectedCriteria == criteria) {
+                                HapticsManager.shared.generate(.selection)
                                 withAnimation {
                                     selectedCriteria = criteria
                                 }
@@ -109,6 +111,7 @@ struct CustomSortingView: View {
                     VStack(spacing: 0) {
                         ForEach(Array(SortOrder.allCases.enumerated()), id: \.element.self) { index, order in
                             sortRow(title: order.title(for: selectedCriteria), isSelected: selectedOrder == order) {
+                                HapticsManager.shared.generate(.selection)
                                 withAnimation {
                                     selectedOrder = order
                                 }

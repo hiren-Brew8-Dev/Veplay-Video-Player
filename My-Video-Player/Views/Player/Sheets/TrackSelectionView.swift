@@ -112,6 +112,7 @@ struct AudioTrackSettingsView: View {
                         .foregroundColor(.homeTextPrimary)
                     
                     Button(action: {
+                        HapticsManager.shared.generate(.medium)
                         viewModel.audioDelay = 0.0
                     }) {
                         Text("Reset")
@@ -147,7 +148,10 @@ struct AudioTrackSettingsView: View {
     }
     
     func trackRow(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.selection)
+            action()
+        }) {
             HStack {
                 Text(title)
                     .font(.system(size: 15))

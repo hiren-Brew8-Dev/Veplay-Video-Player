@@ -26,7 +26,9 @@ struct VideosTabView: View {
                             .font(.system(size: AppDesign.Icons.headerSize, weight: .bold))
                             .foregroundColor(.homeTextPrimary)
                         Spacer()
-                        Button(action: {}) {
+                        Button(action: {
+                            HapticsManager.shared.generate(.medium)
+                        }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "crown.fill")
                                     .foregroundColor(.yellow)
@@ -65,6 +67,7 @@ struct VideosTabView: View {
                                         HStack(spacing: 15) {
                                             ForEach(viewModel.historyVideos) { video in
                                                 Button(action: {
+                                                    HapticsManager.shared.generate(.selection)
                                                     viewModel.playingVideo = video
                                                 }) {
                                                     VideoCardView(video: video, viewModel: viewModel)
@@ -127,6 +130,7 @@ struct VideosTabView: View {
                                     LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
                                         ForEach(viewModel.videos.prefix(6)) { video in
                                             Button(action: {
+                                                HapticsManager.shared.generate(.selection)
                                                 // self.selectedVideo = video
                                                 viewModel.playingVideo = video
                                             }) {
@@ -148,7 +152,10 @@ struct VideosTabView: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        Button(action: { showImportMenu = true }) {
+                        Button(action: {
+                            HapticsManager.shared.generate(.medium)
+                            showImportMenu = true
+                        }) {
                             Image(systemName: "plus")
                             .appIconStyle(size: 24, weight: .bold, color: .homeTextPrimary)
                             .frame(width: 56, height: 56)
@@ -161,13 +168,21 @@ struct VideosTabView: View {
                         .actionSheet(isPresented: $showImportMenu) {
                             ActionSheet(title: Text("Import Videos"), buttons: [
                                 .default(Text("Import from Photos")) { 
+                                    HapticsManager.shared.generate(.selection)
                                     viewModel.showPhotoPicker = true
                                 },
                                 .default(Text("Add From iOS Files")) { 
+                                    HapticsManager.shared.generate(.selection)
                                     viewModel.showFileImporter = true
                                 },
-                                .default(Text("Connect to Computer")) { /* Show Wifi IP */ },
-                                .default(Text("New Folder")) { /* Create Folder */ },
+                                .default(Text("Connect to Computer")) {
+                                    HapticsManager.shared.generate(.selection)
+                                    /* Show Wifi IP */
+                                },
+                                .default(Text("New Folder")) {
+                                    HapticsManager.shared.generate(.selection)
+                                    /* Create Folder */
+                                },
                                 .cancel()
                             ])
                         }

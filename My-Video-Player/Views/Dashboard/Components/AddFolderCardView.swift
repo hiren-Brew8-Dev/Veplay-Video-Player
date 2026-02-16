@@ -5,7 +5,10 @@ struct AddFolderCardView: View {
     var size: CGFloat = 160 // Default size for horizontal scroll
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.selection)
+            action()
+        }) {
             VStack(alignment: .center, spacing: 12) {
                 // Main Action Area
                 ZStack {

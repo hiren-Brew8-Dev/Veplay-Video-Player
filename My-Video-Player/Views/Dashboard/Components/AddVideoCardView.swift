@@ -7,7 +7,10 @@ struct AddVideoCardView: View {
     var body: some View {
         let size = size
         
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.selection)
+            action()
+        }) {
             ZStack(alignment: .bottom) {
                 // 1. Background Section
                 ZStack {

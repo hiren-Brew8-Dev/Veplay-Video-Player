@@ -29,7 +29,10 @@ struct CastDevicePickerView: View {
             
             // Header
             HStack {
-                Button(action: onBack) {
+                Button(action: {
+                    HapticsManager.shared.generate(.medium)
+                    onBack()
+                }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
@@ -112,6 +115,7 @@ struct CastDevicePickerView: View {
                 .padding(.bottom, 20)
             
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
                 }
@@ -153,6 +157,7 @@ struct CastDevicePickerView: View {
                 .padding(.bottom, 20)
             
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 hasShownPermissionPrompt = true
                 withAnimation {
                     showPermissionView = false
@@ -172,6 +177,7 @@ struct CastDevicePickerView: View {
             .padding(.bottom, 15)
             
             Button(action: {
+                HapticsManager.shared.generate(.light)
                 if let url = URL(string: "https://support.google.com/chromecast/answer/10063094") {
                     openURL(url)
                 }
@@ -246,6 +252,7 @@ struct CastDevicePickerView: View {
         VStack(spacing: 12) {
             ForEach(castManager.devices, id: \.deviceID) { device in
                 Button(action: {
+                    HapticsManager.shared.generate(.selection)
                     castManager.connect(to: device)
                     dismiss()
                 }) {
@@ -365,6 +372,7 @@ struct CastDevicePickerView: View {
             }
             
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
                 }

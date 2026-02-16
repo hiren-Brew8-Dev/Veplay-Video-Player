@@ -23,6 +23,7 @@ struct PermissionDeniedView: View {
                     .padding(.horizontal, isIpad ? 80 : 20)
                 
                 Button(action: {
+                    HapticsManager.shared.generate(.medium)
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         UIApplication.shared.open(url)
                     }

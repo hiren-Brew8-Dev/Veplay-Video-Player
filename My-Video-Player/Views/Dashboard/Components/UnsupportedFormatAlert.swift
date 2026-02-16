@@ -16,6 +16,7 @@ struct UnsupportedFormatAlert: View {
                     .edgesIgnoringSafeArea(.all)
                     .background(.ultraThinMaterial)
                     .onTapGesture {
+                        HapticsManager.shared.generate(.medium)
                         withAnimation {
                             isPresented = false
                         }
@@ -109,6 +110,7 @@ struct UnsupportedFormatAlert: View {
                     
                     // Action Button
                     Button(action: {
+                        HapticsManager.shared.generate(.medium)
                         withAnimation {
                             isPresented = false
                         }

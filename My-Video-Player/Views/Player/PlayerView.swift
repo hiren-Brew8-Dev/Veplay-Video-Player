@@ -290,6 +290,7 @@ struct PlayerView: View {
                 let isMediumSwipe = translation > 80 && velocity > 400
                 
                 if (isFastSwipe || isLongSwipe || isMediumSwipe) && translation > 0 {
+                    HapticsManager.shared.generate(.medium)
                     withAnimation(.easeOut(duration: 0.25)) {
                         dismissOffset = geo.size.height
                     }

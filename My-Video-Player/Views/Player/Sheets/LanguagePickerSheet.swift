@@ -29,6 +29,7 @@ struct LanguagePickerSheet: View {
                     .foregroundColor(.homeTextPrimary)
                 Spacer()
                 Button("Done") {
+                    HapticsManager.shared.generate(.medium)
                     isPresented = false
                 }
                 .foregroundColor(.homeAccent)
@@ -52,6 +53,7 @@ struct LanguagePickerSheet: View {
                 LazyVStack(spacing: 0) {
                     ForEach(languages, id: \.1) { lang in
                         Button(action: {
+                            HapticsManager.shared.generate(.selection)
                             selectedLanguageCode = lang.1
                             isPresented = false
                         }) {

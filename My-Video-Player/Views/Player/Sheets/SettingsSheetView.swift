@@ -53,6 +53,7 @@ struct SettingsSheetView: View {
     private var settingsHeader: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 withAnimation(.easeInOut(duration: 0.3)) {
                     isPresented = false
                 }
@@ -150,7 +151,10 @@ struct SettingsSheetView: View {
                 
                 Spacer()
                 
-                Button(action: onPlayingMode) {
+                Button(action: {
+                    HapticsManager.shared.generate(.selection)
+                    onPlayingMode()
+                }) {
                     HStack(spacing: 6) {
                         Image(systemName: viewModel.playingMode.iconName)
                             .font(.system(size: 14, weight: .semibold))
@@ -226,7 +230,10 @@ struct SettingsGridItem: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.medium)
+            action()
+        }) {
             VStack(spacing: 8) {
                 ZStack {
                     Circle()
@@ -257,7 +264,10 @@ struct SettingsListItem: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.light)
+            action()
+        }) {
             HStack(spacing: 16) {
               
                 Text(title)
@@ -389,7 +399,10 @@ struct VideoQueueRow: View {
         .contentShape(Rectangle())
         .padding(.vertical, 8)
         .padding(.horizontal, 16)
-        .onTapGesture(perform: onTap)
+        .onTapGesture {
+            HapticsManager.shared.generate(.selection)
+            onTap()
+        }
         .onAppear {
             if video.isGenericTitle {
                 dashboardViewModel.loadTitle(for: video) { title in

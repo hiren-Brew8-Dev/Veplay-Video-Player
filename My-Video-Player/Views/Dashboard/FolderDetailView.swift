@@ -204,6 +204,7 @@ struct FolderDetailView: View {
         HStack(spacing: isIpad ? 12 : 8) {
             // Selection Mode (Leading)
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 withAnimation {
                     viewModel.isSelectionMode = true
                 }
@@ -221,6 +222,7 @@ struct FolderDetailView: View {
             
             // Sort Button
             Button(action: {
+                HapticsManager.shared.generate(.selection)
                 withAnimation {
                     showSortSheet = true
                 }
@@ -242,6 +244,7 @@ struct FolderDetailView: View {
             
             // View Mode Toggle (Trailing)
             Button(action: {
+                HapticsManager.shared.generate(.light)
                 withAnimation {
                     isGridView.toggle()
                 }
@@ -262,6 +265,7 @@ struct FolderDetailView: View {
     var standardHeader: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 navigationManager.pop()
             }) {
                 ZStack {
@@ -284,7 +288,8 @@ struct FolderDetailView: View {
             
             if !displayVideos.isEmpty {
                 HStack(spacing: 12) {
-                    Button(action: { 
+                    Button(action: {
+                        HapticsManager.shared.generate(.medium)
                         let updatedVideos = displayVideos.map { liveVideo($0) }
                         navigationManager.push(.search(contextTitle: folder.name, initialVideos: updatedVideos))
                     }) {
@@ -313,6 +318,7 @@ struct FolderDetailView: View {
     var selectionHeader: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.selection)
                 if isAllSelected {
                     selectedVideoIds.removeAll()
                 } else {
@@ -370,6 +376,7 @@ struct FolderDetailView: View {
                         Section(header: sectionHeaderLabel("Folders")) {
                             ForEach(folder.subfolders) { subfolder in
                                 Button(action: {
+                                    HapticsManager.shared.generate(.light)
                                     navigationManager.push(.folderDetail(subfolder))
                                 }) {
                                     FolderCardView(folder: subfolder, viewModel: viewModel, onMenuAction: {
@@ -415,28 +422,29 @@ struct FolderDetailView: View {
         LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
             if !folder.subfolders.isEmpty {
                 Section(header: sectionHeaderLabel("Folders")) {
-                    ForEach(folder.subfolders) { subfolder in
-                        Button(action: {
-                            navigationManager.push(.folderDetail(subfolder))
-                        }) {
-                            HStack {
-                                Image(systemName: "folder.fill")
-                                    .foregroundColor(.homeTint)
-                                Text(subfolder.name)
-                                    .foregroundColor(.homeTextPrimary)
-                                Spacer()
-                                Text("\(subfolder.videos.count) Videos")
-                                    .font(.caption)
-                                    .foregroundColor(.homeTextSecondary)
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(.homeTextSecondary)
+                            ForEach(folder.subfolders) { subfolder in
+                                Button(action: {
+                                    HapticsManager.shared.generate(.light)
+                                    navigationManager.push(.folderDetail(subfolder))
+                                }) {
+                                    HStack {
+                                        Image(systemName: "folder.fill")
+                                            .foregroundColor(.homeTint)
+                                        Text(subfolder.name)
+                                            .foregroundColor(.homeTextPrimary)
+                                        Spacer()
+                                        Text("\(subfolder.videos.count) Videos")
+                                            .font(.caption)
+                                            .foregroundColor(.homeTextSecondary)
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption)
+                                            .foregroundColor(.homeTextSecondary)
+                                    }
+                                    .padding()
+                                    .background(Color.homeCardBackground.opacity(0.3))
+                                    .contentShape(Rectangle())
+                                }
                             }
-                            .padding()
-                            .background(Color.homeCardBackground.opacity(0.3))
-                            .contentShape(Rectangle())
-                        }
-                    }
                 }
             }
             
@@ -577,21 +585,29 @@ struct FolderDetailView: View {
         VStack(spacing: 0) {
             Spacer()
             HStack(spacing: 0) {
-                selectionBarItem(icon: "trash", title: "Delete", action: { deleteSelected() })
+                selectionBarItem(icon: "trash", title: "Delete", action: {
+                    HapticsManager.shared.generate(.medium)
+                    deleteSelected()
+                })
                 
-                selectionBarItem(icon: "doc.on.doc", title: "Copy", action: { 
+                selectionBarItem(icon: "doc.on.doc", title: "Copy", action: {
+                    HapticsManager.shared.generate(.medium)
                     viewModel.copyVideos(ids: selectedVideoIds, isCut: false, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
                     viewModel.showMovePicker = true
                 })
 
                 if folder.albumIdentifier == nil {
-                    selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: { 
+                    selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: {
+                        HapticsManager.shared.generate(.medium)
                         viewModel.copyVideos(ids: selectedVideoIds, isCut: true, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
                         viewModel.showMovePicker = true
                     })
                 }
 
-                selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareVideos(ids: selectedVideoIds) })
+                selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: {
+                    HapticsManager.shared.generate(.medium)
+                    viewModel.shareVideos(ids: selectedVideoIds)
+                })
             }
             .padding(.top, isIpad ? 20 : 12)
             .padding(.bottom, max(10, UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0))
@@ -644,6 +660,7 @@ struct FolderDetailView: View {
     
     private func handleVideoTap(_ video: VideoItem) {
         if viewModel.isSelectionMode {
+            HapticsManager.shared.generate(.selection)
             if selectedVideoIds.contains(video.id) {
                 selectedVideoIds.remove(video.id)
             } else {
@@ -651,6 +668,7 @@ struct FolderDetailView: View {
             }
         } else {
             // Setup playlist context: All videos in this folder/album
+            HapticsManager.shared.generate(.medium)
             viewModel.currentPlaylist = sortedVideos
             viewModel.playingVideo = video
         }

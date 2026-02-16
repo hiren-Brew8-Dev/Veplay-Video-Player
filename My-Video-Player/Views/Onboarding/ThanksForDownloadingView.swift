@@ -117,7 +117,7 @@ struct ThanksForDownloadingView: View {
                 
                 // MARK: - Action Button
                 Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    HapticsManager.shared.generate(.medium)
                     isOnboardingCompleted = true
                     viewModel.loadData()
                     if !Global.shared.getIsUserPro() {

@@ -68,7 +68,8 @@ struct HomeView: View {
                 HStack(spacing: 12) {
                     
                     Menu {
-                        Button(action: { 
+                        Button(action: {
+                            HapticsManager.shared.generate(.medium)
                             withAnimation { viewModel.isSelectionMode = true }
                         }) {
                             Label("Select", systemImage: "checkmark.circle")
@@ -87,7 +88,10 @@ struct HomeView: View {
                         
                         Divider()
                         
-                        Button(action: { showSortSheet = true }) {
+                        Button(action: {
+                            HapticsManager.shared.generate(.selection)
+                            showSortSheet = true
+                        }) {
                             Label("Sort by", systemImage: "arrow.up.arrow.down")
                         }
                     } label: {

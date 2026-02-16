@@ -129,6 +129,7 @@ struct VideoSectionView: View {
         HStack(spacing: isIpad ? 12 : 8) {
             // Selection Mode (Leading)
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 withAnimation {
                     viewModel.isSelectionMode = true
                 }
@@ -146,12 +147,14 @@ struct VideoSectionView: View {
             
             // Sort Button
             Button(action: {
+                HapticsManager.shared.generate(.selection)
                 withAnimation {
                     showSortSheet = true
                 }
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.up.arrow.down")
+                    // ... (rest of content)
                         .font(.system(size: 14, weight: .semibold))
                     Text("Sort by")
                         .font(.system(size: 14, weight: .medium))
@@ -167,6 +170,7 @@ struct VideoSectionView: View {
             
             // View Mode Toggle (Trailing)
             Button(action: {
+                HapticsManager.shared.generate(.light)
                 withAnimation {
                     viewModel.isGridView.toggle()
                 }
@@ -248,6 +252,7 @@ struct VideoSectionView: View {
     private var selectionHeader: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.selection)
                 let allVideos = viewModel.importedVideos
                 if isAllSelected {
                     viewModel.selectedVideoIds.removeAll()
@@ -282,6 +287,7 @@ struct VideoSectionView: View {
             Spacer()
             
             Button("Done") {
+                HapticsManager.shared.generate(.medium)
                 viewModel.isSelectionMode = false
                 viewModel.selectedVideoIds.removeAll()
             }
@@ -299,19 +305,27 @@ struct VideoSectionView: View {
         VStack(spacing: 0) {
             Spacer()
             HStack(spacing: 0) {
-                selectionBarItem(icon: "trash", title: "Delete", action: { deleteSelected() })
+                selectionBarItem(icon: "trash", title: "Delete", action: {
+                    HapticsManager.shared.generate(.medium)
+                    deleteSelected()
+                })
                 
-                selectionBarItem(icon: "doc.on.doc", title: "Copy", action: { 
+                selectionBarItem(icon: "doc.on.doc", title: "Copy", action: {
+                    HapticsManager.shared.generate(.medium)
                     viewModel.copyVideos(ids: viewModel.selectedVideoIds, isCut: false, sourceURL: viewModel.importedVideosDirectory)
                     viewModel.showMovePicker = true
                 })
 
-                selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: { 
+                selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: {
+                    HapticsManager.shared.generate(.medium)
                     viewModel.copyVideos(ids: viewModel.selectedVideoIds, isCut: true, sourceURL: viewModel.importedVideosDirectory)
                     viewModel.showMovePicker = true
                 })
 
-                selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: { viewModel.shareSelectedVideos() })
+                selectionBarItem(icon: "square.and.arrow.up", title: "Share", action: {
+                    HapticsManager.shared.generate(.medium)
+                    viewModel.shareSelectedVideos()
+                })
             }
             
             .padding(.top, isIpad ? 20 : 12)
@@ -394,12 +408,14 @@ struct VideoSectionView: View {
             if viewModel.importedVideos.isEmpty && !viewModel.isImporting {
                 Menu {
                     Button(action: {
+                        HapticsManager.shared.generate(.selection)
                         viewModel.showPhotoPicker = true
                     }) {
                         Label("Import from Photos", systemImage: "photo.on.rectangle")
                     }
                     
                     Button(action: {
+                        HapticsManager.shared.generate(.selection)
                         viewModel.showFileImporter = true
                     }) {
                         Label("Add From iOS Files", systemImage: "plus.rectangle.on.folder")
@@ -618,6 +634,7 @@ struct VideoSectionView: View {
     
     private func handleVideoTap(_ video: VideoItem) {
         if viewModel.isSelectionMode {
+            HapticsManager.shared.generate(.selection)
             if viewModel.selectedVideoIds.contains(video.id) {
                 viewModel.selectedVideoIds.remove(video.id)
             } else {
@@ -625,6 +642,7 @@ struct VideoSectionView: View {
             }
         } else {
             // Setup playlist context: All imported videos (sorted)
+            HapticsManager.shared.generate(.medium)
             viewModel.currentPlaylist = viewModel.sortedImportedVideos
             viewModel.playingVideo = video
         }

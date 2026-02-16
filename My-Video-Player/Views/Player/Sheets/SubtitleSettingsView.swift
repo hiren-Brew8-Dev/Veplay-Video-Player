@@ -63,6 +63,7 @@ struct SubtitleSettingsView: View {
     private var header: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 if let onBack = onBack {
                     onBack()
                 } else {
@@ -97,7 +98,10 @@ struct SubtitleSettingsView: View {
     }
     
     private var importCard: some View {
-        Button(action: { showingFileImporter = true }) {
+        Button(action: {
+            HapticsManager.shared.generate(.medium)
+            showingFileImporter = true
+        }) {
             HStack(spacing: 16) {
                 ZStack {
                     Circle()
@@ -161,7 +165,10 @@ struct SubtitleSettingsView: View {
     }
     
     private func trackRow(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.selection)
+            action()
+        }) {
             HStack {
                 Text(title)
                     .font(.system(size: 15, weight: isSelected ? .semibold : .medium))

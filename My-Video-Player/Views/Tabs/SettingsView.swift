@@ -18,6 +18,7 @@ struct SettingsView: View {
             // Header (Matching FolderDetailView style)
             HStack(spacing: 12) {
                 Button(action: {
+                    HapticsManager.shared.generate(.medium)
                     navigationManager.pop()
                 }) {
                     ZStack {
@@ -162,6 +163,7 @@ struct SettingsView: View {
     // MARK: - Background Play Handling
     
     private func handleBackgroundPlayToggle(_ newValue: Bool) {
+        HapticsManager.shared.generate(.selection)
         if newValue {
             if Global.shared.getIsUserPro() {
                 isBackgroundPlayEnabled = true
@@ -176,6 +178,7 @@ struct SettingsView: View {
     }
 
     private func handleFaceIDToggle(_ newValue: Bool) {
+        HapticsManager.shared.generate(.selection)
         if newValue {
             // User wants to ENABLE App Lock
             enableAppLock()
@@ -304,7 +307,10 @@ struct SettingsView: View {
     }
     
     private func settingsActionRow(icon: String, title: String, iconColor: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.selection)
+            action()
+        }) {
             HStack(spacing: 16) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)

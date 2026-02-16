@@ -47,6 +47,7 @@ struct AlbumSectionView: View {
                             
                             if viewModel.showPermissionDenied {
                                 Button(action: {
+                                    HapticsManager.shared.generate(.medium)
                                     if let url = URL(string: UIApplication.openSettingsURLString) {
                                         UIApplication.shared.open(url)
                                     }
@@ -79,6 +80,7 @@ struct AlbumSectionView: View {
                             ForEach(viewModel.galleryAlbums, id: \.localIdentifier) { album in
                                 let folder = Folder(name: albumDestinationTitle(for: album), videoCount: album.estimatedAssetCount, videos: [], url: nil, albumIdentifier: album.localIdentifier, subfolders: [])
                                 Button(action: {
+                                    HapticsManager.shared.generate(.light)
                                     navigationManager.push(.folderDetail(folder))
                                 }) {
                                     AlbumCardView(album: album, isLandscape: isLandscape, availableWidth: currentWidth)

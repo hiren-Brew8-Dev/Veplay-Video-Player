@@ -102,6 +102,7 @@ struct FolderSectionView: View {
     private var selectionHeader: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.selection)
                 if isAllSelected {
                     viewModel.selectedFolderIds.removeAll()
                 } else {
@@ -134,6 +135,7 @@ struct FolderSectionView: View {
             Spacer()
             
             Button("Done") {
+                HapticsManager.shared.generate(.medium)
                 viewModel.isSelectionMode = false
                 viewModel.selectedFolderIds.removeAll()
             }
@@ -150,7 +152,10 @@ struct FolderSectionView: View {
         VStack(spacing: 0) {
             Spacer()
             HStack(spacing: 0) {
-                Button(action: { showDeleteSelectedAlert = true }) {
+                Button(action: {
+                    HapticsManager.shared.generate(.medium)
+                    showDeleteSelectedAlert = true
+                }) {
                     VStack(spacing: 8) {
                         ZStack {
                             Circle()
@@ -200,6 +205,7 @@ struct FolderSectionView: View {
         HStack(spacing: isIpad ? 12 : 8) {
             // Selection Mode (Leading)
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 withAnimation {
                     viewModel.isSelectionMode = true
                 }
@@ -217,6 +223,7 @@ struct FolderSectionView: View {
             
             // Sort Button
             Button(action: {
+                HapticsManager.shared.generate(.selection)
                 withAnimation {
                     showSortSheet = true
                 }
@@ -238,6 +245,7 @@ struct FolderSectionView: View {
             
             // View Mode Toggle (Trailing)
             Button(action: {
+                HapticsManager.shared.generate(.light)
                 withAnimation {
                     viewModel.isGridView.toggle()
                 }
@@ -279,6 +287,7 @@ struct FolderSectionView: View {
             }
             
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 viewModel.showCreateFolderAlert = true
             }) {
                 Text("Create Folder")
@@ -451,6 +460,7 @@ struct FolderSectionView: View {
                 viewModel.selectedFolderIds.insert(folder.id)
             }
         } else {
+            HapticsManager.shared.generate(.light)
             navigationManager.push(.folderDetail(folder))
         }
     }

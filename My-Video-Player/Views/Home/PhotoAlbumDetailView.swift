@@ -20,6 +20,7 @@ struct PhotoAlbumDetailView: View {
                 // Header
                 HStack {
                 StandardIconButton(icon: "chevron.left", action: {
+                    HapticsManager.shared.generate(.medium)
                     presentationMode.wrappedValue.dismiss()
                 })
                     
@@ -52,6 +53,7 @@ struct PhotoAlbumDetailView: View {
                         LazyVGrid(columns: columns, spacing: 2) {
                             ForEach(assets, id: \.localIdentifier) { asset in
                                 Button(action: {
+                                    HapticsManager.shared.generate(.medium)
                                     viewModel.playingVideo = viewModel.videoItem(from: asset)
                                 }) {
                                     GeometryReader { geo in

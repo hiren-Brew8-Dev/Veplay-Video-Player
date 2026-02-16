@@ -43,6 +43,7 @@ struct PlayingModeSheetView: View {
     private var header: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 if let onBack = onBack {
                     onBack()
                 } else {
@@ -100,6 +101,7 @@ struct PlayingModeSheetView: View {
         let isSelected = viewModel.playingMode == mode
         
         return Button(action: {
+            HapticsManager.shared.generate(.selection)
             viewModel.playingMode = mode
             withAnimation(.easeInOut(duration: 0.3)) {
                 isPresented = false

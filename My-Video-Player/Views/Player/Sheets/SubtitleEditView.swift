@@ -38,7 +38,10 @@ struct SubtitleEditView: View {
                         VStack(alignment: .leading, spacing: 25) {
                             // Back Button & Header
                             HStack {
-                                Button(action: { isPresented = false }) {
+                                Button(action: {
+                                    HapticsManager.shared.generate(.medium)
+                                    isPresented = false
+                                }) {
                                     Image(systemName: "arrow.left")
                                         .font(.system(size: 20, weight: .bold))
                                         .foregroundColor(.white)
@@ -75,7 +78,10 @@ struct SubtitleEditView: View {
                     VStack(spacing: 30) {
                         // Header
                         HStack {
-                            Button(action: { isPresented = false }) {
+                            Button(action: {
+                                HapticsManager.shared.generate(.medium)
+                                isPresented = false
+                            }) {
                                 Image(systemName: "arrow.left")
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(.white)
@@ -116,7 +122,10 @@ struct SubtitleEditView: View {
             
             HStack(spacing: 8) { // Tighter spacing to fit in varying widths
                 ForEach(sizes, id: \.self) { size in
-                    Button(action: { subtitleSize = size }) {
+                    Button(action: {
+                        HapticsManager.shared.generate(.selection)
+                        subtitleSize = size
+                    }) {
                         Text(size)
                             .font(.system(size: 14, weight: .bold))
                             .frame(maxWidth: .infinity)
@@ -169,7 +178,10 @@ struct SubtitleEditView: View {
     }
     
     func colorCircle(_ name: String, _ color: Color) -> some View {
-        Button(action: { subtitleColor = name }) {
+        Button(action: {
+            HapticsManager.shared.generate(.selection)
+            subtitleColor = name
+        }) {
             ZStack {
                 Circle()
                     .fill(color)

@@ -186,7 +186,7 @@ struct Onboarding3View: View {
                 
                 // MARK: - Action Button
                 Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    HapticsManager.shared.generate(.medium)
                     navManager.push(.onboarding4)
                 }) {
                     Text("Continue")

@@ -15,9 +15,11 @@ struct CreateFolderSheet: View {
             .navigationBarTitle("New Folder", displayMode: .inline)
             .navigationBarItems(
                 leading: Button("Cancel") {
+                    HapticsManager.shared.generate(.medium)
                     presentationMode.wrappedValue.dismiss()
                 },
                 trailing: Button("Create") {
+                    HapticsManager.shared.generate(.success)
                     viewModel.createFolder(name: folderName)
                     presentationMode.wrappedValue.dismiss()
                 }

@@ -48,6 +48,7 @@ struct AppLockView: View {
                         .foregroundColor(.homeAccent)
                 }
                 .onTapGesture {
+                    HapticsManager.shared.generate(.medium)
                     onUnlock()
                 }
                 .onAppear {

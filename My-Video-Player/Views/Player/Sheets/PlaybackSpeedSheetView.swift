@@ -44,6 +44,7 @@ struct PlaybackSpeedSheetView: View {
     private var header: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 if let onBack = onBack {
                     onBack()
                 } else {
@@ -70,6 +71,7 @@ struct PlaybackSpeedSheetView: View {
             
             // Reset Button
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 viewModel.setSpeed(1.0)
             }) {
                 Text("Reset")
@@ -137,7 +139,10 @@ struct PlaybackSpeedSheetView: View {
     }
     
     private func speedButton(icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button(action: {
+            HapticsManager.shared.generate(.selection)
+            action()
+        }) {
             Image(systemName: icon)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.white)
@@ -151,6 +156,7 @@ struct PlaybackSpeedSheetView: View {
         let isSelected = abs(viewModel.playbackSpeed - speed) < 0.01
         
         return Button(action: {
+            HapticsManager.shared.generate(.selection)
             viewModel.setSpeed(speed)
         }) {
             Text(String(format: "%g", speed))

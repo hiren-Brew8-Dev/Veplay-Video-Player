@@ -11,6 +11,7 @@ struct MoveToFolderSheet: View {
                 // Only show user folders and Downloads
                 ForEach(viewModel.folders.filter { $0.url != nil || $0.name == "Downloads" }) { folder in
                     Button(action: {
+                        HapticsManager.shared.generate(.selection)
                         viewModel.moveVideo(video, to: folder)
                         presentationMode.wrappedValue.dismiss()
                     }) {
@@ -31,6 +32,7 @@ struct MoveToFolderSheet: View {
             }
             .navigationBarTitle("Move to Folder", displayMode: .inline)
             .navigationBarItems(trailing: Button("Cancel") {
+                HapticsManager.shared.generate(.medium)
                 presentationMode.wrappedValue.dismiss()
             })
         }

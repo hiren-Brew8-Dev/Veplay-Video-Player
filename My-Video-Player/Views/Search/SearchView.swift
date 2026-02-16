@@ -72,6 +72,7 @@ struct SearchView: View {
     private var customHeader: some View {
         HStack {
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 if viewModel.selectedTab == .search {
                     // If in Search Tab, switch back to the previous tab
                     viewModel.selectedTab = viewModel.lastActiveDataTab
@@ -121,6 +122,7 @@ struct SearchView: View {
             
             if !viewModel.searchText.isEmpty {
                 Button(action: {
+                    HapticsManager.shared.generate(.light)
                     viewModel.searchText = ""
                 }) {
                     Image(systemName: "xmark.circle.fill")
@@ -147,6 +149,7 @@ struct SearchView: View {
                 Spacer()
                 
                 Button(action: {
+                    HapticsManager.shared.generate(.medium)
                     viewModel.clearSearchHistory()
                 }) {
                     ZStack {
@@ -168,6 +171,7 @@ struct SearchView: View {
                 alignment: .leading
             ) { keyword in
                 Button(action: {
+                    HapticsManager.shared.generate(.selection)
                     viewModel.searchText = keyword
                     viewModel.persistSearchKeyword(keyword)
                     isSearchFocused = false
@@ -230,6 +234,7 @@ struct SearchView: View {
                     LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
                         ForEach(filtered) { video in
                             Button(action: {
+                                HapticsManager.shared.generate(.selection)
                                 isSearchFocused = false
                                 viewModel.currentPlaylist = filtered
                                 viewModel.playingVideo = video
@@ -254,6 +259,7 @@ struct SearchView: View {
                         ForEach(filtered.indices, id: \.self) { index in
                             let video = filtered[index]
                             Button(action: {
+                                HapticsManager.shared.generate(.selection)
                                 isSearchFocused = false
                                 viewModel.currentPlaylist = filtered
                                 viewModel.playingVideo = video

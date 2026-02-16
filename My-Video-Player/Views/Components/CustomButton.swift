@@ -19,7 +19,7 @@ struct CustomButton: View {
     
     var body: some View {
         Button {
-            
+            HapticsManager.shared.generate(.selection)
             action()
         } label: {
             ZStack {

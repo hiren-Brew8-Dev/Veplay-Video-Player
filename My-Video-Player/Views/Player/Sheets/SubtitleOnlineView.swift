@@ -28,11 +28,12 @@ struct SubtitleOnlineView: View {
             
             // Header
             HStack {
-                StandardIconButton(icon: "chevron.left", action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        isPresented = false
-                    }
-                })
+            StandardIconButton(icon: "chevron.left", action: {
+                HapticsManager.shared.generate(.medium)
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isPresented = false
+                }
+            })
                 
                 Spacer()
                 
@@ -118,6 +119,7 @@ struct SubtitleOnlineView: View {
                     .cornerRadius(10)
                     
                     Button("Search") {
+                        HapticsManager.shared.generate(.medium)
                         hideKeyboard()
                         selectedMovie = nil
                         yifyService.search(query: searchText)
@@ -141,6 +143,7 @@ struct SubtitleOnlineView: View {
                 VStack(spacing: 0) {
                     // Back Button
                     Button(action: {
+                        HapticsManager.shared.generate(.medium)
                         withAnimation { selectedMovie = nil }
                     }) {
                         HStack {
@@ -215,6 +218,7 @@ struct SubtitleOnlineView: View {
     }
     
     func handleMovieTap(_ item: YIFYSubtitle) {
+        HapticsManager.shared.generate(.selection)
         selectedMovie = item
         yifyService.fetchSubtitles(for: item.url) { subs in
             // Filter common languages if needed, or sort
@@ -263,7 +267,10 @@ struct SubtitleOnlineView: View {
                     .foregroundColor(.green)
                     .font(.system(size: 20))
             } else {
-                Button(action: onDownload) {
+                Button(action: {
+                    HapticsManager.shared.generate(.medium)
+                    onDownload()
+                }) {
                     Image(systemName: "arrow.down.to.line")
                         .foregroundColor(.white)
                 }

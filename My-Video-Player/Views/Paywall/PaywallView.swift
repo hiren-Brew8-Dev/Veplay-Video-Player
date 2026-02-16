@@ -303,10 +303,12 @@ struct PaywallView: View {
                         }
                         Text("|").foregroundColor(.white.opacity(0.3))
                         FooterLinkButton(text: "Privacy policy") {
+                            HapticsManager.shared.generate(.light)
                             openWebPage("https://sites.google.com/view/shivshankarapps/privacy-policy", title: "Privacy Policy")
                         }
                         Text("|").foregroundColor(.white.opacity(0.3))
                         FooterLinkButton(text: "Terms of use") {
+                            HapticsManager.shared.generate(.light)
                             openWebPage("https://sites.google.com/view/shivshankarapps/terms-conditions", title: "Terms & Conditions")
                         }
                     }

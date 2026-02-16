@@ -122,13 +122,9 @@ struct Onboarding4View: View {
                 
                 // MARK: - Action Button
                 Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    
-                    PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-                        DispatchQueue.main.async {
-                            navManager.push(.thanksForDownloading)
-                        }
-                    }
+                    HapticsManager.shared.generate(.medium)
+                    UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
+                    navManager.push(.thanksForDownloading)
                 }) {
                     Text("Continue")
                         .appFont(.figtreeBold, size: isIpad ? 26 : 20)

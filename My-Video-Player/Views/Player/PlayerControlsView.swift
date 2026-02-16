@@ -80,8 +80,7 @@ struct PlayerControlsView: View {
     }
     
     private func handleLockToggle() {
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
+        HapticsManager.shared.generate(.medium)
         
         withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
             viewModel.isLocked.toggle()
@@ -217,12 +216,14 @@ struct PlayerControlsView: View {
                         viewModel: viewModel,
                         lockNamespace: lockNamespace,
                         onMenu: {
+                            HapticsManager.shared.generate(.medium)
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 viewModel.showSettingsSheet = true
                                 viewModel.isControlsVisible = false
                             }
                         },
                         onTimer: {
+                            HapticsManager.shared.generate(.medium)
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 returnToSettings = false
                                 viewModel.showSleepTimerSheet = true
@@ -230,6 +231,7 @@ struct PlayerControlsView: View {
                             }
                         },
                         onCast: {
+                            HapticsManager.shared.generate(.medium)
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 viewModel.showCastingSheet = true
                                 viewModel.isControlsVisible = false
@@ -253,14 +255,17 @@ struct PlayerControlsView: View {
                             bookmarks: viewModel.bookmarks,
                             currentAspectRatio: viewModel.aspectRatio,
                             onPlayPause: {
+                                HapticsManager.shared.generate(.medium)
                                 viewModel.togglePlayPause()
                                 resetTimer()
                             },
                             onSkipBackward: {
+                                HapticsManager.shared.generate(.light)
                                 viewModel.seek(to: viewModel.currentTime - 10)
                                 resetTimer()
                             },
                             onSkipForward: {
+                                HapticsManager.shared.generate(.light)
                                 viewModel.seek(to: viewModel.currentTime + 10)
                                 resetTimer()
                             },
@@ -291,6 +296,7 @@ struct PlayerControlsView: View {
                                 handleLockToggle()
                             },
                             onAudioCaptions: {
+                                HapticsManager.shared.generate(.medium)
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     returnToSettings = false
                                     viewModel.showAudioCaptionsSheet = true
@@ -298,6 +304,7 @@ struct PlayerControlsView: View {
                                 }
                             },
                             onMenu: {
+                                HapticsManager.shared.generate(.medium)
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     viewModel.showSettingsSheet = true
                                     viewModel.isControlsVisible = false
@@ -305,14 +312,17 @@ struct PlayerControlsView: View {
                             },
                             showBookmarkControls: showBookmarkButton && showFloatingBookmarkControls,
                             onSeekToPrevBookmark: {
+                                HapticsManager.shared.generate(.light)
                                 viewModel.seekToPreviousBookmark()
                                 resetTimer()
                             },
                             onSeekToNextBookmark: {
+                                HapticsManager.shared.generate(.light)
                                 viewModel.seekToNextBookmark()
                                 resetTimer()
                             },
                             onToggleBookmark: {
+                                HapticsManager.shared.generate(.success)
                                 viewModel.toggleBookmark()
                                 resetTimer()
                             },
@@ -321,6 +331,7 @@ struct PlayerControlsView: View {
                             isAtBookmark: viewModel.isAtBookmark,
                             isSubtitleEnabled: viewModel.subtitleManager.isEnabled,
                             onRotate: {
+                                HapticsManager.shared.generate(.medium)
                                 // Simple rotation trigger
                                 let keyWindow = UIApplication.shared.connectedScenes
                                     .filter({$0.activationState == .foregroundActive})
@@ -360,6 +371,7 @@ struct PlayerControlsView: View {
         HStack(spacing: isLandscape ? (isIpad ? 100 : 50) : (isIpad ? 60 : 30)) {
             // Skip Backward 10s
             Button(action: {
+                HapticsManager.shared.generate(.light)
                 viewModel.performDoubleTapSeek(forward: false)
                 showDoubleTapFeedback = false
                 resetTimer()
@@ -373,6 +385,7 @@ struct PlayerControlsView: View {
             
             // Play/Pause
             Button(action: {
+                HapticsManager.shared.generate(.medium)
                 viewModel.togglePlayPause()
                 resetTimer()
             }) {
@@ -389,6 +402,7 @@ struct PlayerControlsView: View {
             
             // Skip Forward 10s
             Button(action: {
+                HapticsManager.shared.generate(.light)
                 viewModel.performDoubleTapSeek(forward: true)
                 showDoubleTapFeedback = true
                 resetTimer()

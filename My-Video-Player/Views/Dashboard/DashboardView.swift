@@ -90,6 +90,9 @@ struct DashboardView: View {
             }
             .accentColor(.homeAccent)
             .background(Color.clear)
+            .onChange(of: viewModel.selectedTab) { _ in
+                HapticsManager.shared.selectionVibrate()
+            }
             
             
             
@@ -186,6 +189,7 @@ struct DashboardView: View {
             HStack(spacing: isIpad ? 20 : 16) {
                 // Settings Button (Trailing, before 3-dots)
                 Button(action: {
+                    HapticsManager.shared.generate(.medium)
                     navigationManager.push(.settings)
                 }) {
                     ZStack {
@@ -201,6 +205,7 @@ struct DashboardView: View {
                 
                 if !Global.shared.getIsUserPro() {
                     Button {
+                        HapticsManager.shared.generate(.medium)
                         navigationManager.push(.paywall(isFromOnboarding: false))
                     } label: {
                         ZStack {
@@ -228,8 +233,12 @@ struct DashboardView: View {
     @ViewBuilder
     private var folderAlertContent: some View {
         TextField("Folder Name", text: $viewModel.newFolderName)
-        Button("Cancel", role: .cancel) { viewModel.newFolderName = "" }
+        Button("Cancel", role: .cancel) {
+            HapticsManager.shared.generate(.medium)
+            viewModel.newFolderName = ""
+        }
         Button("Create") {
+            HapticsManager.shared.generate(.success)
             let name = viewModel.newFolderName
             if viewModel.createFolder(name: name) {
                 // Stay in current tab
@@ -300,6 +309,7 @@ private struct PlusButtonOverlay: View {
                     if viewModel.selectedTab == .folders {
                         // Direct Button for Folders
                         Button(action: { 
+                            HapticsManager.shared.generate(.medium)
                             viewModel.showCreateFolderAlert = true 
                         }) {
                             plusButtonLabel
@@ -307,10 +317,16 @@ private struct PlusButtonOverlay: View {
                     } else {
                         // Menu for Videos (Home)
                         Menu {
-                            Button(action: { viewModel.showPhotoPicker = true }) {
+                            Button(action: {
+                                HapticsManager.shared.generate(.selection)
+                                viewModel.showPhotoPicker = true
+                            }) {
                                 Label("Import from Photos", systemImage: "photo.on.rectangle")
                             }
-                            Button(action: { viewModel.showFileImporter = true }) {
+                            Button(action: {
+                                HapticsManager.shared.generate(.selection)
+                                viewModel.showFileImporter = true
+                            }) {
                                 Label("Add From iOS Files", systemImage: "plus.rectangle.on.folder")
                             }
                         } label: {

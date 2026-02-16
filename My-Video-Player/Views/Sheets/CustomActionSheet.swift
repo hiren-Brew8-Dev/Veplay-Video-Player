@@ -50,6 +50,7 @@ struct CustomActionSheet: View {
             VStack(spacing: 0) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     Button(action: {
+                        HapticsManager.shared.generate(item.role == .destructive ? .medium : .light)
                         withAnimation {
                             isPresented = false
                         }

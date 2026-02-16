@@ -65,7 +65,10 @@ struct VideoCardView: View {
                             }
                         }
                     } else {
-                        Button(action: { onMenuAction?() }) {
+                        Button(action: {
+                            HapticsManager.shared.generate(.medium)
+                            onMenuAction?()
+                        }) {
                             ZStack {
                                 Circle()
                                     .fill(.ultraThinMaterial)
