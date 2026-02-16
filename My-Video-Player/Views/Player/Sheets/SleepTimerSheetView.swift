@@ -21,7 +21,14 @@ struct SleepTimerSheetView: View {
             
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 20) {
-                    timerOptionsCard
+                    ZStack {
+                        timerOptionsCard
+                            .blur(radius: Global.shared.getIsUserPro() ? 0 : 4)
+                        
+                        if !Global.shared.getIsUserPro() {
+                            premiumOverlay
+                        }
+                    }
                     
                     if viewModel.isSleepTimerActive {
                         turnOffCard
@@ -221,5 +228,45 @@ struct SleepTimerSheetView: View {
             return original == TimeInterval(minutes * 60)
         }
         return false
+    }
+    
+    // MARK: - Premium Overlay
+    
+    private var premiumOverlay: some View {
+        Button {
+            withAnimation {
+                isPresented = false
+                viewModel.showPaywall = true
+            }
+        } label: {
+            VStack(spacing: 16) {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 40))
+                    .foregroundColor(.premiumAccent)
+                
+                VStack(spacing: 8) {
+                    Text("Premium Feature")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Text("Unlock Sleep Timer and more with Premium")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                }
+                
+                Text("GET PREMIUM")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.black)
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 32)
+                    .background(Color.premiumAccent)
+                    .cornerRadius(24)
+            }
+            .padding(32)
+            .background(Color.black.opacity(0.4))
+            .cornerRadius(24)
+        }
+        .buttonStyle(.plain)
     }
 }

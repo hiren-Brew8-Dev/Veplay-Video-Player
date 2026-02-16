@@ -302,7 +302,7 @@ struct SettingsView: View {
             .padding(16)
         }
     }
-
+    
     private func settingsActionRow(icon: String, title: String, iconColor: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 16) {
