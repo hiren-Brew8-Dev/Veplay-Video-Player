@@ -230,7 +230,7 @@ struct PlayerControlsView: View {
                                     viewModel.isControlsVisible = false
                                 }
                             } else {
-                                viewModel.showPaywall = true
+                                viewModel.showPremiumPopup = true
                             }
                         },
                         onCast: {
@@ -520,7 +520,90 @@ struct PlayerControlsView: View {
         }
         .overlay(snapshotToastOverlay)
         .overlay(sleepTimerToastOverlay)
-        .allowsHitTesting(viewModel.isAnySheetVisible)
+        .overlay(premiumPopupOverlay)
+        .allowsHitTesting(viewModel.isAnySheetVisible || viewModel.showPremiumPopup)
+    }
+
+    private var premiumPopupOverlay: some View {
+        Group {
+            if viewModel.showPremiumPopup {
+                ZStack {
+                    Color.black.opacity(0.6)
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture {
+                            withAnimation { viewModel.showPremiumPopup = false }
+                        }
+                    
+                    VStack(spacing: 24) {
+                        // Icon
+                        ZStack {
+                            Circle()
+                                .fill(Color.orange.opacity(0.2))
+                                .frame(width: 80, height: 80)
+                            
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 40, weight: .bold))
+                                .foregroundColor(.orange)
+                                .shadow(color: .orange.opacity(0.5), radius: 10)
+                        }
+                        
+                        // Text
+                        VStack(spacing: 8) {
+                            Text("Premium Feature")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.white)
+                            
+                            Text("Unlock Sleep Timer and other premium features to enhance your experience.")
+                                .font(.system(size: 16))
+                                .foregroundColor(.white.opacity(0.7))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                        }
+                        
+                        // Buttons
+                        VStack(spacing: 12) {
+                            Button(action: {
+                                withAnimation {
+                                    viewModel.showPremiumPopup = false
+                                    viewModel.showPaywall = true
+                                }
+                            }) {
+                                Text("Unlock Premium")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(.black)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 54)
+                                    .background(Color.orange)
+                                    .cornerRadius(27)
+                            }
+                            
+                            Button(action: {
+                                withAnimation { viewModel.showPremiumPopup = false }
+                            }) {
+                                Text("Not Now")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white.opacity(0.6))
+                                    .padding(.vertical, 8)
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                    }
+                    .padding(.vertical, 32)
+                    .frame(width: 340)
+                    .background(
+                        RoundedRectangle(cornerRadius: 32)
+                            .fill(Color(red: 0.1, green: 0.1, blue: 0.12))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 32)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.5), radius: 40)
+                }
+                .transition(.scale.combined(with: .opacity))
+                .zIndex(300)
+            }
+        }
     }
 
     private func closeAllSheets() {
@@ -583,7 +666,7 @@ struct PlayerControlsView: View {
                          viewModel.showSleepTimerSheet = true
                      }
                  } else {
-                     viewModel.showPaywall = true
+                     viewModel.showPremiumPopup = true
                  }
             },
             onScreenshot: { 

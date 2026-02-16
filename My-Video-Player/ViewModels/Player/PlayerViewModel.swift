@@ -112,6 +112,7 @@ import UIKit
     @MainActor @Published var showTrackSelectionSheet: Bool = false
     @MainActor @Published var showSleepTimerToast: Bool = false
     @MainActor @Published var showPaywall: Bool = false
+    @MainActor @Published var showPremiumPopup: Bool = false
     
     @MainActor var isAnySheetVisible: Bool {
         showSettingsSheet || showAudioCaptionsSheet || showSleepTimerSheet ||

@@ -94,20 +94,17 @@ struct PaywallView: View {
                                 if isFromOnboarding {
                                     navigationManager.push(.dashboard)
                                 } else {
-                                    navigationManager.pop()
+                                    presentationMode.wrappedValue.dismiss()
                                 }
                             } label: {
                                 if isNeedToShowCross {
                                     Image(systemName: "xmark")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(.white.opacity(0.6))
-                                        .aspectRatio(1.0, contentMode: .fit)
-                                        .responsiveWidth(iphoneWidth: 35)
-                                        .padding(7)
-                                        .background(Color.white.opacity(0.1))
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .padding(10)
+                                        .background(Color.white.opacity(0.2))
                                         .clipShape(Circle())
                                 }
-                                
                             }
                         }
                       
@@ -499,7 +496,7 @@ struct PaywallView: View {
                         if isFromOnboarding {
                             navigationManager.push(.dashboard)
                         } else {
-                            navigationManager.pop()
+                            presentationMode.wrappedValue.dismiss()
                         }
                         
                         print(transaction)
@@ -524,7 +521,7 @@ struct PaywallView: View {
                 if isFromOnboarding {
                     navigationManager.push(.dashboard)
                 } else {
-                    navigationManager.pop()
+                    presentationMode.wrappedValue.dismiss()
                 }
             }
             catch{
