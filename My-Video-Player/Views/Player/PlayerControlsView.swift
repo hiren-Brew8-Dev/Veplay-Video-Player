@@ -930,7 +930,7 @@ struct SleepTimerView: View {
             Divider()
                 .background(Color.gray.opacity(0.3))
             
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     timerOptionRow(minutes: 5)
                     Divider().background(Color.gray.opacity(0.2)).padding(.leading, 16)

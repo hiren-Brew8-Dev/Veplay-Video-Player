@@ -42,7 +42,7 @@ struct VideosTabView: View {
                     }
                     .padding()
                     
-                    ScrollView {
+                    ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 20) {
                             
                             // History Section

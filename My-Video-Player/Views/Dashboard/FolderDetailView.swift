@@ -99,7 +99,7 @@ struct FolderDetailView: View {
                 } else if isGridView {
                     gridView
                 } else {
-                    ScrollView(.vertical, showsIndicators: true) {
+                    ScrollView(.vertical, showsIndicators: false) {
                         listView
                             .padding(.bottom, viewModel.isSelectionMode ? 140 : 90)
                     }
@@ -363,7 +363,7 @@ struct FolderDetailView: View {
             let isLandscape = geometry.size.width > geometry.size.height
             let currentWidth = geometry.size.width
             
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
                     // Folders Section
                     if !folder.subfolders.isEmpty {

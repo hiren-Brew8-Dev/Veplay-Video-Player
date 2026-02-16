@@ -48,7 +48,7 @@ struct PhotoAlbumDetailView: View {
                          .foregroundColor(.homeTextSecondary)
                      Spacer()
                 } else {
-                    ScrollView {
+                    ScrollView(showsIndicators: false) {
                         LazyVGrid(columns: columns, spacing: 2) {
                             ForEach(assets, id: \.localIdentifier) { asset in
                                 Button(action: {

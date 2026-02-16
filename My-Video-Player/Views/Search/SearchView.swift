@@ -27,7 +27,7 @@ struct SearchView: View {
                         .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                         .padding(.bottom, isIpad ? 24 : 16)
                     
-                    ScrollView {
+                    ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 24) {
                             if viewModel.searchText.isEmpty {
                                 // History Section

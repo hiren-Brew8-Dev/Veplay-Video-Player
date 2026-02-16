@@ -74,7 +74,7 @@ struct AlbumSectionView: View {
                         Spacer()
                     }
                 } else {
-                    ScrollView {
+                    ScrollView(showsIndicators: false) {
                         LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
                             ForEach(viewModel.galleryAlbums, id: \.localIdentifier) { album in
                                 let folder = Folder(name: albumDestinationTitle(for: album), videoCount: album.estimatedAssetCount, videos: [], url: nil, albumIdentifier: album.localIdentifier, subfolders: [])

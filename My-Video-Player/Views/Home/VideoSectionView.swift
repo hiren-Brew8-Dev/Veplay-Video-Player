@@ -45,7 +45,7 @@ struct VideoSectionView: View {
                     }
                     
                     ScrollViewReader { proxy in
-                        ScrollView {
+                        ScrollView(showsIndicators: false) {
                             VStack(spacing: 24) {
                                 // Content Start
                                 

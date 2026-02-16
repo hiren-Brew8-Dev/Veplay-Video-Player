@@ -41,7 +41,7 @@ struct PrivateFolderView: View {
                         let isLandscape = geometry.size.width > geometry.size.height
                         let currentWidth = geometry.size.width
                         
-                        ScrollView {
+                        ScrollView(showsIndicators: false) {
                             LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: 12) {
                                 // Placeholder: showing same videos but pretending they are secure
                                 // In real implementation: viewModel.privateVideos

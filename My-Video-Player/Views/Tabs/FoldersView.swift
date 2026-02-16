@@ -50,7 +50,7 @@ struct FoldersView: View {
                     let isLandscape = geometry.size.width > geometry.size.height
                     let currentWidth = geometry.size.width
                     
-                    ScrollView(.vertical, showsIndicators: true) {
+                    ScrollView(.vertical, showsIndicators: false) {
                         VStack {
                             if isGridView {
                                 LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: 16) {

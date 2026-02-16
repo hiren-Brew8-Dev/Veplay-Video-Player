@@ -310,7 +310,7 @@ struct FolderSectionView: View {
             let isLandscape = isIpad ? (geometry.size.width > geometry.size.height) : (geometry.size.width > 500)
             let currentWidth = geometry.size.width
             
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 20) {
                     Group {
                         if viewModel.isGridView {

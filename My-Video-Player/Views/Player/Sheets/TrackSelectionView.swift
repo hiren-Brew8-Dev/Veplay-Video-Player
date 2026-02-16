@@ -54,7 +54,7 @@ struct AudioTrackSettingsView: View {
                 .background(Color.gray.opacity(0.3))
             
             // Tracks List inside ScrollView
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     if viewModel.availableAudioTracks.isEmpty {
                         VStack(spacing: 12) {

@@ -48,7 +48,7 @@ struct LanguagePickerSheet: View {
             .padding()
             
             // List
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 0) {
                     ForEach(languages, id: \.1) { lang in
                         Button(action: {

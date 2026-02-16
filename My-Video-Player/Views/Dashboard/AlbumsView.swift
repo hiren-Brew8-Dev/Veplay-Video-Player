@@ -32,7 +32,7 @@ struct AlbumsView: View {
                 .padding(.bottom, 10)
                 .background(Color.homeBackground)
                 
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: [
                         GridItem(.flexible(), spacing: 15),
                         GridItem(.flexible(), spacing: 15),

@@ -40,7 +40,7 @@ struct FloatingSelectionMenu<T: Hashable>: View {
                     .background(Color.white.opacity(0.2))
                 
                 // Items List
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
                         ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                             Button(action: {

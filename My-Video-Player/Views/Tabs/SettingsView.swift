@@ -41,7 +41,7 @@ struct SettingsView: View {
             .padding(.vertical, isIpad ? 24 : 8)
             .background(Color.homeBackground)
 
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     // Privacy & Security Section
                     settingsSection(title: "Privacy & Security") {

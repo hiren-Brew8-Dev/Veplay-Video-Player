@@ -190,7 +190,7 @@ struct CastDevicePickerView: View {
     
     // MARK: - Discovery Content
     private var discoveryContent: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
                 // Top info card - fixed height
                 ZStack {
