@@ -25,14 +25,14 @@ struct SplashView : View {
                 // App Icon / Logo
                 ZStack {
                     Circle()
-                        .fill(Color(hex: "F9B041").opacity(0.1))
+                        .fill(Color.premiumAccent.opacity(0.1))
                         .frame(width: 140, height: 140)
                         .blur(radius: 20)
                     
                     Image(systemName: "play.circle.fill")
                         .font(.system(size: 80))
-                        .foregroundColor(Color(hex: "F9B041"))
-                        .shadow(color: Color(hex: "F9B041").opacity(0.4), radius: 15)
+                        .foregroundColor(.premiumAccent)
+                        .shadow(color: .premiumAccent.opacity(0.4), radius: 15)
                 }
                 .scaleEffect(logoScale)
                 .opacity(logoOpacity)
@@ -40,11 +40,11 @@ struct SplashView : View {
                 // App Name
                 VStack(spacing: 8) {
                     Text("My Video Player")
-                        .appFont(.manropeBold, size: 28)
+                        .appFont(.figtreeBold, size: 28)
                         .foregroundColor(.white)
                     
                     Text("Pro Media Experience")
-                        .appFont(.manropeRegular, size: 14)
+                        .appFont(.figtreeRegular, size: 14)
                         .foregroundColor(.white.opacity(0.6))
                         .kerning(2)
                 }

@@ -20,13 +20,13 @@ struct Onboarding3View: View {
             // MARK: - Decorative Background Accents
             Group {
                 Circle()
-                    .foregroundColor(Color(red: 0.98, green: 0.69, blue: 0.27).opacity(0.08))
+                    .foregroundColor(.bgBlurOrange1.opacity(0.08))
                     .frame(width: 256, height: 256)
                     .blur(radius: 80)
                     .offset(x: -164.50, y: 410)
                 
                 Circle()
-                    .foregroundColor(Color(red: 1, green: 0.67, blue: 0.21).opacity(0.08))
+                    .foregroundColor(.bgBlurOrange2.opacity(0.08))
                     .frame(width: 256, height: 256)
                     .blur(radius: 80)
                     .offset(x: 161.50, y: -410)
@@ -54,7 +54,7 @@ struct Onboarding3View: View {
                         Rectangle()
                             .foregroundColor(.clear)
                             .frame(width: 32, height: 7)
-                            .background(Color(red: 1, green: 0.67, blue: 0.21))
+                            .background(Color.premiumAccent)
                             .cornerRadius(24)
                     }
                     .responsivePadding(edge: .top, fraction: 30)
@@ -102,7 +102,7 @@ struct Onboarding3View: View {
                                     .cornerRadius(16)
                                 
                                 Rectangle()
-                                    .fill(Color(red: 1, green: 0.67, blue: 0.21))
+                                    .fill(Color.premiumAccent)
                                     .frame(width: isAnimating ? 120 : 0, height: 4)
                                     .cornerRadius(16)
                             }
@@ -111,11 +111,11 @@ struct Onboarding3View: View {
                             
                             HStack {
                                 Text("00:00")
-                                    .font(Font.custom("Figtree-SemiBold", size: 14))
+                                    .appFont(.figtreeSemiBold, size: 14)
                                     .foregroundColor(.white)
                                 Spacer()
                                 Text("02:23")
-                                    .font(Font.custom("Figtree-SemiBold", size: 14))
+                                    .appFont(.figtreeSemiBold, size: 14)
                                     .foregroundColor(.white)
                             }
                             .padding(.horizontal, 16)
@@ -167,13 +167,13 @@ struct Onboarding3View: View {
                 // MARK: - Text Content
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Clean Playback\nExperience")
-                        .font(Font.custom("Figtree-Bold", size: 40))
+                        .appFont(.figtreeBold, size: 40)
                         .foregroundColor(.white)
                         .fixedSize(horizontal: false, vertical: true)
                         .scaleEffect(isAnimating ? 1 : 0.95, anchor: .leading)
                     
                     Text("A simple player with clear controls.")
-                        .font(Font.custom("Figtree-Regular", size: 16))
+                        .appFont(.figtreeRegular, size: 16)
                         .foregroundColor(Color.white.opacity(0.80))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -190,11 +190,11 @@ struct Onboarding3View: View {
                     navManager.push(.onboarding4)
                 }) {
                     Text("Continue")
-                        .font(Font.custom("Figtree-Bold", size: 20))
+                        .appFont(.figtreeBold, size: 20)
                         .foregroundColor(Color(red: 0.05, green: 0.05, blue: 0.06))
                         .responsiveWidth(iphoneWidth: 321)
                         .responsiveHeight(iphoneHeight: 52)
-                        .background(Color(red: 1, green: 0.67, blue: 0.21))
+                        .background(Color.premiumAccent)
                         .cornerRadius(40)
                 }
                 .responsivePadding(edge: .bottom, fraction: 10)
@@ -222,7 +222,7 @@ struct OnboardingTag: View {
                     .foregroundColor(.white)
             }
             Text(text)
-                .font(Font.custom("Figtree-SemiBold", size: 14))
+                .appFont(.figtreeSemiBold, size: 14)
                 .foregroundColor(.white)
         }
         .padding(.horizontal, 16)

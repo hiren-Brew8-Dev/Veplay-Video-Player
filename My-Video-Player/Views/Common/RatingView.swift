@@ -23,12 +23,12 @@ struct RatingView: View {
             VStack(spacing: isIpad ? 40 : 20) {
                 VStack(spacing: 8) {
                     Text("Thanks for\nDownloading")
-                        .appFont(.manropeBold, size: 40)
+                        .appFont(.figtreeBold, size: 40)
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                     
                     Text("You’ve not just downloaded our app, but you’ve given us the opportunity to help you make your phone clean. We’re glad to have you here!\n\n~Team Video Player")
-                        .appFont(.manropeRegular, size: 16)
+                        .appFont(.figtreeRegular, size: 16)
                         .foregroundColor(.white.opacity(0.8))
                         .multilineTextAlignment(.center)
                         .lineSpacing(4)

@@ -20,13 +20,13 @@ struct Onboarding2View: View {
             // MARK: - Decorative Background Accents
             Group {
                 Circle()
-                    .foregroundColor(Color(red: 0.98, green: 0.69, blue: 0.27).opacity(0.08))
+                    .foregroundColor(.bgBlurOrange1.opacity(0.08))
                     .frame(width: 256, height: 256)
                     .blur(radius: 80)
                     .offset(x: -164.50, y: 410)
                 
                 Circle()
-                    .foregroundColor(Color(red: 1, green: 0.67, blue: 0.21).opacity(0.08))
+                    .foregroundColor(.bgBlurOrange2.opacity(0.08))
                     .frame(width: 256, height: 256)
                     .blur(radius: 80)
                     .offset(x: 161.50, y: -410)
@@ -48,7 +48,7 @@ struct Onboarding2View: View {
                         Rectangle()
                             .foregroundColor(.clear)
                             .frame(width: 32, height: 7)
-                            .background(Color(red: 1, green: 0.67, blue: 0.21))
+                            .background(Color.premiumAccent)
                             .cornerRadius(24)
                         
                         Rectangle()
@@ -108,13 +108,13 @@ struct Onboarding2View: View {
                 // MARK: - Text Content
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Organize Easily\nIn Folders")
-                        .font(Font.custom("Figtree-Bold", size: 40))
+                        .appFont(.figtreeBold, size: 40)
                         .foregroundColor(.white)
                         .fixedSize(horizontal: false, vertical: true)
                         .scaleEffect(isAnimating ? 1 : 0.95, anchor: .leading)
                     
                     Text("Create folders to keep your videos arranged.")
-                        .font(Font.custom("Figtree-Regular", size: 16))
+                        .appFont(.figtreeRegular, size: 16)
                         .foregroundColor(Color.white.opacity(0.80))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -131,11 +131,11 @@ struct Onboarding2View: View {
                     navManager.push(.onboarding3)
                 }) {
                     Text("Continue")
-                        .font(Font.custom("Figtree-Bold", size: 20))
+                        .appFont(.figtreeBold, size: 20)
                         .foregroundColor(Color(red: 0.05, green: 0.05, blue: 0.06))
                         .responsiveWidth(iphoneWidth: 321)
                         .responsiveHeight(iphoneHeight: 52)
-                        .background(Color(red: 1, green: 0.67, blue: 0.21))
+                        .background(Color.premiumAccent)
                         .cornerRadius(40)
                 }
                 .responsivePadding(edge: .bottom, fraction: 10)
@@ -170,17 +170,17 @@ struct OnboardingFolderRow: View {
                 
                 Image(systemName: "folder.fill")
                     .font(.system(size: 24))
-                    .foregroundColor(Color(red: 1, green: 0.67, blue: 0.21))
+                    .foregroundColor(.premiumAccent)
             }
             
             // Info Section
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(Font.custom("Figtree-Bold", size: 16))
+                    .appFont(.figtreeBold, size: 16)
                     .foregroundColor(.white)
                 
                 Text(count)
-                    .font(Font.custom("Figtree-Medium", size: 14))
+                    .appFont(.figtreeMedium, size: 14)
                     .foregroundColor(Color.white.opacity(0.5))
             }
             
@@ -201,7 +201,7 @@ struct OnboardingFolderRow: View {
                 .overlay(
                     // Alternating Gradient Highlight
                     LinearGradient(
-                        colors: gradientSide == .right ? [.clear, Color(red: 1, green: 0.67, blue: 0.21).opacity(0.2)] : [Color(red: 1, green: 0.67, blue: 0.21).opacity(0.2), .clear],
+                        colors: gradientSide == .right ? [.clear, .premiumAccent.opacity(0.2)] : [.premiumAccent.opacity(0.2), .clear],
                         startPoint: .leading,
                         endPoint: .trailing
                     )

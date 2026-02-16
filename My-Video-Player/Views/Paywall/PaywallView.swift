@@ -46,294 +46,290 @@ struct PaywallView: View {
     
     var body: some View {
         ZStack {
+            // MARK: - Background
+            Color.black.ignoresSafeArea()
+            
+            // Decorative Blurred Circles
+            ZStack {
+                
+                Circle()
+                    .foregroundColor(.bgBlurOrange2.opacity(0.14))
+                    .aspectRatio(1.0, contentMode: .fit)
+                    .responsiveWidth(iphoneWidth: 356)
+                    .blur(radius: 130)
+                
+                
+                Circle()
+                    .foregroundColor(.bgBlurOrange1.opacity(0.15))
+                    .aspectRatio(1.0, contentMode: .fit)
+                    .responsiveWidth(iphoneWidth: 300)
+                    .blur(radius: 80)
+                    .offset(x: -164.5, y: 368.5)
+                
+             
+                    
+                
+                Circle()
+                    .foregroundColor(.bgBlurOrange2.opacity(0.15))
+                    .aspectRatio(1.0, contentMode: .fit)
+                    .responsiveWidth(iphoneWidth: 300)
+                    .blur(radius: 80)
+                    .offset(x: 161.5, y: -451.5)
+            }
+            .ignoresSafeArea()
+            
             ScrollView(showsIndicators: false) {
-                VStack(spacing: isIpad ? 30 : 10) {
-                   
-                    ZStack {
-                        
-                       
-                        
-                        VStack(alignment: .center, spacing: 6) {
-                            Text("Unlock\nUnlimited Use")
-                            
-                                .appFont(.manropeRegular, size: 40 )
-                                .foregroundStyle(.white)
-                                .minimumScaleFactor(0.4)
-                                .multilineTextAlignment(.center)
-                            
+                VStack(spacing: 0) {
+                    
+                    HStack {
+                        Spacer()
+                        ZStack {
+                            Rectangle()
+                                .fill(.black.opacity(0.001))
+                                .aspectRatio(1.0, contentMode: .fit)
+                                .responsiveWidth(iphoneWidth: 35)
+                            Button {
+                                HapticsManager.shared.generateOnboardingVibrate()
+                                if isFromIntialPaywall {
+                                    isNeedToMoveToInitialDetails.toggle()
+                                } else {
+                                    if isFromOnboarding {
+                                        navigationManager.push(.dashboard)
+                                    } else {
+                                        navigationManager.pop()
+                                    }
+                                }
+                            } label: {
+                                if isNeedToShowCross {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.white.opacity(0.6))
+                                        .aspectRatio(1.0, contentMode: .fit)
+                                        .responsiveWidth(iphoneWidth: 35)
+                                        .padding(7)
+                                        .background(Color.white.opacity(0.1))
+                                        .clipShape(Circle())
+                                }
+                                
+                            }
                         }
-                        .responsivePadding(edge: .top, fraction: 0.25)
+                        .responsivePadding(edge: .trailing, fraction: 10)
+                      
                     }
-                 
+                       
+                    // MARK: - Header "Unlock Premium"
+                    HStack(spacing: 12) {
+                        Text("Unlock")
+                            .appFont(.figtreeExtraBold, size: 44)
+                            .foregroundColor(.white)
+                        
+                        Text("Premium")
+                            .appFont(.figtreeExtraBold, size: 44)
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 8)
+                            .background(Color.premiumAccent)
+                    }
+                    .responsivePadding(edge: .top, fraction: 15)
+                    
+                    // MARK: - Features
+                    VStack(alignment: .leading, spacing: 16) {
+                        FeatureRow(icon: "feature_1_paywall", text: "Unlimited Folders")
+                        FeatureRow(icon: "feature_2_paywall", text: "Background Playback")
+                        FeatureRow(icon: "feature_3_paywall", text: "Ad-Free Experience")
+                    }
+                    .responsivePadding(edge: .top, fraction: 40)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .responsivePadding(edge: .leading, fraction: 55)
+                    
+                    // MARK: - Trial Toggle
                     HStack {
                         Text("Not sure? Enable free trial")
-                            .appFont(.manropeMedium, size: 14)
+                            .appFont(.figtreeMedium, size: 14)
                             .foregroundColor(.white)
                         
                         Spacer()
                         
-                        //MARK: Not Sure?
-                        CustomButton(image: remoteConfigManager.currentSelectedPaywallPlan == 0
-                                     ? .multiSwitchOnPaywall
-                                     : .multiSwitchOffPaywall) {
-                            HapticsManager.shared.generate(.selection)
-                            withAnimation(.easeInOut(duration: 0.1)) {
-                                if remoteConfigManager.currentSelectedPaywallPlan != 0 {
-                                    remoteConfigManager.currentSelectedPaywallPlan = 0
-                                } else {
-                                    remoteConfigManager.currentSelectedPaywallPlan = 1
+                        CustomToggle(isOn: remoteConfigManager.currentSelectedPaywallPlan == 0)
+                            .onTapGesture {
+                                HapticsManager.shared.generate(.selection)
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    if remoteConfigManager.currentSelectedPaywallPlan != 0 {
+                                        remoteConfigManager.currentSelectedPaywallPlan = 0
+                                    } else {
+                                        remoteConfigManager.currentSelectedPaywallPlan = 1
+                                    }
                                 }
                             }
-                        }
-                                     .responsiveWidth(iphoneWidth: 0.13)
                     }
                     .padding(isIpad ? 25 : 16)
-                    .background(.white.opacity(0.08)) // dark grey pill
+                    .background(Color.white.opacity(0.08))
                     .cornerRadius(isIpad ? 40 : 20)
                     .padding(.horizontal, 25)
-                    .aspectRatio(345/58, contentMode: .fit)
+                    .responsivePadding(edge: .top, fraction: 40)
                     
+                    // MARK: - Subscription Plans
                     let weeklyPlan = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.weekly" }
                     let yearlyPlan = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.yearly" }
                     let lifeTimePlan = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.lifetime" }
                     
-                    HStack(spacing: isIpad ? 40 : 16) {
+                    HStack(spacing: isIpad ? 30 : 12) {
                         SubscriptionOption(
                             title: "Weekly",
                             price: weeklyPlan?.displayPrice ?? "$0.00",
                             duration: "per week",
                             isSelected: remoteConfigManager.currentSelectedPaywallPlan == 0,
-                            onSelect: {
-                                withAnimation(.easeInOut(duration: 0.1)) {
-                                    remoteConfigManager.currentSelectedPaywallPlan = 0
-                                    HapticsManager.shared.generateOnboardingVibrate()
-                                }
-                                
-                            },
-                            description: "Free For\n3 Days"
+                            description: remoteConfigManager.weekly_plan_description,
+                            onSelect: { selectPlan(0) }
                         )
+                        
                         SubscriptionOption(
                             title: "Yearly",
-                            price: !remoteConfigManager.isNeedToShowWeeklyPriceOnYearly ? "\(yearlyPlan?.displayPrice ?? "$0.00")" : "\(self.calculateYearToWeeklyPrice(actualPrice: yearlyPlan?.price ?? 0, currencyCode: yearlyPlan?.priceFormatStyle.currencyCode ?? "") ?? "$0.00")",
-                            duration: remoteConfigManager.isNeedToShowWeeklyPriceOnYearly ? "per week" : "per year",
+                            price: !remoteConfigManager.showWeeklyPriceOnYearly ? "\(yearlyPlan?.displayPrice ?? "$0.00")" : "\(self.calculateYearToWeeklyPrice(actualPrice: yearlyPlan?.price ?? 0, currencyCode: yearlyPlan?.priceFormatStyle.currencyCode ?? "") ?? "$0.00")",
+                            duration: remoteConfigManager.showWeeklyPriceOnYearly ? "per week" : "per year",
                             isSelected: remoteConfigManager.currentSelectedPaywallPlan == 1,
-                            onSelect: {
-                                withAnimation(.easeInOut(duration: 0.1)) {
-                                    remoteConfigManager.currentSelectedPaywallPlan = 1
-                                    HapticsManager.shared.generateOnboardingVibrate()
-                                }
-                                
-                            },
-                            description: "Party\nAll Year"
+                            description: remoteConfigManager.yearly_plan_description,
+                            onSelect: { selectPlan(1) }
                         )
+                        
                         SubscriptionOption(
                             title: "Lifetime",
                             price: lifeTimePlan?.displayPrice ?? "$0.00",
                             duration: "one time",
                             isSelected: remoteConfigManager.currentSelectedPaywallPlan == 2,
-                            onSelect: {
-                                withAnimation(.easeInOut(duration: 0.1)) {
-                                    remoteConfigManager.currentSelectedPaywallPlan = 2
-                                    HapticsManager.shared.generateOnboardingVibrate()
-                                }
-                                
-                            },
-                            description: "Limited\nTime Offer"
+                            description: remoteConfigManager.lifetime_plan_description,
+                            onSelect: { selectPlan(2) }
                         )
                     }
-                    .padding()
+                    .responsivePadding(edge: .top, fraction: 30)
+                    .padding(.horizontal)
                     
-                    
-                    // MARK: No Payment Now
-                    switch remoteConfigManager.currentSelectedPaywallPlan {
-                    case 0 :
-                        Text("\(remoteConfigManager.planInfoTitleTextYearly)Auto-renews @ just \(weeklyPlan?.displayPrice ?? "$00.00")/week")
-                            .appFont(.manropeMedium, size: 14)
-                    case 1 :
-                        Text("Auto-renews @ just \(yearlyPlan?.displayPrice ?? "$00.00")/year")
-                            .appFont(.manropeMedium, size: 14)
-                    case 2 :
-                        Text("Pay once, Forever yours")
-                            .appFont(.manropeMedium, size: 14)
-                    default :
-                        Text("")
+                    // Status text
+                    VStack(spacing: 4) {
+                        Text(currentBottomLineDescription)
+                            .appFont(.figtreeMedium, size: 15)
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                            .responsivePadding(edge: .top, fraction: 25)
                     }
+                
                     
+                    // MARK: - Main Button
                     Button(action: {
-                        withAnimation(.easeIn(duration: 0.3)) {
-                            HapticsManager.shared.generateOnboardingVibrate()
-                            AnalyticsManager.shared.log(.userClickedTryFree)
-                            switch remoteConfigManager.currentSelectedPaywallPlan {
-                            case 0:
-                                self.purchaseProduct(purchaseProduct: weeklyPlan)
-                            case 1:
-                                self.purchaseProduct(purchaseProduct: yearlyPlan)
-                            case 2:
-                                self.purchaseProduct(purchaseProduct: lifeTimePlan)
-                            default:
-                                self.purchaseProduct(purchaseProduct: weeklyPlan)
-                            }
+                        HapticsManager.shared.generateOnboardingVibrate()
+                        switch remoteConfigManager.currentSelectedPaywallPlan {
+                        case 0: self.purchaseProduct(purchaseProduct: weeklyPlan)
+                        case 1: self.purchaseProduct(purchaseProduct: yearlyPlan)
+                        case 2: self.purchaseProduct(purchaseProduct: lifeTimePlan)
+                        default: self.purchaseProduct(purchaseProduct: weeklyPlan)
                         }
                     }) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white)
+                                .fill(Color.premiumAccent)
                                 .aspectRatio(355/64, contentMode: .fit)
                                 .shadow(radius: 4)
                                 .cornerRadius(60)
                             
                             Text(remoteConfigManager.currentSelectedPaywallPlan == 0 &&  remoteConfigManager.isTrialPriceUnabled ? "\(remoteConfigManager.continueBtnText) \(formattedTrialPrice(for: yearlyPlan))" : "Continue")
-                                .appFont(.manropeRegular, size: 20)
+                                .appFont(.figtreeExtraBold, size: 20)
                                 .foregroundStyle(.black)
                         }
-                        .responsiveWidth(iphoneWidth: 0.95, ipadWidth: 0.6)
+                        .responsiveWidth(iphoneWidth: 355, ipadWidth: 0.6)
                     }
-                    
-                    .responsiveWidth(iphoneWidth: 0.95, ipadWidth: 0.6)
-                    .padding(.horizontal, isIpad ? 80 : 20)
-                    .padding(.top, isIpad ? 15 : 8)
+                    .responsiveWidth(iphoneWidth: 345)
+                    .responsivePadding(edge: .top, fraction: 30)
                     .disabled(isProccesing)
                     
                     Text("🔒 Secured with iTunes. Cancel anytime")
-                        .appFont(.manropeMedium, size: 13)
-                        .padding(.vertical)
-                      
-                    VStack(spacing: 10) {
-                        
-                        HStack(spacing: isIpad ? 16 : 8) {
-                            
-                            FooterLinkButton(text: "Restore") {
-                                withAnimation(.easeIn(duration: 0.2)) {
-                                    HapticsManager.shared.generateOnboardingVibrate()
-                                    restorePurchase()
-                                    AnalyticsManager.shared.log(.userClickedRestore)
-                                }
-                            }
-                            
-                            Rectangle()
-                                .frame(width: isIpad ? 1 : 0.5, height:  isIpad ? 18 : 15)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 3)
-                            
-                            FooterLinkButton(text: "Privacy policy", action: {
-                                HapticsManager.shared.generate(.light)
-                                withAnimation(.easeIn(duration: 0.2)) {
-                                    openWebPage("https://sites.google.com/view/shivshankarapps/privacy-policy", title: "Privacy Policy")
-                                    AnalyticsManager.shared.log(.privacyPolicyTapped)
-                                }
-                            })
-                            
-                            Rectangle()
-                                .frame(width:  isIpad ? 1 : 0.5, height:  isIpad ? 18 : 15)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 3)
-                            
-                            FooterLinkButton(text: "Terms of use", action: {
-                                HapticsManager.shared.generate(.light)
-                                withAnimation(.easeIn(duration: 0.2)) {
-                                    
-                                    openWebPage("https://sites.google.com/view/shivshankarapps/terms-conditions", title: "Terms & Conditions")
-                                    
-                                    AnalyticsManager.shared.log(.termsAndConditionTapped)
-                                }
-                            })
-                        }
-                        .padding(.top, -10)
-                        
-                        
-                        Text("Premium membership unlocks all the packs and content. This is an auto-renew subscription. Subscriptions will automatically renew and you will be charged for renewal within 24 hours prior to end of each period unless auto renew is tuned off at least 24-hours before the end of each period. You can manage your subscription settings and auto-renewal may turned off by going to Apple ID Account Settings after purchase.")
-                            .foregroundStyle(.gray)
-                            .appFont(.manropeRegular, size: 10)
-                        
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
+                        .appFont(.figtreeMedium, size: 11)
+                        .foregroundColor(.white.opacity(0.6))
+                        .responsivePadding(edge: .top, fraction: 15)
                     
-                    
-                    Spacer()
-                }
-                .responsivePadding(edge: .top, fraction: isIpad ? -0.03 : -0.04)
-                
-                .scrollIndicators(.hidden)
-                
-            }
-            
-            .scrollBounceBehavior(.basedOnSize)
-            .responsiveWidth(iphoneWidth: 1.0, ipadWidth: 0.5)
-            
-            VStack {
-                
-                HStack {
-                    
-                    Spacer()
-                    
-                    Button {
-                        withAnimation(.easeIn(duration: 0.2)) {
+                    // MARK: - Footer Links
+                    HStack(spacing: 8) {
+                        FooterLinkButton(text: "Restore") {
                             HapticsManager.shared.generateOnboardingVibrate()
-                            if isFromIntialPaywall {
-                                isNeedToMoveToInitialDetails.toggle()
-                            } else {
-                                if isFromOnboarding {
-                                    navigationManager.push(.dashboard)
-                                } else {
-                                    navigationManager.pop()
-                                }
-                            }
-                            AnalyticsManager.shared.log(.skipButtonTapped)
+                            restorePurchase()
                         }
-                    } label: {
-                        if isNeedToShowCross {
-                            Image(.closePaywall)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 30)
-                                .padding(.vertical, 5)
-                                .shadow(radius: 10)
+                        Text("|").foregroundColor(.white.opacity(0.3))
+                        FooterLinkButton(text: "Privacy policy") {
+                            openWebPage("https://sites.google.com/view/shivshankarapps/privacy-policy", title: "Privacy Policy")
+                        }
+                        Text("|").foregroundColor(.white.opacity(0.3))
+                        FooterLinkButton(text: "Terms of use") {
+                            openWebPage("https://sites.google.com/view/shivshankarapps/terms-conditions", title: "Terms & Conditions")
                         }
                     }
+                    .responsivePadding(edge: .top, fraction: 15)
+                    
+                    Text("Premium membership unlocks all the packs and content. This is an auto-renew subscription. Subscriptions will automatically renew and you will be charged for renewal within 24 hours prior to end of each period unless auto renew is tuned off at least 24-hours before the end of each period. You can manage your subscription settings and auto-renewal may turned off by going to Apple ID Account Settings after purchase.")
+                        .appFont(.figtreeRegular, size: 8)
+                        .foregroundColor(.white.opacity(0.5))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
+                        .padding(.vertical, 20)
+                    
+                    Spacer(minLength: 50)
                 }
-                
-                Spacer()
             }
-            .responsivePadding(edge: .top, fraction: 0.07)
-            .responsivePadding(edge: .trailing, fraction: 0.1)
             
             
             
             if !subscriptionStore.isReady || isProccesing {
                 loaderOverlay()
-                    .transition(.opacity)
             }
-            
-            
         }
         .navigationBarBackButtonHidden()
-        .ignoresSafeArea()
+        
         .fullScreenCover(item: $webViewData) { data in
             URLWebView(titleName: data.title, urlString: data.url)
         }
-        
-        .navigationDestination(isPresented: $isNeedToMoveToInitialDetails, destination: {
+        .navigationDestination(isPresented: $isNeedToMoveToInitialDetails) {
             Onboarding1View()
-        })
+        }
         .onAppear {
             checkPaywallXTypes()
-            
-            // Print trial info for debugging
-             if let weekly = subscriptionStore.subscriptions.first(where: { $0.id == "com.wildrr.app.weekly" }) {
-                 print("Intro Offer Weekly:", weekly.subscription?.introductoryOffer as Any)
-             }
-
-             if let yearly = subscriptionStore.subscriptions.first(where: { $0.id == "com.wildrr.app.yearly" }) {
-                 print("Intro Offer Yearly:", yearly.subscription?.introductoryOffer as Any)
-             }
-            
-            // Trigger the animation for each feature row
-            for i in 0..<featureVisibility.count {
-                DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.3) {
-                    featureVisibility[i] = true
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    private var currentBottomLineDescription: String {
+        let description: String
+        let price: String
+        
+        switch remoteConfigManager.currentSelectedPaywallPlan {
+        case 0:
+            description = remoteConfigManager.week_plan_bottom_line_description
+            price = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.weekly" }?.displayPrice ?? ""
+        case 1:
+            description = remoteConfigManager.year_plan_bottom_line_description
+            price = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.yearly" }?.displayPrice ?? ""
+        case 2:
+            description = remoteConfigManager.lifetime_plan_bottom_line_description
+            price = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.lifetime" }?.displayPrice ?? ""
+        default:
+            return ""
+        }
+        
+        return description.replacingOccurrences(of: "[Pricing]", with: price)
+    }
+    
+    private var bindingForPlan: Binding<Bool> {
+        Binding(
+            get: { remoteConfigManager.currentSelectedPaywallPlan == 0 },
+            set: { newValue in
+                withAnimation {
+                    remoteConfigManager.currentSelectedPaywallPlan = newValue ? 0 : 1
                 }
             }
+        )
+    }
+    
+    private func selectPlan(_ index: Int) {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            remoteConfigManager.currentSelectedPaywallPlan = index
+            HapticsManager.shared.generateOnboardingVibrate()
         }
     }
     
@@ -354,8 +350,6 @@ struct PaywallView: View {
         
         return formattedZeroPrice
     }
-    
-    
     
     func checkPaywallXTypes(){
         
@@ -493,15 +487,17 @@ struct PaywallView: View {
     
     private func loaderOverlay() -> some View {
         ZStack {
-            Rectangle()
-                .fill(.white.opacity(0.9))
-                .frame(width: 80, height: 80)
-                .cornerRadius(15)
-            
+            RoundedRectangle(cornerRadius: 10)
+                .fill(.white.opacity(0.2))
+                .aspectRatio(1.0, contentMode: .fit)
+                .responsiveWidth(iphoneWidth: 100)
+                
             ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 .scaleEffect(1.5)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.4))
         .ignoresSafeArea()
         
     }
@@ -519,9 +515,8 @@ struct FooterLinkButton: View {
     var body: some View {
         Button(action: action) {
             Text(text)
-                .appFont(.manropeMedium, size: 15)
-            
-                .foregroundColor(.white)
+                .appFont(.figtreeMedium, size: 12)
+                .foregroundColor(.white.opacity(0.8))
         }
     }
 }
@@ -531,15 +526,32 @@ struct FeatureRow: View {
     let text: String
     
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Image(icon)
-                .resizable()
-                .frame(width: isIpad ? 24 : 20, height: isIpad ? 24 : 20)
-            Text(text)
-                .appFont(.manropeMedium, size: 18)
-                .tracking(1.0)
+                .font(.system(size: 20))
                 .foregroundColor(.white)
+                .frame(width: 24, height: 24)
             
+            Text(text)
+                .appFont(.figtreeSemiBold, size: 18)
+                .foregroundColor(.white)
+        }
+    }
+}
+
+struct CustomToggle: View {
+    var isOn: Bool
+    
+    var body: some View {
+        ZStack(alignment: isOn ? .trailing : .leading) {
+            RoundedRectangle(cornerRadius: 33)
+                .fill(isOn ? Color.premiumAccent : Color.white.opacity(0.12))
+                .frame(width: 50, height: 26)
+            
+            Circle()
+                .fill(Color.white)
+                .frame(width: 22, height: 22)
+                .padding(2)
         }
     }
 }
@@ -549,59 +561,51 @@ struct SubscriptionOption: View {
     var price: String
     var duration: String
     var isSelected: Bool
-    var onSelect: () -> Void
     var description: String
+    var onSelect: () -> Void
     
     var body: some View {
-        ZStack {
-            VStack(alignment: .center, spacing: 0) {
+        VStack(spacing: 0) {
+            VStack(spacing: 6) {
+                Text(title)
+                    .appFont(isSelected ? .figtreeRegular : .figtreeBold, size: 16)
+                    .foregroundColor(isSelected ? .black :  .white.opacity(RemoteConfigManager.shared.paywallPlanTitleOpacity / 100.0))
                 
-                VStack(spacing: 6) {
-                    Text(title)
-                        .appFont(.manropeMedium, size: 16)
-                    
-                        .foregroundColor(.white.opacity(0.5))
-                    
-                    Text(price)
-                        .appFont(.manropeMedium, size: 18)
-                    
-                        .foregroundColor(.white)
-                    
-                    
-                    Text(duration)
-                        .appFont(.manropeMedium, size: 14)
-                    
-                        .foregroundColor(.white)
-                }
-                .padding(.top, 14)
+                Text(price)
+                    .appFont(isSelected ? .figtreeExtraBold : .figtreeMedium, size: 18)
+                    .foregroundColor(isSelected ? .black : .white)
                 
-                Spacer()
-                
-                ZStack(alignment: .center) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(isSelected ? Color.white : .white.opacity(0.12))
-                        .aspectRatio(115/53, contentMode: .fit)
-                        .padding([.leading, .trailing], 5)
-                    
-                    Text(description)
-                        .appFont(.manropeBold, size: 14)
-                    
-                        .foregroundColor(isSelected ? .black : .white.opacity(0.4))
-                        .multilineTextAlignment(.center)
-                        .padding([.leading, .trailing], 6)
-                }
-                .padding(.bottom, 5)
+                Text(duration)
+                    .appFont(isSelected ? .figtreeExtraBold : .figtreeMedium, size: 14)
+                    .foregroundColor(isSelected ? .black : .white)
             }
-            .aspectRatio(110/154, contentMode: .fit)
-            .responsiveWidth(iphoneWidth: 0.28, ipadWidth: 0.2)
-            .cornerRadius(16)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color.white : Color.white.opacity(0.12), lineWidth: 2)
-            )
-            .onTapGesture {
-                onSelect()
+            .padding(.top, 14)
+            
+            Spacer()
+            
+            ZStack(alignment: .center) {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.black : .white.opacity(0.06))
+                    .aspectRatio(100/53, contentMode: .fit)
+                    .padding([.leading, .trailing], 5)
+                
+                Text(description)
+                    .appFont(isSelected ? .figtreeBold : .figtreeMedium, size: 15)
+                    .foregroundColor(isSelected ? .white : .white.opacity(0.4))
+                    .multilineTextAlignment(.center)
+                    .padding([.leading, .trailing], 6)
             }
+        }
+        .responsiveWidth(iphoneWidth: 110)
+        .responsiveHeight(iphoneHeight: 154)
+        .background(isSelected ? Color.premiumAccent : Color.clear)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isSelected ? Color.clear : Color.white.opacity(0.1), lineWidth: 1)
+        )
+        .onTapGesture {
+            onSelect()
         }
     }
 }
@@ -609,5 +613,3 @@ struct SubscriptionOption: View {
 #Preview {
     PaywallView()
 }
-
-

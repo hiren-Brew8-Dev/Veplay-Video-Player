@@ -20,14 +20,14 @@ struct ThanksForDownloadingView: View {
             // Decorative Blurred Circles
             Group {
                 Circle()
-                    .foregroundColor(Color(red: 0.98, green: 0.69, blue: 0.27).opacity(0.08))
+                    .foregroundColor(.bgBlurOrange1.opacity(0.08))
                     .responsiveWidth(iphoneWidth: 256)
                     .responsiveHeight(iphoneHeight: 256)
                     .blur(radius: 80)
                     .offset(x: -164.50, y: 410)
                 
                 Circle()
-                    .foregroundColor(Color(red: 1, green: 0.67, blue: 0.21).opacity(0.08))
+                    .foregroundColor(.bgBlurOrange2.opacity(0.08))
                     .responsiveWidth(iphoneWidth: 256)
                     .responsiveHeight(iphoneHeight: 256)
                     .blur(radius: 80)
@@ -40,7 +40,7 @@ struct ThanksForDownloadingView: View {
                 
                 // MARK: - Title
                 Text("Thanks for\nDownloading")
-                    .font(Font.custom("Figtree-Bold", size: 52))
+                    .appFont(.figtreeBold, size: 52)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .scaleEffect(isAnimating ? 1 : 0.9)
@@ -54,7 +54,7 @@ struct ThanksForDownloadingView: View {
                     HStack(alignment: .top, spacing: 0) {
                         // Message Text
                         Text("You’ve not just downloaded our app, but you’ve given us the opportunity to help you make your phone clean. We’re glad to have you here!")
-                            .font(Font.custom("Figtree-Medium", size: 18))
+                            .appFont(.figtreeMedium, size: 18)
                             .lineSpacing(10)
                             .foregroundColor(.white)
                             .multilineTextAlignment(.leading)
@@ -91,7 +91,7 @@ struct ThanksForDownloadingView: View {
                     
                     // Team Signature
                     Text("~Team Video Player")
-                        .font(Font.custom("Figtree-Bold", size: 20))
+                        .appFont(.figtreeBold, size: 20)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
@@ -108,7 +108,7 @@ struct ThanksForDownloadingView: View {
                             .foregroundColor(.clear)
                             .responsiveWidth(iphoneWidth: 26.98)
                             .responsiveHeight(iphoneHeight: 24.09)
-                            .background(Color(red: 1, green: 0.67, blue: 0.21).opacity(0.20))
+                            .background(Color.premiumAccent.opacity(0.20))
                             .offset(x: 119.70 * (UIScreen.main.bounds.width / 393), 
                                     y: -154.45 * (UIScreen.main.bounds.height / 852))
                             .blur(radius: 10.83)
@@ -127,11 +127,11 @@ struct ThanksForDownloadingView: View {
                     navManager.push(.paywall)
                 }) {
                     Text("Continue")
-                        .font(Font.custom("Figtree-Bold", size: 20))
+                        .appFont(.figtreeBold, size: 20)
                         .foregroundColor(Color(red: 0.05, green: 0.05, blue: 0.06))
                         .responsiveWidth(iphoneWidth: 321)
                         .responsiveHeight(iphoneHeight: 52)
-                        .background(Color(red: 1, green: 0.67, blue: 0.21))
+                        .background(Color.premiumAccent)
                         .cornerRadius(40)
                 }
                 .responsivePadding(edge: .bottom, fraction: 20)

@@ -42,6 +42,25 @@
 		<string>_googlecast._tcp</string>
 		<string>_airplay._tcp</string>
 	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Figtree-Black.ttf</string>
+		<string>Figtree-BlackItalic.ttf</string>
+		<string>Figtree-Bold.ttf</string>
+		<string>Figtree-BoldItalic.ttf</string>
+		<string>Figtree-ExtraBold.ttf</string>
+		<string>Figtree-ExtraBoldItalic.ttf</string>
+		<string>Figtree-Italic-VariableFont_wght.ttf</string>
+		<string>Figtree-Italic.ttf</string>
+		<string>Figtree-Light.ttf</string>
+		<string>Figtree-LightItalic.ttf</string>
+		<string>Figtree-Medium.ttf</string>
+		<string>Figtree-MediumItalic.ttf</string>
+		<string>Figtree-Regular.ttf</string>
+		<string>Figtree-SemiBold.ttf</string>
+		<string>Figtree-SemiBoldItalic.ttf</string>
+		<string>Figtree-VariableFont_wght.ttf</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
@@ -314,25 +333,6 @@
 				</array>
 			</dict>
 		</dict>
-	</array>
-	<key>UIAppFonts</key>
-	<array>
-		<string>Figtree-Black.ttf</string>
-		<string>Figtree-BlackItalic.ttf</string>
-		<string>Figtree-Bold.ttf</string>
-		<string>Figtree-BoldItalic.ttf</string>
-		<string>Figtree-ExtraBold.ttf</string>
-		<string>Figtree-ExtraBoldItalic.ttf</string>
-		<string>Figtree-Italic-VariableFont_wght.ttf</string>
-		<string>Figtree-Italic.ttf</string>
-		<string>Figtree-Light.ttf</string>
-		<string>Figtree-LightItalic.ttf</string>
-		<string>Figtree-Medium.ttf</string>
-		<string>Figtree-MediumItalic.ttf</string>
-		<string>Figtree-Regular.ttf</string>
-		<string>Figtree-SemiBold.ttf</string>
-		<string>Figtree-SemiBoldItalic.ttf</string>
-		<string>Figtree-VariableFont_wght.ttf</string>
 	</array>
 </dict>
 </plist>

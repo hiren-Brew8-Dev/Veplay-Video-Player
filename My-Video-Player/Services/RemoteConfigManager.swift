@@ -13,26 +13,24 @@ import Combine
 class RemoteConfigManager: ObservableObject {
     static let shared = RemoteConfigManager()
 
-    @Published var isNeedToShowWeeklyPriceOnYearly: Bool = false
+    @Published var showWeeklyPriceOnYearly: Bool = false
     @Published var isShowNeverrCardView: Bool = false
     @Published var currentSelectedPaywallPlan: Int = 0
     @Published var minimumRequiredVersion: Double = 1.0
     @Published var continueBtnText: String = "Continue"
     @Published var isNeedToShowForceUpdate = false
     @Published var currentPaywallXType: Int = 0
-    @Published var planInfoTitleTextYearly: String = "Secured by Apple, Cancel Anytime"
     @Published var isTrialPriceUnabled: Bool = false
-    @Published var planInfoTitleTextWeekly: String = "Weekly Access"
-    @Published var planInfoTitleTextWeeklyDummy: String = "Weekly Access"
-    @Published var planInfoTitleTextMonthly: String = "Monthly Access"
-    @Published var weeklyPlanDescription: String = "Best Value\nFor Money"
-    @Published var monthlyPlanDescription: String = "Most Popular"
-    @Published var yearlyPlanDescription: String = "Save 80%"
-    
-    // Paywall customization colors
-    @Published var paywallPlanTitleColor: String = "#FFFFFF"
-    @Published var paywallPlanTitleOpacity: Double = 50.0
+    @Published var planInfoTitleTextWeek: String = "Weekly Access"
+    @Published var planInfoTitleTextWeekDummy: String = "Weekly Access"
+    @Published var weekly_plan_description: String = "Free for \n3 days"
+    @Published var yearly_plan_description: String = "Design All Year"
+    @Published var lifetime_plan_description: String = "Limited\nTime offer"
+    @Published var week_plan_bottom_line_description: String = ""
+    @Published var year_plan_bottom_line_description: String = ""
+    @Published var lifetime_plan_bottom_line_description: String = ""
     @Published var isTrialPriceUnabledWeekly: Bool = false
+    @Published var paywallPlanTitleOpacity: Double = 60.0
 
     private let remoteConfig = RemoteConfig.remoteConfig()
 
@@ -47,16 +45,17 @@ class RemoteConfigManager: ObservableObject {
             "Current_Selected_Paywall_Plan": 0 as NSObject,
             "min_required_version": 1.0 as NSObject,
             "contine_Button_Text": "Continue" as NSObject,
-            "planInfo_Title_Text_Yearly": "🔥 No Payment Now!" as NSObject,
+            
             "paywall_X_type": 0 as NSObject,
             "is_Trail_Price_Unable": false as NSObject,
-            "planInfoTitleTextWeekly": "Weekly Access" as NSObject,
-            "planInfoTitleTextWeeklyDummy": "Weekly Access" as NSObject,
-            "planInfoTitleTextMonthly": "Monthly Access" as NSObject,
-            "weeklyPlanDescription": "Best Value\nFor Money" as NSObject,
-            "monthlyPlanDescription": "Most Popular" as NSObject,
-            "yearlyPlanDescription": "Save 80%" as NSObject,
-            "isTrialPriceUnabledWeekly": false as NSObject
+            "weekly_plan_description": "Free for \n3 days" as NSObject,
+            "yearly_plan_description": "Design All Year" as NSObject,
+            "lifetime_plan_description": "Limited\nTime offer" as NSObject,
+            "week_plan_bottom_line_description": "🔥 No Payment Now! Auto-renew @ just [Pricing]/week" as NSObject,
+            "year_plan_bottom_line_description": "Auto-renews @ just [Pricing]/year" as NSObject,
+            "lifetime_plan_bottom_line_description": "Pay once, Forever yours" as NSObject,
+            "isTrialPriceUnabledWeekly": false as NSObject,
+            "paywall_plan_title_opacity": 60.0 as NSObject
         ])
 
         fetchRemoteConfig()
@@ -75,22 +74,23 @@ class RemoteConfigManager: ObservableObject {
             if status == .successFetchedFromRemote || status == .successUsingPreFetchedData {
                 DispatchQueue.main.async {
                     self.isShowNeverrCardView = self.remoteConfig["is_show_neverr_card_view"].boolValue
-                    self.isNeedToShowWeeklyPriceOnYearly = self.remoteConfig["showWeeklyPriceOnYearly"].boolValue
+                    self.showWeeklyPriceOnYearly = self.remoteConfig["showWeeklyPriceOnYearly"].boolValue
                     self.currentSelectedPaywallPlan = self.remoteConfig["Current_Selected_Paywall_Plan"].numberValue.intValue
                     self.minimumRequiredVersion = self.remoteConfig["min_required_version"].numberValue.doubleValue
-                    self.continueBtnText = self.remoteConfig["contine_Button_Text"].stringValue ?? "Continue"
+                    self.continueBtnText = self.remoteConfig["contine_Button_Text"].stringValue
                     self.currentPaywallXType = self.remoteConfig["paywall_X_type"].numberValue.intValue
-                    self.planInfoTitleTextYearly = self.remoteConfig["planInfo_Title_Text_Yearly"].stringValue ?? ""
+                  
                     self.isTrialPriceUnabled = self.remoteConfig["is_Trail_Price_Unable"].boolValue
                     
-                    self.planInfoTitleTextWeekly = self.remoteConfig["planInfoTitleTextWeekly"].stringValue ?? "Weekly Access"
-                    self.planInfoTitleTextWeeklyDummy = self.remoteConfig["planInfoTitleTextWeeklyDummy"].stringValue ?? "Weekly Access"
-                    self.planInfoTitleTextMonthly = self.remoteConfig["planInfoTitleTextMonthly"].stringValue ?? "Monthly Access"
+                    self.weekly_plan_description = self.remoteConfig["weekly_plan_description"].stringValue.replacingOccurrences(of: "\\n", with: "\n")
+                    self.yearly_plan_description = self.remoteConfig["yearly_plan_description"].stringValue.replacingOccurrences(of: "\\n", with: "\n")
+                    self.lifetime_plan_description = self.remoteConfig["lifetime_plan_description"].stringValue.replacingOccurrences(of: "\\n", with: "\n")
                     
-                    self.weeklyPlanDescription = self.remoteConfig["weeklyPlanDescription"].stringValue ?? "Best Value\nFor Money"
-                    self.monthlyPlanDescription = self.remoteConfig["monthlyPlanDescription"].stringValue ?? "Most Popular"
-                    self.yearlyPlanDescription = self.remoteConfig["yearlyPlanDescription"].stringValue ?? "Save 80%"
+                    self.week_plan_bottom_line_description = self.remoteConfig["week_plan_bottom_line_description"].stringValue .replacingOccurrences(of: "\\n", with: "\n")
+                    self.year_plan_bottom_line_description = self.remoteConfig["year_plan_bottom_line_description"].stringValue.replacingOccurrences(of: "\\n", with: "\n")
+                    self.lifetime_plan_bottom_line_description = self.remoteConfig["lifetime_plan_bottom_line_description"].stringValue.replacingOccurrences(of: "\\n", with: "\n")
                     self.isTrialPriceUnabledWeekly = self.remoteConfig["isTrialPriceUnabledWeekly"].boolValue
+                    self.paywallPlanTitleOpacity = self.remoteConfig["paywall_plan_title_opacity"].numberValue.doubleValue
                     
                     self.checkForceUpdate()
                 }

@@ -30,12 +30,12 @@ extension View {
 // MARK: - Enum for Fonts
 
 enum AppFont: String {
-    case manropeBold = "Manrope-Bold"
-    case manropeLight = "Manrope-Light"
-    case manropeMedium = "Manrope-Medium"
-    case manropeRegular = "Manrope-Regular"
-    case manropeSemiBold = "Manrope-SemiBold"
-    case manropeExtraBold = "Manrope-ExtraBold"
+    case figtreeBold = "Figtree-Bold"
+    case figtreeLight = "Figtree-Light"
+    case figtreeMedium = "Figtree-Medium"
+    case figtreeRegular = "Figtree-Regular"
+    case figtreeSemiBold = "Figtree-SemiBold"
+    case figtreeExtraBold = "Figtree-ExtraBold"
 
     func size(_ size: CGFloat) -> Font {
         Font.custom(self.rawValue, size: size)

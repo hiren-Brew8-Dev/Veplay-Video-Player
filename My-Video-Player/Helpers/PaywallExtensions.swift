@@ -33,6 +33,9 @@ extension Color {
 
 extension Color {
     static let proSubtitle = Color(hex: "#F9CB8A")
+    static let bgBlurOrange1 = Color(red: 0.98, green: 0.69, blue: 0.27)
+    static let bgBlurOrange2 = Color(red: 1, green: 0.67, blue: 0.21)
+    static let premiumAccent = Color(red: 1, green: 0.67, blue: 0.21)
 }
 
 // MARK: - Responsive Extensions (Ensuring availability)

@@ -17,7 +17,7 @@ struct CustomTextButton: View {
     var cornerRadius: CGFloat = 50
     var shadowRadius: CGFloat = 4
     
-    var font: AppFont = .manropeMedium
+    var font: AppFont = .figtreeMedium
     var iphoneFontSize: CGFloat = 18
     
     var borderColor: Color = .clear

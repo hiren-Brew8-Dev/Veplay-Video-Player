@@ -100,7 +100,7 @@ struct CustomRatingPopup: View {
                         ZStack (alignment: .top) {
                             LottieView(animationName: lottieAnimationName, playback: .play)
                                 .aspectRatio(1, contentMode: .fit)
-                                .responsiveWidth(iphoneWidth: 0.31, ipadWidth: 0.21)
+                                .responsiveWidth(iphoneWidth: 122, ipadWidth: 83)
                                 
                                 .opacity(imageOpacity)
                                 
@@ -117,13 +117,13 @@ struct CustomRatingPopup: View {
                                 CustomButton(image: .closePaywall) {
                                     RatingFlowViewModel.shared.customRatingDismiss()
                                 }
-                                .responsiveWidth(iphoneWidth: 0.07, ipadWidth: 0.05)
+                                .responsiveWidth(iphoneWidth: 28, ipadWidth: 20)
                                 
                             }
                         }
                         
                         Text(titleText)
-                            .appFont(.manropeBold, size: 20)
+                            .appFont(.figtreeBold, size: 20)
                             .minimumScaleFactor(0.3)
                             .padding(.bottom, 8)
                             .multilineTextAlignment(.center)
@@ -135,7 +135,7 @@ struct CustomRatingPopup: View {
                         
                         Text(subtitleText)
                             .multilineTextAlignment(.center)
-                            .appFont(.manropeRegular, size: 15)
+                            .appFont(.figtreeRegular, size: 15)
                             .foregroundStyle(.white.opacity(0.6))
                             .lineSpacing(4)
                             .minimumScaleFactor(0.3)
@@ -148,11 +148,11 @@ struct CustomRatingPopup: View {
                         Spacer()
                         
                         StarRatingView(ratedStars: $ratedStars, animate: showStars)
-                            .responsivePadding(edge: .vertical, fraction: 0.015)
-                            .responsivePadding(edge: .bottom, fraction: 0.01)
+                            .responsivePadding(edge: .vertical, fraction: 13)
+                            .responsivePadding(edge: .bottom, fraction: 9)
                             
                         
-                        CustomTextButton(title: buttonTitle, aspectRatio: 200/44, iphoneWidth: 0.55, ipadWidth: 0.36,foregroundColor: ratedStars == 0 ? Color(hex: "#828282") : .black, backgroundColor: ratedStars == 0 ? .white.opacity(0.1) : .white, font: .manropeSemiBold) {
+                        CustomTextButton(title: buttonTitle, aspectRatio: 200/44, iphoneWidth: 216, ipadWidth: 141,foregroundColor: ratedStars == 0 ? Color(hex: "#828282") : .black, backgroundColor: ratedStars == 0 ? .white.opacity(0.1) : .white, font: .figtreeSemiBold) {
                             
                             RatingFlowViewModel.shared.submitStars(stars: ratedStars)
                             RatingFlowViewModel.shared.isAlreadyShown
@@ -170,7 +170,7 @@ struct CustomRatingPopup: View {
                 
         }
         .aspectRatio(289/345, contentMode: .fit)
-        .responsiveWidth(iphoneWidth: 0.82, ipadWidth: 0.54)
+        .responsiveWidth(iphoneWidth: 322, ipadWidth: 212)
         .cornerRadius(32)
         .shadow(radius: 20)
         .scaleEffect(showPopup ? 1 : 0.85)
@@ -296,7 +296,7 @@ struct StarRatingView: View {
                 Image(index <= ratedStars ? .ratingFill : .ratingUnfill)
                     .resizable()
                     .scaledToFit()
-                    .responsiveWidth(iphoneWidth: 0.07, ipadWidth: 0.05)
+                    .responsiveWidth(iphoneWidth: 28, ipadWidth: 20)
                     .scaleEffect(index <= ratedStars ? 1.2 : 1)
                     .opacity(animate ? 1 : 0)
                     .animation(
