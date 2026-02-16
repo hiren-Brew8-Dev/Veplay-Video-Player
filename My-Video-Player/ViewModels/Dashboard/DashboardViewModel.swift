@@ -250,6 +250,39 @@ class DashboardViewModel: ObservableObject {
         shareVideos(ids: selectedVideoIds)
     }
     
+    // MARK: - Conflict Resolution State
+    
+    struct ConflictItem: Identifiable {
+        let id = UUID()
+        let sourceVideo: VideoItem
+        let destinationURL: URL
+        let message: String
+        
+        var formattedSize: String? {
+            let bcf = ByteCountFormatter()
+            bcf.allowedUnits = [.useAll]
+            bcf.countStyle = .file
+            return bcf.string(fromByteCount: sourceVideo.fileSizeBytes)
+        }
+    }
+    
+    enum ConflictAction {
+        case skip
+        case replace
+        case keepBoth
+    }
+    
+    @Published var conflictQueue: [ConflictItem] = []
+    @Published var currentConflict: ConflictItem? = nil
+    @Published var showConflictResolution: Bool = false
+    @Published var pendingPasteDestination: URL? = nil
+    @Published var pendingPasteItems: [VideoItem] = [] // Items waiting to be processed
+    @Published var processedPasteItems: [VideoItem] = [] // Items resolved and ready for final import
+    @Published var pendingPasteNames: [String] = [] // Names corresponding to pending items
+    @Published var processedPasteNames: [String] = [] // Names corresponding to processed items
+    @Published var isPasteMoveOperation: Bool = false
+
+    
     var sortedFolders: [Folder] {
         let option = SortOption(rawValue: folderSortOptionRaw) ?? .dateDesc
         
@@ -1079,47 +1112,222 @@ class DashboardViewModel: ObservableObject {
         
         guard !videosToPaste.isEmpty else { return }
         
-        let wasCutMode = isCutMode
-        let sourceAlbumId = sourceAlbumIdentifier
+        // Initialize State for Conflict Checking
+        self.pendingPasteDestination = destination
+        self.isPasteMoveOperation = isCutMode
+        self.pendingPasteItems = []
+        self.processedPasteItems = []
+        self.pendingPasteNames = []
+        self.processedPasteNames = []
+        self.conflictQueue = []
         
         Task {
-            var urls: [URL] = []
-            var names: [String] = []
+            var conflicts: [ConflictItem] = []
+            var safeItems: [VideoItem] = []
+            var safeNames: [String] = []
             
             for video in videosToPaste {
                 if let url = await getURLAsync(for: video) {
-                    urls.append(url)
-                    // CRITICAL: Always use the actual filename from the resolved URL.
-                    // For gallery items, getURLAsync provides a temp file with the original name.
-                    // Using video.title here can result in 'Fetching Title...' or empty names.
-                    names.append(url.lastPathComponent)
+                    let filename = url.lastPathComponent
+                    let destinationURL = destination.appendingPathComponent(filename)
+                    
+                    // Check for conflict
+                    if FileManager.default.fileExists(atPath: destinationURL.path) {
+                        // Conflict found!
+                        let conflict = ConflictItem(
+                            sourceVideo: video,
+                            destinationURL: destinationURL,
+                            message: "A file named \"\(filename)\" already exists in this folder."
+                        )
+                        conflicts.append(conflict)
+                        
+                        // Add to pending, will be processed after resolution
+                        // We store the original Name for now
+                        self.pendingPasteItems.append(video)
+                        self.pendingPasteNames.append(filename)
+                    } else {
+                        // No conflict, safe to proceed
+                        safeItems.append(video)
+                        safeNames.append(filename)
+                    }
                 }
             }
             
-            // 1. Import/Move
-            let results = await self.importVideos(from: urls, names: names, to: destination, shouldMove: wasCutMode)
-            
-            // 2. Cleanup
             await MainActor.run {
-                if wasCutMode && !results.isEmpty {
-                    for video in videosToPaste {
-                        // If file was successfully imported/moved to destination, handle source UI removal
+                // 1. Queue valid non-conflicting items immediately
+                self.processedPasteItems.append(contentsOf: safeItems)
+                self.processedPasteNames.append(contentsOf: safeNames)
+                
+                // 2. Setup conflicts
+                if !conflicts.isEmpty {
+                    self.conflictQueue = conflicts
+                    self.currentConflict = conflicts.first
+                    self.showConflictResolution = true
+                } else {
+                    // No conflicts at all? Finish immediately
+                    self.finalizePasteOperation()
+                }
+            }
+        }
+    }
+    
+    func resolveConflict(action: ConflictAction, applyToAll: Bool) {
+        guard let current = currentConflict, let index = pendingPasteNames.firstIndex(of: current.destinationURL.lastPathComponent) else {
+            // Should not happen, but safe fallback
+            processNextConflict()
+            return
+        }
+        
+        let video = pendingPasteItems[index]
+        let originalName = pendingPasteNames[index]
+        
+        // Define logic for Current Item
+        switch action {
+        case .skip:
+            // Do not add to processed list. Just remove from pending.
+            break
+        case .replace:
+            // Add to processed list. Import logic will overwrite.
+            processedPasteItems.append(video)
+            processedPasteNames.append(originalName)
+            
+            // Should delete existing file at destination to ensure clean replace?
+            // Actually importVideos handles overwrite if we implement it, 
+            // OR we can delete it right here.
+            // Let's delete strictly here to be safe and ensure the "Replace" logic holds.
+            try? FileManager.default.removeItem(at: current.destinationURL)
+            
+        case .keepBoth:
+            // Generate new name: "Video (1).mp4"
+            let fileManager = FileManager.default
+            let baseName = (originalName as NSString).deletingPathExtension
+            let ext = (originalName as NSString).pathExtension
+            var counter = 1
+            var uniqueName = originalName
+            
+            while fileManager.fileExists(atPath: current.destinationURL.deletingLastPathComponent().appendingPathComponent(uniqueName).path) ||
+                    processedPasteNames.contains(uniqueName) { // Also check against names we just decided to add
+                uniqueName = "\(baseName) (\(counter)).\(ext)"
+                counter += 1
+            }
+            
+            processedPasteItems.append(video)
+            processedPasteNames.append(uniqueName)
+        }
+        
+        // Remove from pending now that we decided
+        pendingPasteItems.remove(at: index)
+        pendingPasteNames.remove(at: index)
+        
+        // Apply to All Logic
+        if applyToAll {
+            // We need to apply the SAME action to all remaining items in the conflict queue
+            // But we must be careful: "Keep Both" implies generating unique names for each.
+            // "Replace" implies deleting existing for each.
+            // "Skip" implies dropping each.
+            
+            // The conflictQueue contains the REMAINING conflicts (including current).
+            // We already handled 'current'. Now handle the rest.
+            let remainingConflicts = conflictQueue.dropFirst()
+            
+            for conflict in remainingConflicts {
+                guard let pIndex = pendingPasteNames.firstIndex(of: conflict.destinationURL.lastPathComponent) else { continue }
+                let pVideo = pendingPasteItems[pIndex]
+                let pName = pendingPasteNames[pIndex]
+                
+                switch action {
+                case .skip:
+                    break
+                case .replace:
+                    processedPasteItems.append(pVideo)
+                    processedPasteNames.append(pName)
+                    try? FileManager.default.removeItem(at: conflict.destinationURL)
+                case .keepBoth:
+                    let fileManager = FileManager.default
+                    let baseName = (pName as NSString).deletingPathExtension
+                    let ext = (pName as NSString).pathExtension
+                    var counter = 1
+                    var uniqueName = pName
+                    
+                    while fileManager.fileExists(atPath: conflict.destinationURL.deletingLastPathComponent().appendingPathComponent(uniqueName).path) ||
+                            processedPasteNames.contains(uniqueName) {
+                        uniqueName = "\(baseName) (\(counter)).\(ext)"
+                        counter += 1
+                    }
+                    processedPasteItems.append(pVideo)
+                    processedPasteNames.append(uniqueName)
+                }
+                
+                // We don't remove from pending loop here safely, so just let the queue finish
+            }
+            
+            // Clear queue effectively
+            conflictQueue.removeAll()
+            currentConflict = nil
+            showConflictResolution = false
+            finalizePasteOperation()
+            return
+        }
+        
+        // Move to next
+        processNextConflict()
+    }
+    
+    private func processNextConflict() {
+        if !conflictQueue.isEmpty {
+            conflictQueue.removeFirst()
+        }
+        
+        if let next = conflictQueue.first {
+            currentConflict = next
+        } else {
+            showConflictResolution = false
+            currentConflict = nil
+            finalizePasteOperation()
+        }
+    }
+    
+    // The Final Step: Actually Run the Import
+    private func finalizePasteOperation() {
+        guard let destination = pendingPasteDestination, !processedPasteItems.isEmpty else {
+            // Cleanup if nothing to paste
+            cleanupPasteState()
+            return
+        }
+        
+        Task {
+            var urls: [URL] = []
+            
+            // Re-fetch URLs for processed items (safe redundant check)
+            for video in processedPasteItems {
+                 if let url = await getURLAsync(for: video) {
+                     urls.append(url)
+                 }
+            }
+            
+            // 1. Import/Move
+            // Note: We pass our calculated names.
+            let results = await self.importVideos(from: urls, names: processedPasteNames, to: destination, shouldMove: isPasteMoveOperation)
+            
+            // 2. Cleanup (Move Logic)
+            await MainActor.run {
+                if isPasteMoveOperation && !results.isEmpty {
+                    // Similar cleanup logic to before
+                    // We iterate through the ORIGINAL copied IDs to check what needs deletion
+                    // But strictly, we only delete what was successfully moved.
+                    
+                    // Actually, we should iterate over processedPasteItems because those are the ones we tried to move.
+                    for video in processedPasteItems {
                         if let url = video.url {
-                            // Check if the source file is gone (moved) or still there (duplicate or copy)
                             if !FileManager.default.fileExists(atPath: url.path) {
-                                // moved successfully - already gone from filesystem
                                 withAnimation {
                                     self.importedVideos.removeAll { $0.id == video.id }
                                 }
                             } else {
-                                // File still exists (copied or failed move/duplicate during cut), 
-                                // we should delete it IF it's not the one we just pasted (same path check)
-                                // But simpler: if Move mode and results contains the new destination,
-                                // we can delete the source if it's different from all results.
-                                // Higher level: Results contains only SUCCESSFUL paste operations.
-                                if results.contains(where: { $0.url?.lastPathComponent == url.lastPathComponent }) {
-                                    // The file was successfully pasted with this name.
-                                    // If the source path is different from any successful destination path, delete source.
+                                // If locally still exists, check if we should delete source
+                                // Only if result confirmed success
+                                if results.contains(where: { $0.url?.lastPathComponent == self.processedPasteNames[self.processedPasteItems.firstIndex(of: video)!] }) {
+                                     // Double check path diff
                                     if !results.contains(where: { $0.url?.path == url.path }) {
                                         self.deleteVideo(video)
                                     }
@@ -1129,36 +1337,48 @@ class DashboardViewModel: ObservableObject {
                     }
                     
                     // Gallery handling
-                    if let albumId = sourceAlbumId {
-                        let galleryVideos = videosToPaste.filter { $0.asset != nil }
-                        if !galleryVideos.isEmpty {
-                            Task {
-                                let sourceCollections = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumId], options: nil)
-                                if let sourceAlbum = sourceCollections.firstObject {
-                                    try? await PHPhotoLibrary.shared().performChanges {
-                                        let assetsToRemove = galleryVideos.compactMap { $0.asset } as NSArray
-                                        let request = PHAssetCollectionChangeRequest(for: sourceAlbum)
-                                        request?.removeAssets(assetsToRemove)
-                                    }
-                                    await MainActor.run {
-                                        self.loadData()
-                                    }
-                                }
-                            }
-                        }
-                    }
+                     if let albumId = sourceAlbumIdentifier {
+                         let galleryVideos = processedPasteItems.filter { $0.asset != nil }
+                         if !galleryVideos.isEmpty {
+                             Task {
+                                 let sourceCollections = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumId], options: nil)
+                                 if let sourceAlbum = sourceCollections.firstObject {
+                                     try? await PHPhotoLibrary.shared().performChanges {
+                                         let assetsToRemove = galleryVideos.compactMap { $0.asset } as NSArray
+                                         let request = PHAssetCollectionChangeRequest(for: sourceAlbum)
+                                         request?.removeAssets(assetsToRemove)
+                                     }
+                                     await MainActor.run { self.loadData() }
+                                 }
+                             }
+                         }
+                     }
                 }
-                self.copiedVideoIds.removeAll()
-                self.isCutMode = false
-                self.sourceURL = nil
-                self.sourceAlbumIdentifier = nil
-                self.isSelectionMode = false
-                self.selectedVideoIds.removeAll()
+                
+                cleanupPasteState()
                 
                 self.loadImportedVideos()
                 self.loadUserFolders()
             }
         }
+    }
+    
+    private func cleanupPasteState() {
+        self.copiedVideoIds.removeAll()
+        self.isCutMode = false
+        self.sourceURL = nil
+        self.sourceAlbumIdentifier = nil
+        self.isSelectionMode = false
+        self.selectedVideoIds.removeAll()
+        
+        self.pendingPasteDestination = nil
+        self.pendingPasteItems = []
+        self.processedPasteItems = []
+        self.pendingPasteNames = []
+        self.processedPasteNames = []
+        self.conflictQueue = []
+        self.currentConflict = nil
+        self.showConflictResolution = false
     }
     
     private func getURLAsync(for item: VideoItem) async -> URL? {

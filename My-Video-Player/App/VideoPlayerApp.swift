@@ -62,6 +62,12 @@ struct VideoPlayerApp: App {
                 if dashboardViewModel.showActionSheet {
                     ActionSheetOverlay(viewModel: dashboardViewModel)
                 }
+                
+                // Global Conflict Resolution Overlay for Paste Operations
+                ConflictResolutionOverlay(viewModel: dashboardViewModel)
+                
+                // Global Importing Overlay
+                ImportingOverlay(viewModel: dashboardViewModel)
             }
             .preferredColorScheme(.dark)
             .environment(\.managedObjectContext, cdManager.container.viewContext)

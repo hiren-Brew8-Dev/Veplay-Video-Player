@@ -1,0 +1,169 @@
+import SwiftUI
+import AVKit
+
+struct ConflictResolutionView: View {
+    @ObservedObject var viewModel: DashboardViewModel
+    let conflict: DashboardViewModel.ConflictItem
+    
+    @State private var applyToAll: Bool = false
+    @State private var thumbnail: UIImage? = nil
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            // Header
+            Text("File Conflict")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.white)
+            
+            // Card Content
+            VStack(spacing: 16) {
+                // Thumbnail & Info
+                HStack(spacing: 16) {
+                    // Thumbnail
+                    ZStack {
+                        if let thumb = thumbnail {
+                            Image(uiImage: thumb)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } else {
+                            Rectangle()
+                                .fill(Color.black.opacity(0.3))
+                                .overlay(
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.white.opacity(0.5))
+                                )
+                        }
+                    }
+                    .frame(width: 80, height: 80)
+                    .cornerRadius(8)
+                    .clipped()
+                    
+                    // Details
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(conflict.sourceVideo.title)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .lineLimit(2)
+                        
+                        Text("Duration: \(conflict.sourceVideo.formattedDuration)")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.7))
+                        
+                        if let size = conflict.formattedSize {
+                            Text(size)
+                                .font(.system(size: 14))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(12)
+                .background(Color.premiumCardBackground)
+                .cornerRadius(12)
+                
+                Text(conflict.message)
+                    .font(.system(size: 15))
+                    .foregroundColor(.white.opacity(0.9))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+            
+            // Apply to all
+            if viewModel.conflictQueue.count > 1 {
+                Button(action: {
+                    applyToAll.toggle()
+                }) {
+                    HStack {
+                        Image(systemName: applyToAll ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 20))
+                            .foregroundColor(applyToAll ? .blue : .white.opacity(0.5))
+                        
+                        Text("Apply to all remaining conflicts")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white)
+                    }
+                }
+                .padding(.bottom, 8)
+            }
+            
+            // Actions
+            VStack(spacing: 12) {
+                Button(action: {
+                    viewModel.resolveConflict(action: .keepBoth, applyToAll: applyToAll)
+                }) {
+                    Text("Keep Both")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .cornerRadius(12)
+                }
+                
+                Button(action: {
+                    viewModel.resolveConflict(action: .replace, applyToAll: applyToAll)
+                }) {
+                    Text("Replace")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(12)
+                }
+                
+                Button(action: {
+                    viewModel.resolveConflict(action: .skip, applyToAll: applyToAll)
+                }) {
+                    Text("Skip")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                }
+            }
+        }
+        .padding(24)
+        .background(
+            LinearGradient(
+                colors: [.premiumGradientTop, .premiumGradientBottom],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .cornerRadius(28)
+        .overlay(
+            RoundedRectangle(cornerRadius: 28)
+                .stroke(Color.premiumCardBorder, lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.5), radius: 20, x: 0, y: 10)
+        .frame(maxWidth: 400)
+        .padding(.horizontal, 20)
+        .task {
+            // Load thumbnail
+            await loadThumbnail()
+        }
+    }
+    
+    private func loadThumbnail() async {
+        if let thumbPath = conflict.sourceVideo.thumbnailPath,
+           let image = UIImage(contentsOfFile: thumbPath.path) {
+            self.thumbnail = image
+            return
+        }
+        
+        // Fallback generation (reuse logic or simple generator)
+        if let url = conflict.sourceVideo.url {
+            let asset = AVURLAsset(url: url)
+            let generator = AVAssetImageGenerator(asset: asset)
+            generator.appliesPreferredTrackTransform = true
+            do {
+                let cgImage = try generator.copyCGImage(at: .zero, actualTime: nil)
+                self.thumbnail = UIImage(cgImage: cgImage)
+            } catch {
+                print("Thumbnail gen failed: \(error)")
+            }
+        }
+    }
+}
