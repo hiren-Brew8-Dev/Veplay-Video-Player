@@ -215,8 +215,10 @@ struct SearchView: View {
         }()
         
         let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let filtered = baseVideos.filter {
-            query.isEmpty || $0.title.localizedCaseInsensitiveContains(query)
+        let filtered = baseVideos.filter { video in
+            if query.isEmpty { return true }
+            return video.title.localizedCaseInsensitiveContains(query) ||
+            (video.url?.lastPathComponent.localizedCaseInsensitiveContains(query) ?? false)
         }
         
         VStack(alignment: .leading, spacing: 16) {

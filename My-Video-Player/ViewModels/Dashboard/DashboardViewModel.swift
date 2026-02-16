@@ -434,7 +434,10 @@ class DashboardViewModel: ObservableObject {
         if searchText.isEmpty {
             return videos
         } else {
-            return videos.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
+            return videos.filter { video in
+                video.title.localizedCaseInsensitiveContains(searchText) ||
+                (video.url?.lastPathComponent.localizedCaseInsensitiveContains(searchText) ?? false)
+            }
         }
     }
     
