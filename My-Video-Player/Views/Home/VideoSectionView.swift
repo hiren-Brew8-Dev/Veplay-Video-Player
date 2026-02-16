@@ -41,7 +41,6 @@ struct VideoSectionView: View {
                             .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                             .padding(.top, 10)
                             .padding(.bottom, 10)
-                            .background(Color.homeBackground) // Ensure opaque background
                     }
                     
                     ScrollViewReader { proxy in

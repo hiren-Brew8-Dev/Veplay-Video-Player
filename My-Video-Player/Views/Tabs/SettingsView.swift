@@ -40,7 +40,7 @@ struct SettingsView: View {
             }
             .padding(.horizontal, AppDesign.Icons.horizontalPadding)
             .padding(.vertical, isIpad ? 24 : 8)
-            .background(Color.homeBackground)
+            .background(Color.clear)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
@@ -136,7 +136,7 @@ struct SettingsView: View {
             .iPad { $0.frame(maxWidth: .infinity, alignment: .center) }
             
         }
-        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
+        .background(AppGlobalBackground().ignoresSafeArea())
         .fullScreenCover(item: $webViewData) { data in
             URLWebView(titleName: data.title, urlString: data.url)
         }

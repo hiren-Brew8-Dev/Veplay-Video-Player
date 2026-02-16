@@ -15,9 +15,6 @@ struct FolderSectionView: View {
     
     var body: some View {
         ZStack {
-            Color.homeBackground
-                .ignoresSafeArea()
-            
             VStack(spacing: 0) {
                 if viewModel.isSelectionMode {
                     selectionHeader

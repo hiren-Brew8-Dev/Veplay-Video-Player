@@ -16,7 +16,8 @@ struct SearchView: View {
             let currentWidth = geometry.size.width
             
             ZStack {
-                Color.homeBackground.ignoresSafeArea()
+                AppGlobalBackground()
+                    .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     // Custom Header

@@ -45,7 +45,6 @@ struct DashboardView: View {
                         }
                         VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
                     }
-                    .background(Color.homeBackground)
                     .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
                 
@@ -57,7 +56,6 @@ struct DashboardView: View {
                         }
                         AlbumSectionView(viewModel: viewModel)
                     }
-                    .background(Color.homeBackground)
                     .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
 
@@ -69,7 +67,6 @@ struct DashboardView: View {
                         }
                         FolderSectionView(viewModel: viewModel)
                     }
-                    .background(Color.homeBackground)
                     .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
                 
@@ -91,7 +88,7 @@ struct DashboardView: View {
                 UnsupportedFormatAlert(video: viewModel.unsupportedVideoForAlbum, isPresented: $viewModel.showUnsupportedFormatAlert)
             }
         }
-        .background(Color.homeBackground.ignoresSafeArea())
+        .background(AppGlobalBackground())
         .ignoresSafeArea(edges: .bottom)
         .fullScreenCover(item: $viewModel.playingVideo) { video in
             PlayerView(
@@ -208,7 +205,7 @@ struct DashboardView: View {
         }
         .frame(height: AppDesign.Icons.headerHeight)
         .padding(.vertical, 8)
-        .background(Color.homeBackground.ignoresSafeArea())
+        .background(Color.clear)
     }
 
 

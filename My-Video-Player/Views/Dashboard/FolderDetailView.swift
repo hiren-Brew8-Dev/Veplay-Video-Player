@@ -75,7 +75,7 @@ struct FolderDetailView: View {
     
     var body: some View {
         ZStack {
-            Color.homeBackground
+            AppGlobalBackground()
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
