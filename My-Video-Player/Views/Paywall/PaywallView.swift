@@ -133,42 +133,43 @@ struct PaywallView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .responsivePadding(edge: .leading, fraction: 55)
                     
-                    // MARK: - Trial Toggle
-                    HStack {
-                        Text("Not sure? Enable free trial")
-                            .appFont(.figtreeMedium, size: 14)
-                            .foregroundColor(.white)
-                        
-                        Spacer()
-                        
-                        CustomToggle(isOn: remoteConfigManager.currentSelectedPaywallPlan == remoteConfigManager.paywallFreeTrialPlan)
-                            .onTapGesture {
-                                HapticsManager.shared.generate(.selection)
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    let trialPlan = remoteConfigManager.paywallFreeTrialPlan
-
-                                    if remoteConfigManager.currentSelectedPaywallPlan != trialPlan {
+                    if remoteConfigManager.isTrialPriceUnabled {
+                        HStack {
+                            Text("Not sure? Enable free trial")
+                                .appFont(.figtreeMedium, size: 14)
+                                .foregroundColor(.white)
+                            
+                            Spacer()
+                            
+                            CustomToggle(isOn: remoteConfigManager.currentSelectedPaywallPlan == remoteConfigManager.paywallFreeTrialPlan)
+                                .onTapGesture {
+                                    HapticsManager.shared.generate(.selection)
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        let trialPlan = remoteConfigManager.paywallFreeTrialPlan
                                         
-                                        // Turn ON trial → switch to trial plan
-                                        remoteConfigManager.currentSelectedPaywallPlan = trialPlan
-                                        
-                                    } else {
-                                        
-                                        // Turn OFF trial → switch to first non-trial plan
-                                        if let firstNonTrialPlan = [0,1,2].first(where: { $0 != trialPlan }) {
-                                            remoteConfigManager.currentSelectedPaywallPlan = firstNonTrialPlan
+                                        if remoteConfigManager.currentSelectedPaywallPlan != trialPlan {
+                                            
+                                            // Turn ON trial → switch to trial plan
+                                            remoteConfigManager.currentSelectedPaywallPlan = trialPlan
+                                            
+                                        } else {
+                                            
+                                            // Turn OFF trial → switch to first non-trial plan
+                                            if let firstNonTrialPlan = [0,1,2].first(where: { $0 != trialPlan }) {
+                                                remoteConfigManager.currentSelectedPaywallPlan = firstNonTrialPlan
+                                            }
                                         }
+                                        
                                     }
-
                                 }
-                            }
+                        }
+                        .padding(isIpad ? 25 : 16)
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(isIpad ? 30 : 20)
+                        .padding(.horizontal)
+                        
+                        .responsivePadding(edge: .top, fraction: 40)
                     }
-                    .padding(isIpad ? 25 : 16)
-                    .background(Color.white.opacity(0.08))
-                    .cornerRadius(isIpad ? 30 : 20)
-                    .padding(.horizontal)
-                    
-                    .responsivePadding(edge: .top, fraction: 40)
                     
                     // MARK: - Subscription Plans
                     let weeklyPlan = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.weekly" }

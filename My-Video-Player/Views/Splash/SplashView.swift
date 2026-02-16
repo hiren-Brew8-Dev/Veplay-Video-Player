@@ -68,8 +68,11 @@ struct SplashView : View {
         if !isOnboardingCompleted {
             navigationManager.push(.onboarding1)
         } else {
-            // Onboarding done → show paywall first, it will navigate to dashboard on dismiss
-            navigationManager.push(.paywall(isFromOnboarding: true))
+            if !Global.shared.getIsUserPro() {
+                navigationManager.push(.paywall(isFromOnboarding: true))
+            } else {
+                navigationManager.push(.dashboard)
+            }
         }
     }
     

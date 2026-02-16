@@ -120,7 +120,11 @@ struct ThanksForDownloadingView: View {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     isOnboardingCompleted = true
                     viewModel.loadData()
-                    navManager.push(.paywall(isFromOnboarding: true))
+                    if !Global.shared.getIsUserPro() {
+                        navManager.push(.paywall(isFromOnboarding: true))
+                    } else {
+                        navManager.push(.dashboard)
+                    }
                 }) {
                     Text("Continue")
                         .appFont(.figtreeBold, size: 20)

@@ -29,7 +29,7 @@ class RemoteConfigManager: ObservableObject {
     @Published var week_plan_bottom_line_description: String = ""
     @Published var year_plan_bottom_line_description: String = ""
     @Published var lifetime_plan_bottom_line_description: String = ""
-    @Published var isTrialPriceUnabledWeekly: Bool = false
+    
     @Published var paywallPlanTitleOpacity: Double = 60.0
     @Published var paywallFreeTrialPlan: Int = 0
 
@@ -55,7 +55,7 @@ class RemoteConfigManager: ObservableObject {
             "week_plan_bottom_line_description": "🔥 No Payment Now! Auto-renew @ just [Pricing]/week" as NSObject,
             "year_plan_bottom_line_description": "Auto-renews @ just [Pricing]/year" as NSObject,
             "lifetime_plan_bottom_line_description": "Pay once, Forever yours" as NSObject,
-            "isTrialPriceUnabledWeekly": false as NSObject,
+            
             "paywall_plan_title_opacity": 60.0 as NSObject,
             "paywall_freeTrial_plan" : 0 as NSObject
         ])
@@ -91,7 +91,7 @@ class RemoteConfigManager: ObservableObject {
                     self.week_plan_bottom_line_description = self.remoteConfig["week_plan_bottom_line_description"].stringValue .replacingOccurrences(of: "\\n", with: "\n")
                     self.year_plan_bottom_line_description = self.remoteConfig["year_plan_bottom_line_description"].stringValue.replacingOccurrences(of: "\\n", with: "\n")
                     self.lifetime_plan_bottom_line_description = self.remoteConfig["lifetime_plan_bottom_line_description"].stringValue.replacingOccurrences(of: "\\n", with: "\n")
-                    self.isTrialPriceUnabledWeekly = self.remoteConfig["isTrialPriceUnabledWeekly"].boolValue
+                    
                     self.paywallPlanTitleOpacity = self.remoteConfig["paywall_plan_title_opacity"].numberValue.doubleValue
                     self.paywallFreeTrialPlan = self.remoteConfig["paywall_freeTrial_plan"].numberValue.intValue
                     
