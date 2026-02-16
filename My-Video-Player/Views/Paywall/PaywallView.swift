@@ -20,7 +20,7 @@ struct PaywallView: View {
     
     @State private var webViewData: WebViewData? = nil
     
-    @ObservedObject var subscriptionStore = SubscriptionStore()
+    @ObservedObject var subscriptionStore = SubscriptionStore.shared
     @ObservedObject private var remoteConfigManager = RemoteConfigManager.shared
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var navigationManager : NavigationManager
@@ -141,29 +141,39 @@ struct PaywallView: View {
                         
                         Spacer()
                         
-                        CustomToggle(isOn: remoteConfigManager.currentSelectedPaywallPlan == 0)
+                        CustomToggle(isOn: remoteConfigManager.currentSelectedPaywallPlan == remoteConfigManager.paywallFreeTrialPlan)
                             .onTapGesture {
                                 HapticsManager.shared.generate(.selection)
                                 withAnimation(.easeInOut(duration: 0.2)) {
-                                    if remoteConfigManager.currentSelectedPaywallPlan != 0 {
-                                        remoteConfigManager.currentSelectedPaywallPlan = 0
+                                    let trialPlan = remoteConfigManager.paywallFreeTrialPlan
+
+                                    if remoteConfigManager.currentSelectedPaywallPlan != trialPlan {
+                                        
+                                        // Turn ON trial → switch to trial plan
+                                        remoteConfigManager.currentSelectedPaywallPlan = trialPlan
+                                        
                                     } else {
-                                        remoteConfigManager.currentSelectedPaywallPlan = 1
+                                        
+                                        // Turn OFF trial → switch to first non-trial plan
+                                        if let firstNonTrialPlan = [0,1,2].first(where: { $0 != trialPlan }) {
+                                            remoteConfigManager.currentSelectedPaywallPlan = firstNonTrialPlan
+                                        }
                                     }
+
                                 }
                             }
                     }
                     .padding(isIpad ? 25 : 16)
                     .background(Color.white.opacity(0.08))
                     .cornerRadius(isIpad ? 30 : 20)
-                    
+                    .padding(.horizontal)
                     
                     .responsivePadding(edge: .top, fraction: 40)
                     
                     // MARK: - Subscription Plans
-                    let weeklyPlan = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.weekly" }
-                    let yearlyPlan = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.yearly" }
-                    let lifeTimePlan = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.lifetime" }
+                    let weeklyPlan = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.weekly" }
+                    let yearlyPlan = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.yearly" }
+                    let lifeTimePlan = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.lifetime" }
                     
                     HStack(spacing: isIpad ? 30 : 12) {
                         SubscriptionOption(
@@ -200,7 +210,7 @@ struct PaywallView: View {
                     // Status text
                     VStack(spacing: 4) {
                         Text(currentBottomLineDescription)
-                            .appFont(.figtreeMedium, size: 15)
+                            .appFont(.figtreeMedium, size: 14)
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                             .responsivePadding(edge: .top, fraction: 25)
@@ -224,13 +234,14 @@ struct PaywallView: View {
                                 .shadow(radius: 4)
                                 .cornerRadius(60)
                             
-                            Text(remoteConfigManager.currentSelectedPaywallPlan == 0 &&  remoteConfigManager.isTrialPriceUnabled ? "\(remoteConfigManager.continueBtnText) \(formattedTrialPrice(for: yearlyPlan))" : "Continue")
+                            Text(remoteConfigManager.currentSelectedPaywallPlan == remoteConfigManager.paywallFreeTrialPlan &&  remoteConfigManager.isTrialPriceUnabled ? "\(remoteConfigManager.continueBtnText) \(formattedTrialPrice(for: yearlyPlan))" : "Continue")
                                 .appFont(.figtreeExtraBold, size: 20)
                                 .foregroundStyle(.black)
+                                
                         }
                         
                     }
-                   
+                    .responsivePadding(edge: .horizontal, fraction: 20)
                     .responsivePadding(edge: .top, fraction: 30)
                     .disabled(isProccesing)
                     
@@ -238,6 +249,7 @@ struct PaywallView: View {
                         .appFont(.figtreeMedium, size: 11)
                         .foregroundColor(.white.opacity(0.6))
                         .responsivePadding(edge: .top, fraction: 15)
+                        
                     
                     // MARK: - Footer Links
                     HStack(spacing: 8) {
@@ -266,7 +278,7 @@ struct PaywallView: View {
                     Spacer(minLength: 50)
                 }
             }
-            .responsiveWidth(iphoneWidth: 360, ipadWidth: 280)
+            .responsiveWidth(iphoneWidth: 393, ipadWidth: 280)
             
             
             if !subscriptionStore.isReady || isProccesing {
@@ -297,13 +309,13 @@ struct PaywallView: View {
         switch remoteConfigManager.currentSelectedPaywallPlan {
         case 0:
             description = remoteConfigManager.week_plan_bottom_line_description
-            price = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.weekly" }?.displayPrice ?? ""
+            price = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.weekly" }?.displayPrice ?? ""
         case 1:
             description = remoteConfigManager.year_plan_bottom_line_description
-            price = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.yearly" }?.displayPrice ?? ""
+            price = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.yearly" }?.displayPrice ?? ""
         case 2:
             description = remoteConfigManager.lifetime_plan_bottom_line_description
-            price = subscriptionStore.subscriptions.first { $0.id == "com.wildrr.app.lifetime" }?.displayPrice ?? ""
+            price = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.lifetime" }?.displayPrice ?? ""
         default:
             return ""
         }
@@ -313,10 +325,18 @@ struct PaywallView: View {
     
     private var bindingForPlan: Binding<Bool> {
         Binding(
-            get: { remoteConfigManager.currentSelectedPaywallPlan == 0 },
+            get: { remoteConfigManager.currentSelectedPaywallPlan == remoteConfigManager.paywallFreeTrialPlan },
             set: { newValue in
-                withAnimation {
-                    remoteConfigManager.currentSelectedPaywallPlan = newValue ? 0 : 1
+                let trialPlan = remoteConfigManager.paywallFreeTrialPlan
+                
+                if newValue {
+                    // Toggle ON → switch to trial plan
+                    remoteConfigManager.currentSelectedPaywallPlan = trialPlan
+                } else {
+                    // Toggle OFF → switch to first non-trial plan
+                    if let nonTrial = [0,1,2].first(where: { $0 != trialPlan }) {
+                        remoteConfigManager.currentSelectedPaywallPlan = nonTrial
+                    }
                 }
             }
         )
@@ -362,7 +382,6 @@ struct PaywallView: View {
             isNeedToShowCross = true
         }
     }
-    
     
     func gettrailPeriod(product:Product?) -> String {
         let trailPeriod: String
@@ -423,7 +442,6 @@ struct PaywallView: View {
         }
     }
     
-    
     func purchaseProduct(purchaseProduct:Product?){
         if let product = purchaseProduct {
             isProccesing = true
@@ -435,7 +453,7 @@ struct PaywallView: View {
                     if let transaction = try await subscriptionStore.purchase(product) {
                         AnalyticsManager.shared.log(.paywallPlanSubscribed(planDetails: PlanDetails(planName: transaction.productID, planPrice: "\(transaction.price ?? 0.0)", planExpiry: "\(String(describing: transaction.expirationDate))")))
                         
-                        if purchaseProduct?.id == "com.wildrr.app.weekly" {
+                        if purchaseProduct?.id == "com.video.player.veeplay.app.weekly" {
                             AppReviewManager.submitReview(isShowAppleReviewScreen: false)
                         }
                         if isFromOnboarding {
@@ -453,7 +471,6 @@ struct PaywallView: View {
             }
         }
     }
-    
     
     func restorePurchase(){
         isProccesing = true
@@ -479,13 +496,15 @@ struct PaywallView: View {
     private func loaderOverlay() -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 10)
-                .fill(.white.opacity(0.2))
+                .fill(.white.opacity(1.0))
                 .aspectRatio(1.0, contentMode: .fit)
-                .responsiveWidth(iphoneWidth: 100, ipadWidth: 70)
+                .responsiveWidth(iphoneWidth: 100, ipadWidth: 60)
                 
             ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                .progressViewStyle(CircularProgressViewStyle(tint: .black))
                 .scaleEffect(1.5)
+                
+            
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black.opacity(0.4))

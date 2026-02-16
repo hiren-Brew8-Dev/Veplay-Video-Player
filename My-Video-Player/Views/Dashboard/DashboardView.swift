@@ -159,7 +159,9 @@ struct DashboardView: View {
         .sheet(isPresented: $viewModel.showSortSheet) {
             CustomSortingView(sortOptionRaw: $viewModel.videoSortOptionRaw, title: "Videos")
         }
-        
+        .onAppear {
+            viewModel.loadData()
+        }
     }
 
     @ViewBuilder

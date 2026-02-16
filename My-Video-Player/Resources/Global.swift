@@ -11,7 +11,7 @@ class Global {
     
     static var shared = Global()
     
-    let appID:String = "6756714321"
+    let appID:String = "6759247382"
     
     func storeIsUserPro(_ isPro : Bool){
         UserDefaults.standard.set(isPro, forKey: "isProUser")

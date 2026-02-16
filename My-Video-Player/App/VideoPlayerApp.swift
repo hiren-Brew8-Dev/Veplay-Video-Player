@@ -20,7 +20,11 @@ struct VideoPlayerApp: App {
     @StateObject private var navigationManager = NavigationManager()
     @StateObject private var ratingViewModel = RatingFlowViewModel.shared
     @StateObject private var authService = BiometricAuthService.shared
+
     @AppStorage("useFaceID") private var useFaceID = false
+    
+    // Initialize SubscriptionStore early
+    private let subscriptionStore = SubscriptionStore.shared
 
     var body: some Scene {
         WindowGroup {
@@ -33,6 +37,7 @@ struct VideoPlayerApp: App {
                         case .onboarding3: Onboarding3View()
                         case .onboarding4: Onboarding4View()
                         case .thanksForDownloading: ThanksForDownloadingView()
+                            .environmentObject(dashboardViewModel)
                         case .paywall(let isFromOnboarding): PaywallView(isFromOnboarding: isFromOnboarding)
                             .hideNavigationBar()
                         case .rating: RatingView()

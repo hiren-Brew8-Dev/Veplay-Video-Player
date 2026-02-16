@@ -20,9 +20,7 @@ struct CustomRatingPopup: View {
     @State private var heartDrop: CGFloat = 0
     @State private var smileBounce: CGFloat = 1
     @State private var imageOpacity: Double = 1
-    
     @State private var lastEmotion: Emotion = .neutral
-    
 
     enum Emotion {
         case neutral
@@ -232,7 +230,6 @@ struct CustomRatingPopup: View {
             HapticsManager.shared.generate(.soft)
         }
     }
-
     
     func startSequence() {
         withAnimation { showPopup = true }

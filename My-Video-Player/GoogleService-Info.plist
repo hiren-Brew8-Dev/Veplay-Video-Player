@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyB3zeGlbqruNORWa3ottcTRPnB6jJawIlQ</string>
+	<string>AIzaSyAeUGZfxJWkmi0rJJd1oWLqh0BDailbDwU</string>
 	<key>GCM_SENDER_ID</key>
-	<string>783167983073</string>
+	<string>738432927752</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.hiren.My-Video-Player</string>
+	<string>com.video.player.veeplay.app</string>
 	<key>PROJECT_ID</key>
-	<string>video-player-3b9a7</string>
+	<string>veeplay---video-player</string>
 	<key>STORAGE_BUCKET</key>
-	<string>video-player-3b9a7.firebasestorage.app</string>
+	<string>veeplay---video-player.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:783167983073:ios:b8da068fd5e5572caf96a0</string>
+	<string>1:738432927752:ios:0cbcc5999c4158b26029bd</string>
 </dict>
 </plist>

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ThanksForDownloadingView: View {
     @EnvironmentObject var navManager: NavigationManager
+    @EnvironmentObject var viewModel: DashboardViewModel
     @AppStorage("isOnboardingCompleted") private var isOnboardingCompleted = false
     @State private var isAnimating = false
     
@@ -118,6 +119,7 @@ struct ThanksForDownloadingView: View {
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     isOnboardingCompleted = true
+                    viewModel.loadData()
                     navManager.push(.paywall(isFromOnboarding: true))
                 }) {
                     Text("Continue")
@@ -145,4 +147,5 @@ struct ThanksForDownloadingView: View {
 #Preview {
     ThanksForDownloadingView()
         .environmentObject(NavigationManager())
+        .environmentObject(DashboardViewModel())
 }

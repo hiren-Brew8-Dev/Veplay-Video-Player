@@ -31,6 +31,7 @@ class RemoteConfigManager: ObservableObject {
     @Published var lifetime_plan_bottom_line_description: String = ""
     @Published var isTrialPriceUnabledWeekly: Bool = false
     @Published var paywallPlanTitleOpacity: Double = 60.0
+    @Published var paywallFreeTrialPlan: Int = 0
 
     private let remoteConfig = RemoteConfig.remoteConfig()
 
@@ -55,7 +56,8 @@ class RemoteConfigManager: ObservableObject {
             "year_plan_bottom_line_description": "Auto-renews @ just [Pricing]/year" as NSObject,
             "lifetime_plan_bottom_line_description": "Pay once, Forever yours" as NSObject,
             "isTrialPriceUnabledWeekly": false as NSObject,
-            "paywall_plan_title_opacity": 60.0 as NSObject
+            "paywall_plan_title_opacity": 60.0 as NSObject,
+            "paywall_freeTrial_plan" : 0 as NSObject
         ])
 
         fetchRemoteConfig()
@@ -91,6 +93,7 @@ class RemoteConfigManager: ObservableObject {
                     self.lifetime_plan_bottom_line_description = self.remoteConfig["lifetime_plan_bottom_line_description"].stringValue.replacingOccurrences(of: "\\n", with: "\n")
                     self.isTrialPriceUnabledWeekly = self.remoteConfig["isTrialPriceUnabledWeekly"].boolValue
                     self.paywallPlanTitleOpacity = self.remoteConfig["paywall_plan_title_opacity"].numberValue.doubleValue
+                    self.paywallFreeTrialPlan = self.remoteConfig["paywall_freeTrial_plan"].numberValue.intValue
                     
                     self.checkForceUpdate()
                 }

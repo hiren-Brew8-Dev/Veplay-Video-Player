@@ -63,22 +63,7 @@ struct Onboarding1View: View {
                 
                 // MARK: - Image Cards Section
                 ZStack {
-                    // Left Top Card
-                    OnboardingImageCard(
-                        imageName: "Image_1_left_top_onb_1",
-                        width: isIpad ? 131 : 171,
-                        height: isIpad ? 163 : 213,
-                        playButtonSize: isIpad ? 25 : 35
-                    )
-                    .rotationEffect(.degrees(-8))
-                    .scaleEffect(isAnimating ? 1 : 0.6)
-                    .offset(
-                        x: isAnimating ? (isIpad ? -80 : -80) : (isIpad ? -150 : -150),
-                        y: isAnimating ? (isIpad ? -100 : -100) : (isIpad ? -150 : -150)
-                    )
-                    .opacity(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: isAnimating)
-                    
+                   
                     // Right Top Card
                     OnboardingImageCard(
                         imageName: "Image_2_right_top_onb_1",
@@ -89,21 +74,39 @@ struct Onboarding1View: View {
                     .rotationEffect(.degrees(12))
                     .scaleEffect(isAnimating ? 1 : 0.6)
                     .offset(
-                        x: isAnimating ? (isIpad ? 85 : 85) : (isIpad ? 150 : 150),
-                        y: isAnimating ? (isIpad ? -80 : -80) : (isIpad ? -130 : -130)
+                        x: isAnimating ? (isIpad ? 130 : 85) : (isIpad ? 150 : 150),
+                        y: isAnimating ? (isIpad ? -80 : 10) : (isIpad ? -130 : -130)
                     )
                     .opacity(isAnimating ? 1 : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
                     
+                    
+                    // Left Top Card
+                    OnboardingImageCard(
+                        imageName: "Image_1_left_top_onb_1",
+                        width: isIpad ? 131 : 171,
+                        height: isIpad ? 163 : 213,
+                        playButtonSize: isIpad ? 25 : 35
+                    )
+                    .rotationEffect(.degrees(-8))
+                    .scaleEffect(isAnimating ? 1 : 0.6)
+                    .offset(
+                        x: isAnimating ? (isIpad ? -130 : -80) : (isIpad ? -150 : -150),
+                        y: isAnimating ? (isIpad ? -100 : -10) : (isIpad ? -150 : -150)
+                    )
+                    .opacity(isAnimating ? 1 : 0)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: isAnimating)
+                    
+                    
                     // Bottom Center Card
                     OnboardingImageCard(
                         imageName: "Image_3_bottom_center_onb_1",
-                        width: isIpad ? 141: 201,
-                        height: isIpad ? 125 : 215,
+                        width: isIpad ? 141: 210,
+                        height: isIpad ? 125 : 230,
                         playButtonSize: isIpad ? 30 : 40
                     )
                     .scaleEffect(isAnimating ? 1 : 0.7)
-                    .offset(x: isIpad ? -30 : -15, y: isAnimating ? (isIpad ? 140 : 60) : (isIpad ? 300 : 130))
+                    .offset(x: isIpad ? 0 : -15, y: isAnimating ? (isIpad ? 140 : 100) : (isIpad ? 300 : 130))
                     .opacity(isAnimating ? 1 : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.3), value: isAnimating)
                 }

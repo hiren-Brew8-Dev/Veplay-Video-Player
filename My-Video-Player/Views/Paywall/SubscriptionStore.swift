@@ -28,6 +28,8 @@ enum StoreError:LocalizedError{
 
 class SubscriptionStore: ObservableObject {
     
+    static let shared = SubscriptionStore()
+
     @Published private(set) var isReady: Bool = false
     @Published private(set) var subscriptions: [Product] = []
     @Published private(set) var purchasedSubscriptions: [Product] = []
@@ -38,7 +40,7 @@ class SubscriptionStore: ObservableObject {
     private var updateListenerTask: Task<Void, Error>? = nil
     
     
-    private let productIds: [String] = ["com.wildrr.app.weekly", "com.wildrr.app.yearly", "com.wildrr.app.lifetime"]
+    private let productIds: [String] = ["com.video.player.veeplay.app.weekly", "com.video.player.veeplay.app.yearly", "com.video.player.veeplay.app.lifetime"]
     
     /// Determines if the user is subscribed based on their subscription group status.
     /// Returns true if the subscription group status is either .subscribed or .inGracePeriod.
