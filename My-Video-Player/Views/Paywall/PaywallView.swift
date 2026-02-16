@@ -285,8 +285,6 @@ struct PaywallView: View {
                 loaderOverlay()
             }
         }
-       
-        
         .navigationBarBackButtonHidden()
         
         .fullScreenCover(item: $webViewData) { data in

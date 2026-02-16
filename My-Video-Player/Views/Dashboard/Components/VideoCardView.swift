@@ -92,10 +92,11 @@ struct VideoCardView: View {
                 // Bottom Row: Title & Metadata + Duration
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 4) {
-                        HStack {  Text(resolvedTitle?.truncated(ext: video.url?.pathExtension ?? "") ?? video.truncatedTitle)
+                        HStack {  Text(resolvedTitle?.withExtension(video.url?.pathExtension ?? "") ?? video.fullNameWithExtension)
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(.white)
                                 .lineLimit(1)
+                                .truncationMode(.tail)
                                 .shadow(color: .black.opacity(0.8), radius: 2, x: 0, y: 1)
                             
                             

@@ -90,10 +90,6 @@ struct DashboardView: View {
                 importingOverlay
             }
             
-            if viewModel.showActionSheet {
-                actionSheetOverlay
-            }
-            
             if viewModel.showUnsupportedFormatAlert {
                 UnsupportedFormatAlert(video: viewModel.unsupportedVideoForAlbum, isPresented: $viewModel.showUnsupportedFormatAlert)
             }
@@ -231,31 +227,7 @@ struct DashboardView: View {
         .background(Color.homeBackground.ignoresSafeArea())
     }
 
-    private var actionSheetOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.4)
-                .edgesIgnoringSafeArea(.all)
-                .onTapGesture {
-                    withAnimation {
-                        viewModel.showActionSheet = false
-                    }
-                }
-                .transition(.opacity)
-            
-            CustomActionSheet(
-                target: viewModel.actionSheetTarget,
-                items: viewModel.actionSheetItems,
-                isPresented: $viewModel.showActionSheet
-            )
-            .iPad { view in
-                view.frame(maxWidth: 400)
-                    .clipShape(RoundedRectangle(cornerRadius: 28))
-                    .shadow(radius: 20)
-            }
-            .transition(isIpad ? .scale.combined(with: .opacity) : .move(edge: .bottom))
-        }
-        .zIndex(200)
-    }
+
 
     @ViewBuilder
     private var folderAlertContent: some View {

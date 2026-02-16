@@ -65,10 +65,11 @@ struct VideoRowView: View {
             }
             
             VStack(alignment: .leading, spacing: isIpad ? 8 : 4) {
-                Text(resolvedTitle?.truncated(ext: video.url?.pathExtension ?? "") ?? video.truncatedTitle)
+                Text(resolvedTitle?.withExtension(video.url?.pathExtension ?? "") ?? video.fullNameWithExtension)
                     .font(.system(size: isIpad ? 22 : 16, weight: .semibold))
                     .foregroundColor(.homeTextPrimary)
                     .lineLimit(1)
+                    .truncationMode(.tail)
                 
                 HStack(spacing: 4) {
                     Text(formattedDate(video.creationDate))

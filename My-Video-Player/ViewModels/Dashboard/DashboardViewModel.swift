@@ -720,7 +720,7 @@ class DashboardViewModel: ObservableObject {
         return VideoItem(
             id: stableUUID(from: url.absoluteString),
             asset: nil,
-            title: url.deletingPathExtension().lastPathComponent,
+            title: url.lastPathComponent,
             duration: duration,
             creationDate: creationDate,
             fileSizeBytes: size,
@@ -753,7 +753,7 @@ class DashboardViewModel: ObservableObject {
         
         guard let asset = video.asset else {
             if let url = video.url {
-                let name = url.deletingPathExtension().lastPathComponent
+                let name = url.lastPathComponent
                 completion(name)
             } else {
                 completion("Video")
@@ -769,14 +769,14 @@ class DashboardViewModel: ObservableObject {
             // We capture this even if it IS generic (e.g. IMG_1234) because the user wants to see it.
             let resources = PHAssetResource.assetResources(for: asset)
             if let first = resources.first {
-                let name = (first.originalFilename as NSString).deletingPathExtension
+                let name = (first.originalFilename as NSString) as String
                 bestFilename = name
             }
             
             // 2. Fallback to KVC if needed
             if bestFilename == nil {
                 if let filename = asset.value(forKey: "filename") as? String {
-                    let name = (filename as NSString).deletingPathExtension
+                    let name = (filename as NSString) as String
                     bestFilename = name
                 }
             }

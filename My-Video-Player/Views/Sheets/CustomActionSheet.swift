@@ -204,10 +204,11 @@ struct ActionSheetHeaderTitleView: View {
     @State private var resolvedTitle: String = ""
     
     var body: some View {
-        Text(resolvedTitle.isEmpty ? video.title : resolvedTitle)
+        Text(resolvedTitle.isEmpty ? video.fullNameWithExtension : resolvedTitle.withExtension(video.url?.pathExtension ?? ""))
             .font(.system(size: 16, weight: .bold))
             .foregroundColor(.white)
             .lineLimit(2)
+            .truncationMode(.tail)
             .onAppear {
                 if video.title == "Loading..." || video.title == VideoItem.titlePlaceholder {
                     loadTitle()

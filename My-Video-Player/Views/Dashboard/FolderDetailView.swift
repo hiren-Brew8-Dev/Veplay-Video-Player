@@ -38,17 +38,12 @@ struct FolderDetailView: View {
     @State private var selectedVideoIds = Set<UUID>()
     @State private var animatedVideoIds: Set<UUID> = []
     
-    @State private var showActionSheet = false
-    @State private var activeActionItem: ActionTarget?
     @State private var showSearch = false
     @State private var showImportOptions = false
     @State private var asyncVideos: [VideoItem] = []
     @State private var isLoading = false
     
-    enum ActionTarget {
-        case folder(Folder)
-        case video(VideoItem)
-    }
+
     
     // Derived
     var sortOption: DashboardViewModel.SortOption {
@@ -378,8 +373,8 @@ struct FolderDetailView: View {
                                     navigationManager.push(.folderDetail(subfolder))
                                 }) {
                                     FolderCardView(folder: subfolder, viewModel: viewModel, onMenuAction: {
-                                        activeActionItem = .folder(subfolder)
-                                        showActionSheet = true
+                                        viewModel.actionSheetTarget = .folder(subfolder)
+                                        viewModel.showActionSheet = true
                                     }, size: GridLayout.itemSize(for: currentWidth, isLandscape: isLandscape))
                                 }
                             }

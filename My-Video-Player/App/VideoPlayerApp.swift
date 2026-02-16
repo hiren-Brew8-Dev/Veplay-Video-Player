@@ -28,33 +28,40 @@ struct VideoPlayerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationStack(path: $navigationManager.path) {
-                SplashView()
-                    .navigationDestination(for: NavigationDestination.self) { destination in
-                        switch destination {
-                        case .onboarding1: Onboarding1View()
-                        case .onboarding2: Onboarding2View()
-                        case .onboarding3: Onboarding3View()
-                        case .onboarding4: Onboarding4View()
-                        case .thanksForDownloading: ThanksForDownloadingView()
-                            .environmentObject(dashboardViewModel)
-                        case .paywall(let isFromOnboarding): PaywallView(isFromOnboarding: isFromOnboarding)
-                            .hideNavigationBar()
-                        case .rating: RatingView()
-                        case .dashboard: DashboardView()
-                            .environmentObject(dashboardViewModel)
-                            .hideNavigationBar()
-                        case .settings: SettingsView()
-                            .environmentObject(dashboardViewModel)
-                            .hideNavigationBar()
-                        case .allFolders: FolderSectionView(viewModel: dashboardViewModel)
-                            .hideNavigationBar()
-                        case .folderDetail(let folder): FolderDetailView(initialFolder: folder, viewModel: dashboardViewModel)
-                            .hideNavigationBar()
-                        case .search(let title, let videos): SearchView(viewModel: dashboardViewModel, contextTitle: title, initialVideos: videos)
-                            .hideNavigationBar()
+            ZStack {
+                NavigationStack(path: $navigationManager.path) {
+                    SplashView()
+                        .navigationDestination(for: NavigationDestination.self) { destination in
+                            switch destination {
+                            case .onboarding1: Onboarding1View()
+                            case .onboarding2: Onboarding2View()
+                            case .onboarding3: Onboarding3View()
+                            case .onboarding4: Onboarding4View()
+                            case .thanksForDownloading: ThanksForDownloadingView()
+                                .environmentObject(dashboardViewModel)
+                            case .paywall(let isFromOnboarding): PaywallView(isFromOnboarding: isFromOnboarding)
+                                .hideNavigationBar()
+                            case .rating: RatingView()
+                            case .dashboard: DashboardView()
+                                .environmentObject(dashboardViewModel)
+                                .hideNavigationBar()
+                            case .settings: SettingsView()
+                                .environmentObject(dashboardViewModel)
+                                .hideNavigationBar()
+                            case .allFolders: FolderSectionView(viewModel: dashboardViewModel)
+                                .hideNavigationBar()
+                            case .folderDetail(let folder): FolderDetailView(initialFolder: folder, viewModel: dashboardViewModel)
+                                .hideNavigationBar()
+                            case .search(let title, let videos): SearchView(viewModel: dashboardViewModel, contextTitle: title, initialVideos: videos)
+                                .hideNavigationBar()
+                            }
                         }
-                    }
+                }
+                
+                // Global Action Sheet Overlay
+                if dashboardViewModel.showActionSheet {
+                    ActionSheetOverlay(viewModel: dashboardViewModel)
+                }
             }
             .preferredColorScheme(.dark)
             .environment(\.managedObjectContext, cdManager.container.viewContext)
