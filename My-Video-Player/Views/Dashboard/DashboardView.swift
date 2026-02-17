@@ -362,6 +362,10 @@ private struct PlusButtonOverlay: View {
                         }) {
                             plusButtonLabel
                         }
+                        .buttonStyle(.glassProminent)
+                        .buttonBorderShape(.circle)
+                        .buttonSizing(.fitted)
+                        .tint(Color.homeAccent)
                     } else {
                         // Menu for Videos (Home)
                         Menu {
@@ -380,9 +384,10 @@ private struct PlusButtonOverlay: View {
                         } label: {
                             plusButtonLabel
                         }
-                        .buttonStyle(.glass)
+                        .buttonStyle(.glassProminent)
                         .buttonBorderShape(.circle)
                         .buttonSizing(.fitted)
+                        .tint(Color.homeAccent)
                     }
                 }
             }
@@ -395,15 +400,12 @@ private struct PlusButtonOverlay: View {
     
     private var plusButtonLabel: some View {
         ZStack {
-            Circle()
-                .fill(Color.homeAccent)
-                .contentShape(Circle())
             
             Image(systemName: "plus")
                 .font(.system(size: isIpad ? 28 : 24, weight: .bold))
                 .foregroundColor(.black)
         }
-        .frame(width: isIpad ? 72 : 64, height: isIpad ? 72 : 64)
+        .frame(width: isIpad ? 65 : 45, height: isIpad ? 65 : 45)
     }
 }
 

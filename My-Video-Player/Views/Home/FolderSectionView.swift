@@ -271,6 +271,55 @@ struct FolderSectionView: View {
             .buttonBorderShape(.circle)
         }
     }
+
+    private var selectionActionBar: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            HStack(spacing: 0) {
+                Button(action: {
+                    HapticsManager.shared.generate(.medium)
+                    showDeleteSelectedAlert = true
+                }) {
+                    VStack(spacing: 8) {
+                        ZStack {
+                            Circle()
+                                .fill(viewModel.selectedFolderIds.isEmpty ? Color.white.opacity(0.05) : Color.orange.opacity(0.1))
+                                .frame(width: isIpad ? 60 : 44, height: isIpad ? 60 : 44)
+                            
+                            Image(systemName: "trash")
+                                .font(.system(size: isIpad ? 28 : 20, weight: .semibold))
+                                .foregroundColor(viewModel.selectedFolderIds.isEmpty ? .white.opacity(0.3) : .orange)
+                        }
+                        
+                        Text("Delete")
+                            .font(.system(size: isIpad ? 14 : 11, weight: .bold))
+                            .foregroundColor(viewModel.selectedFolderIds.isEmpty ? .white.opacity(0.3) : .white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                }
+                .disabled(viewModel.selectedFolderIds.isEmpty)
+                .opacity(viewModel.selectedFolderIds.isEmpty ? 0.5 : 1.0)
+            }
+            .padding(.top, isIpad ? 20 : 12)
+            .padding(.bottom, max(10, UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0))
+            
+            .background(Color.homeSheetBackground)
+            
+            .overlay(
+                VStack {
+                    Rectangle()
+                        .fill(Color.premiumCardBorder)
+                        .frame(height: 1)
+                    Spacer()
+                }
+            )
+            .clipShape(RoundedCorner(radius: 32, corners: [.topLeft, .topRight]))
+            .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: -5)
+        }
+        .ignoresSafeArea(.all, edges: .bottom)
+        .transition(.move(edge: .bottom))
+    }
     
     private var emptyStateView: some View {
         VStack(spacing: 24) {
