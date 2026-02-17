@@ -41,20 +41,20 @@ struct ConflictResolutionView: View {
                     
                     // Details
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(conflict.sourceVideo.title)
+                        Text(conflict.sourceTitle)
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .lineLimit(2)
                         
-                        Text("Duration: \(conflict.sourceVideo.formattedDuration)")
-                            .font(.system(size: 14))
-                            .foregroundColor(.white.opacity(0.7))
-                        
-                        if let size = conflict.formattedSize {
-                            Text(size)
+                        if let duration = conflict.sourceDuration {
+                            Text("Duration: \(duration)")
                                 .font(.system(size: 14))
                                 .foregroundColor(.white.opacity(0.7))
                         }
+                        
+                        Text(conflict.formattedSize)
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.7))
                     }
                     Spacer()
                 }
@@ -143,14 +143,16 @@ struct ConflictResolutionView: View {
     }
     
     private func loadThumbnail() async {
-        if let thumbPath = conflict.sourceVideo.thumbnailPath,
+        // Try to get thumbnail from VideoItem if available (Paste/Move)
+        if let video = conflict.sourceVideo,
+           let thumbPath = video.thumbnailPath,
            let image = UIImage(contentsOfFile: thumbPath.path) {
             self.thumbnail = image
             return
         }
         
-        // Fallback generation (reuse logic or simple generator)
-        if let url = conflict.sourceVideo.url {
+        // Fallback generation from URL (Import)
+        if let url = conflict.sourceURL ?? conflict.sourceVideo?.url {
             let asset = AVURLAsset(url: url)
             let generator = AVAssetImageGenerator(asset: asset)
             generator.appliesPreferredTrackTransform = true

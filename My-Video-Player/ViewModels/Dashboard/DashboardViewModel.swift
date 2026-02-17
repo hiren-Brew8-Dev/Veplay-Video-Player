@@ -227,15 +227,19 @@ class DashboardViewModel: ObservableObject {
     
     struct ConflictItem: Identifiable {
         let id = UUID()
-        let sourceVideo: VideoItem
+        let sourceTitle: String
+        let sourceDuration: String?
+        let sourceSize: Int64
+        let sourceURL: URL? // Used for direct file imports
+        let sourceVideo: VideoItem? // Used for paste operations
         let destinationURL: URL
         let message: String
         
-        var formattedSize: String? {
+        var formattedSize: String {
             let bcf = ByteCountFormatter()
             bcf.allowedUnits = [.useAll]
             bcf.countStyle = .file
-            return bcf.string(fromByteCount: sourceVideo.fileSizeBytes)
+            return bcf.string(fromByteCount: sourceSize)
         }
     }
     
@@ -248,12 +252,28 @@ class DashboardViewModel: ObservableObject {
     @Published var conflictQueue: [ConflictItem] = []
     @Published var currentConflict: ConflictItem? = nil
     @Published var showConflictResolution: Bool = false
+    @Published var conflictOperation: OperationType = .paste
+    
+    enum OperationType {
+        case paste
+        case fileImport
+    }
+
+    // Paste State
     @Published var pendingPasteDestination: URL? = nil
-    @Published var pendingPasteItems: [VideoItem] = [] // Items waiting to be processed
-    @Published var processedPasteItems: [VideoItem] = [] // Items resolved and ready for final import
-    @Published var pendingPasteNames: [String] = [] // Names corresponding to pending items
-    @Published var processedPasteNames: [String] = [] // Names corresponding to processed items
+    @Published var pendingPasteItems: [VideoItem] = []
+    @Published var processedPasteItems: [VideoItem] = []
+    @Published var pendingPasteNames: [String] = []
+    @Published var processedPasteNames: [String] = []
     @Published var isPasteMoveOperation: Bool = false
+    
+    // Generic Import State
+    @Published var pendingImportDestination: URL? = nil
+    @Published var pendingImportURLs: [URL] = []
+    @Published var processedImportURLs: [URL] = []
+    @Published var pendingImportNames: [String] = []
+    @Published var processedImportNames: [String] = []
+    @Published var isImportMoveOperation: Bool = false
 
     
     var sortedFolders: [Folder] {
@@ -1097,6 +1117,7 @@ class DashboardViewModel: ObservableObject {
         // Initialize State for Conflict Checking
         self.pendingPasteDestination = destination
         self.isPasteMoveOperation = isCutMode
+        self.conflictOperation = .paste
         self.pendingPasteItems = []
         self.processedPasteItems = []
         self.pendingPasteNames = []
@@ -1117,14 +1138,17 @@ class DashboardViewModel: ObservableObject {
                     if FileManager.default.fileExists(atPath: destinationURL.path) {
                         // Conflict found!
                         let conflict = ConflictItem(
+                            sourceTitle: video.title,
+                            sourceDuration: video.formattedDuration,
+                            sourceSize: video.fileSizeBytes,
+                            sourceURL: url,
                             sourceVideo: video,
                             destinationURL: destinationURL,
                             message: "A file named \"\(filename)\" already exists in this folder."
                         )
                         conflicts.append(conflict)
                         
-                        // Add to pending, will be processed after resolution
-                        // We store the original Name for now
+                        // Add to pending
                         self.pendingPasteItems.append(video)
                         self.pendingPasteNames.append(filename)
                     } else {
@@ -1154,8 +1178,20 @@ class DashboardViewModel: ObservableObject {
     }
     
     func resolveConflict(action: ConflictAction, applyToAll: Bool) {
-        guard let current = currentConflict, let index = pendingPasteNames.firstIndex(of: current.destinationURL.lastPathComponent) else {
-            // Should not happen, but safe fallback
+        guard let current = currentConflict else {
+            processNextConflict()
+            return
+        }
+        
+        if conflictOperation == .paste {
+            handlePasteConflict(current: current, action: action, applyToAll: applyToAll)
+        } else {
+            handleImportConflict(current: current, action: action, applyToAll: applyToAll)
+        }
+    }
+    
+    private func handlePasteConflict(current: ConflictItem, action: ConflictAction, applyToAll: Bool) {
+        guard let index = pendingPasteNames.firstIndex(of: current.destinationURL.lastPathComponent) else {
             processNextConflict()
             return
         }
@@ -1265,8 +1301,186 @@ class DashboardViewModel: ObservableObject {
         } else {
             showConflictResolution = false
             currentConflict = nil
-            finalizePasteOperation()
+            if conflictOperation == .paste {
+                finalizePasteOperation()
+            } else {
+                finalizeImportOperation()
+            }
         }
+    }
+    
+    // MARK: - New Import Flow with Conflicts
+    
+    private func handleImportConflict(current: ConflictItem, action: ConflictAction, applyToAll: Bool) {
+        guard let index = pendingImportNames.firstIndex(of: current.destinationURL.lastPathComponent) else {
+            processNextConflict()
+            return
+        }
+        
+        let url = pendingImportURLs[index]
+        let originalName = pendingImportNames[index]
+        
+        switch action {
+        case .skip:
+            break
+        case .replace:
+            processedImportURLs.append(url)
+            processedImportNames.append(originalName)
+            try? FileManager.default.removeItem(at: current.destinationURL)
+        case .keepBoth:
+            let fileManager = FileManager.default
+            let baseName = (originalName as NSString).deletingPathExtension
+            let ext = (originalName as NSString).pathExtension
+            var counter = 1
+            var uniqueName = originalName
+            while fileManager.fileExists(atPath: current.destinationURL.deletingLastPathComponent().appendingPathComponent(uniqueName).path) ||
+                    processedImportNames.contains(uniqueName) {
+                uniqueName = "\(baseName) (\(counter)).\(ext)"
+                counter += 1
+            }
+            processedImportURLs.append(url)
+            processedImportNames.append(uniqueName)
+        }
+        
+        pendingImportURLs.remove(at: index)
+        pendingImportNames.remove(at: index)
+        
+        if applyToAll {
+            let remainingConflicts = conflictQueue.dropFirst()
+            for conflict in remainingConflicts {
+                guard let pIndex = pendingImportNames.firstIndex(of: conflict.destinationURL.lastPathComponent) else { continue }
+                let pURL = pendingImportURLs[pIndex]
+                let pName = pendingImportNames[pIndex]
+                
+                switch action {
+                case .skip: break
+                case .replace:
+                    processedImportURLs.append(pURL)
+                    processedImportNames.append(pName)
+                    try? FileManager.default.removeItem(at: conflict.destinationURL)
+                case .keepBoth:
+                    let fileManager = FileManager.default
+                    let baseName = (pName as NSString).deletingPathExtension
+                    let ext = (pName as NSString).pathExtension
+                    var counter = 1
+                    var uniqueName = pName
+                    while fileManager.fileExists(atPath: conflict.destinationURL.deletingLastPathComponent().appendingPathComponent(uniqueName).path) ||
+                            processedImportNames.contains(uniqueName) {
+                        uniqueName = "\(baseName) (\(counter)).\(ext)"
+                        counter += 1
+                    }
+                    processedImportURLs.append(pURL)
+                    processedImportNames.append(uniqueName)
+                }
+            }
+            conflictQueue.removeAll()
+            currentConflict = nil
+            showConflictResolution = false
+            finalizeImportOperation()
+            return
+        }
+        processNextConflict()
+    }
+
+    func initiateImportFlow(urls: [URL], names: [String]? = nil, to destination: URL? = nil, shouldMove: Bool = false) {
+        let targetDirectory = destination ?? self.activeImportFolderURL ?? self.importedVideosDirectory
+        
+        self.pendingImportDestination = targetDirectory
+        self.isImportMoveOperation = shouldMove
+        self.conflictOperation = .fileImport
+        self.pendingImportURLs = urls
+        self.processedImportURLs = []
+        self.pendingImportNames = names ?? urls.map { $0.lastPathComponent }
+        self.processedImportNames = []
+        self.conflictQueue = []
+        
+        Task {
+            var conflicts: [ConflictItem] = []
+            var safeURLs: [URL] = []
+            var safeNames: [String] = []
+            
+            for (index, url) in self.pendingImportURLs.enumerated() {
+                let filename = self.pendingImportNames[index]
+                let destinationURL = targetDirectory.appendingPathComponent(filename)
+                
+                if FileManager.default.fileExists(atPath: destinationURL.path) {
+                    // Check if SAME source
+                    if url.path == destinationURL.path {
+                        safeURLs.append(url)
+                        safeNames.append(filename)
+                        continue
+                    }
+                    
+                    // Fetch metadata for conflict UI
+                    let asset = AVURLAsset(url: url)
+                    let duration: CMTime? = try? await asset.load(.duration)
+                    let durationStr = duration.map { VideoItem(title: "", duration: $0.seconds, creationDate: Date(), fileSizeBytes: 0).formattedDuration }
+                    let fileSize = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                    
+                    let conflict = ConflictItem(
+                        sourceTitle: filename,
+                        sourceDuration: durationStr,
+                        sourceSize: Int64(fileSize),
+                        sourceURL: url,
+                        sourceVideo: nil,
+                        destinationURL: destinationURL,
+                        message: "A file named \"\(filename)\" already exists in this folder."
+                    )
+                    conflicts.append(conflict)
+                } else {
+                    safeURLs.append(url)
+                    safeNames.append(filename)
+                }
+            }
+            
+            await MainActor.run {
+                self.processedImportURLs.append(contentsOf: safeURLs)
+                self.processedImportNames.append(contentsOf: safeNames)
+                
+                // Remove safe items from pending
+                for url in safeURLs {
+                    if let idx = self.pendingImportURLs.firstIndex(of: url) {
+                        self.pendingImportURLs.remove(at: idx)
+                        self.pendingImportNames.remove(at: idx)
+                    }
+                }
+                
+                if !conflicts.isEmpty {
+                    self.conflictQueue = conflicts
+                    self.currentConflict = conflicts.first
+                    self.showConflictResolution = true
+                } else {
+                    self.finalizeImportOperation()
+                }
+            }
+        }
+    }
+
+    private func finalizeImportOperation() {
+        guard let destination = pendingImportDestination, !processedImportURLs.isEmpty else {
+            cleanupImportState()
+            return
+        }
+        
+        Task {
+            await self.importVideos(from: processedImportURLs, names: processedImportNames, to: destination, shouldMove: isImportMoveOperation)
+            await MainActor.run {
+                cleanupImportState()
+                self.loadImportedVideos()
+                self.loadUserFolders()
+            }
+        }
+    }
+
+    private func cleanupImportState() {
+        self.pendingImportDestination = nil
+        self.pendingImportURLs = []
+        self.processedImportURLs = []
+        self.pendingImportNames = []
+        self.processedImportNames = []
+        self.conflictQueue = []
+        self.currentConflict = nil
+        self.showConflictResolution = false
     }
     
     // The Final Step: Actually Run the Import
@@ -2306,9 +2520,7 @@ extension DashboardViewModel {
     func handleFileImport(_ result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
-            Task {
-                await self.importVideos(from: urls)
-            }
+            self.initiateImportFlow(urls: urls)
         case .failure(let error):
             print("File import failed: \(error.localizedDescription)")
         }
@@ -2370,8 +2582,8 @@ extension DashboardViewModel {
                         self.importStatusMessage = "Finalizing: \(fileName ?? movie.url.lastPathComponent)"
                     }
                     
-                    // 5. Perform Import
-                    await self.importSingleVideo(from: movie.url, name: fileName ?? movie.url.lastPathComponent)
+                    // 5. Perform Import (using conflict flow)
+                    self.initiateImportFlow(urls: [movie.url], names: [fileName ?? movie.url.lastPathComponent])
                     
                     // 6. Item Complete
                     await MainActor.run {

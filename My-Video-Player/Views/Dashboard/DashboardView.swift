@@ -131,6 +131,11 @@ struct DashboardView: View {
             if viewModel.showUnsupportedFormatAlert {
                 UnsupportedFormatAlert(video: viewModel.unsupportedVideoForAlbum, isPresented: $viewModel.showUnsupportedFormatAlert)
             }
+            
+            if viewModel.showConflictResolution {
+                ConflictResolutionOverlay(viewModel: viewModel)
+                    .zIndex(1000)
+            }
         }
         .ignoresSafeArea(edges: .bottom)
         .fullScreenCover(item: $viewModel.playingVideo) { video in
