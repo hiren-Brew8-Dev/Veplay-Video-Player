@@ -240,13 +240,62 @@ struct FolderSectionView: View {
                 .frame(width: 1, height: 16)
                 .padding(.horizontal, 5)
             
-            // Sort Button
-            Button(action: {
-                HapticsManager.shared.generate(.selection)
-                withAnimation {
-                    showSortSheet = true
+            // Sort Menu
+            Menu {
+                // Recents
+                Button {
+                    viewModel.folderSortOptionRaw = "Recents"
+                } label: {
+                    HStack {
+                        Label("Recently Accessed", systemImage: "clock.arrow.circlepath")
+                        if viewModel.folderSortOptionRaw == "Recents" { Image(systemName: "checkmark") }
+                    }
                 }
-            }) {
+                
+                // Name
+                Menu {
+                    Button {
+                        viewModel.folderSortOptionRaw = "Name (A-Z)"
+                    } label: {
+                        HStack {
+                            Text("A to Z")
+                            if viewModel.folderSortOptionRaw == "Name (A-Z)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                    Button {
+                        viewModel.folderSortOptionRaw = "Name (Z-A)"
+                    } label: {
+                        HStack {
+                            Text("Z to A")
+                            if viewModel.folderSortOptionRaw == "Name (Z-A)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                } label: {
+                    Label("Name", systemImage: "textformat")
+                }
+                
+                // Date
+                Menu {
+                    Button {
+                        viewModel.folderSortOptionRaw = "Newest First"
+                    } label: {
+                        HStack {
+                            Text("Newest First")
+                            if viewModel.folderSortOptionRaw == "Newest First" { Image(systemName: "checkmark") }
+                        }
+                    }
+                    Button {
+                        viewModel.folderSortOptionRaw = "Oldest First"
+                    } label: {
+                        HStack {
+                            Text("Oldest First")
+                            if viewModel.folderSortOptionRaw == "Oldest First" { Image(systemName: "checkmark") }
+                        }
+                    }
+                } label: {
+                    Label("Date", systemImage: "calendar")
+                }
+            } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.up.arrow.down")
                         .font(.system(size: 14, weight: .semibold))

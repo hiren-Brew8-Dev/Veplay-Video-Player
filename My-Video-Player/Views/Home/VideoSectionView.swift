@@ -163,13 +163,96 @@ struct VideoSectionView: View {
                 .frame(width: 1, height: 16)
                 .padding(.horizontal, 5)
             
-            // Sort Button
-            Button(action: {
-                HapticsManager.shared.generate(.selection)
-                withAnimation {
-                    showSortSheet = true
+            // Sort Menu
+            Menu {
+                // Date
+                Menu {
+                    Button {
+                        viewModel.videoSortOptionRaw = "Newest First"
+                    } label: {
+                        HStack {
+                            Text("Newest First")
+                            if viewModel.videoSortOptionRaw == "Newest First" { Image(systemName: "checkmark") }
+                        }
+                    }
+                    Button {
+                        viewModel.videoSortOptionRaw = "Oldest First"
+                    } label: {
+                        HStack {
+                            Text("Oldest First")
+                            if viewModel.videoSortOptionRaw == "Oldest First" { Image(systemName: "checkmark") }
+                        }
+                    }
+                } label: {
+                    Label("Date", systemImage: "calendar")
                 }
-            }) {
+                
+                // Name
+                Menu {
+                    Button {
+                        viewModel.videoSortOptionRaw = "Name (A-Z)"
+                    } label: {
+                        HStack {
+                            Text("A to Z")
+                            if viewModel.videoSortOptionRaw == "Name (A-Z)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                    Button {
+                        viewModel.videoSortOptionRaw = "Name (Z-A)"
+                    } label: {
+                        HStack {
+                            Text("Z to A")
+                            if viewModel.videoSortOptionRaw == "Name (Z-A)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                } label: {
+                    Label("Name", systemImage: "textformat")
+                }
+                
+                // Length (Duration)
+                Menu {
+                    Button {
+                        viewModel.videoSortOptionRaw = "Duration (Long to Short)"
+                    } label: {
+                        HStack {
+                            Text("Long to Short")
+                            if viewModel.videoSortOptionRaw == "Duration (Long to Short)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                    Button {
+                        viewModel.videoSortOptionRaw = "Duration (Short to Long)"
+                    } label: {
+                        HStack {
+                            Text("Short to Long")
+                            if viewModel.videoSortOptionRaw == "Duration (Short to Long)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                } label: {
+                    Label("Length", systemImage: "clock")
+                }
+                
+                // Size
+                Menu {
+                    Button {
+                        viewModel.videoSortOptionRaw = "Size (Large to Small)"
+                    } label: {
+                        HStack {
+                            Text("Large to Small")
+                            if viewModel.videoSortOptionRaw == "Size (Large to Small)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                    Button {
+                        viewModel.videoSortOptionRaw = "Size (Small to Large)"
+                    } label: {
+                        HStack {
+                            Text("Small to Large")
+                            if viewModel.videoSortOptionRaw == "Size (Small to Large)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                } label: {
+                    Label("Size", systemImage: "sdcard")
+                }
+            } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.up.arrow.down")
                         .font(.system(size: 14, weight: .semibold))

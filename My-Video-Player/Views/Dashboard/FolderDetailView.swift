@@ -256,13 +256,122 @@ struct FolderDetailView: View {
                 .frame(width: 1, height: 16)
                 .padding(.horizontal, 5)
             
-            // Sort Button
-            Button(action: {
-                HapticsManager.shared.generate(.selection)
-                withAnimation {
-                    showSortSheet = true
+            // Sort Menu
+            Menu {
+                // Date
+                Menu {
+                    Button {
+                        if folder.url == nil {
+                            viewModel.gallerySortOptionRaw = "Newest First"
+                        } else {
+                            viewModel.folderSortOptionRaw = "Newest First"
+                        }
+                    } label: {
+                        HStack {
+                            Text("Newest First")
+                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Newest First" { Image(systemName: "checkmark") }
+                        }
+                    }
+                    Button {
+                        if folder.url == nil {
+                            viewModel.gallerySortOptionRaw = "Oldest First"
+                        } else {
+                            viewModel.folderSortOptionRaw = "Oldest First"
+                        }
+                    } label: {
+                        HStack {
+                            Text("Oldest First")
+                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Oldest First" { Image(systemName: "checkmark") }
+                        }
+                    }
+                } label: {
+                    Label("Date", systemImage: "calendar")
                 }
-            }) {
+                
+                // Name
+                Menu {
+                    Button {
+                        if folder.url == nil {
+                            viewModel.gallerySortOptionRaw = "Name (A-Z)"
+                        } else {
+                            viewModel.folderSortOptionRaw = "Name (A-Z)"
+                        }
+                    } label: {
+                        HStack {
+                            Text("A to Z")
+                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Name (A-Z)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                    Button {
+                        if folder.url == nil {
+                            viewModel.gallerySortOptionRaw = "Name (Z-A)"
+                        } else {
+                            viewModel.folderSortOptionRaw = "Name (Z-A)"
+                        }
+                    } label: {
+                        HStack {
+                            Text("Z to A")
+                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Name (Z-A)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                } label: {
+                    Label("Name", systemImage: "textformat")
+                }
+                
+                // Length (Duration)
+                Menu {
+                    Button {
+                        if folder.url == nil {
+                            viewModel.gallerySortOptionRaw = "Duration (Long to Short)"
+                        } else {
+                            viewModel.folderSortOptionRaw = "Duration (Long to Short)"
+                        }
+                    } label: {
+                        HStack {
+                            Text("Long to Short")
+                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Duration (Long to Short)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                    Button {
+                        if folder.url == nil {
+                            viewModel.gallerySortOptionRaw = "Duration (Short to Long)"
+                        } else {
+                            viewModel.folderSortOptionRaw = "Duration (Short to Long)"
+                        }
+                    } label: {
+                        HStack {
+                            Text("Short to Long")
+                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Duration (Short to Long)" { Image(systemName: "checkmark") }
+                        }
+                    }
+                } label: {
+                    Label("Length", systemImage: "clock")
+                }
+                
+                // Size (Only if not album)
+                if folder.url != nil {
+                    Menu {
+                        Button {
+                            viewModel.folderSortOptionRaw = "Size (Large to Small)"
+                        } label: {
+                            HStack {
+                                Text("Large to Small")
+                                if viewModel.folderSortOptionRaw == "Size (Large to Small)" { Image(systemName: "checkmark") }
+                            }
+                        }
+                        Button {
+                            viewModel.folderSortOptionRaw = "Size (Small to Large)"
+                        } label: {
+                            HStack {
+                                Text("Small to Large")
+                                if viewModel.folderSortOptionRaw == "Size (Small to Large)" { Image(systemName: "checkmark") }
+                            }
+                        }
+                    } label: {
+                        Label("Size", systemImage: "sdcard")
+                    }
+                }
+            } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.up.arrow.down")
                         .font(.system(size: 14, weight: .semibold))
