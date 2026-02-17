@@ -156,7 +156,7 @@ struct PaywallView: View {
                     .responsivePadding(edge: .top, fraction: 40)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .responsivePadding(edge: .leading, fraction: 55)
-                    
+                    /*
                     if remoteConfigManager.isTrialPriceUnabled {
                         HStack {
                             Text("Not sure? Enable free trial")
@@ -196,7 +196,9 @@ struct PaywallView: View {
                         .offset(y: isAnimating ? 0 : 20)
                         .opacity(isAnimating ? 1 : 0)
                         .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.25), value: isAnimating)
+                        
                     }
+                     */
                     
                     // MARK: - Subscription Plans
                     let weeklyPlan = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.weekly" }

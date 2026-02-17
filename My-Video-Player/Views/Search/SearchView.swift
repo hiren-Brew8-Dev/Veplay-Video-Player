@@ -42,8 +42,13 @@ struct SearchView: View {
                         }
                         .padding(.top, 10)
                     }
+                    .scrollDismissesKeyboard(.immediately)
                     .scrollBounceBehavior(.basedOnSize)
                 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isSearchFocused = false
             }
             .navigationBarHidden(true)
             .onAppear {
