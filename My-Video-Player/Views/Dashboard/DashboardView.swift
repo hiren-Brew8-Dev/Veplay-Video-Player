@@ -40,10 +40,12 @@ struct DashboardView: View {
                 Tab("Videos", systemImage: "play.circle", value: .home) {
                     NavigationStack(path: $navigationManager.homePath) {
                         VStack(spacing: 0) {
-                            if !viewModel.isSelectionMode {
-                                headerView(title: "Videos")
-                            }
+                            // Header is now handled inside VideoSectionView for custom translucent effect
+//                            if !viewModel.isSelectionMode {
+//                                headerView(title: "Videos")
+//                            }
                             VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
+                                .ignoresSafeArea(edges: .top)
                                 .background {
                                     AppGlobalBackground()
                                         .allowsHitTesting(false)
@@ -60,10 +62,12 @@ struct DashboardView: View {
                 Tab("Gallery", systemImage: "photo.on.rectangle", value: .gallery) {
                     NavigationStack(path: $navigationManager.galleryPath) {
                         VStack(spacing: 0) {
-                            if !viewModel.isSelectionMode {
-                                headerView(title: "Gallery")
-                            }
+                            // Header is now handled inside AlbumSectionView
+//                            if !viewModel.isSelectionMode {
+//                                headerView(title: "Gallery")
+//                            }
                             AlbumSectionView(viewModel: viewModel)
+                                .ignoresSafeArea(edges: .top)
                                 .background {
                                     AppGlobalBackground()
                                         .allowsHitTesting(false)
@@ -80,10 +84,12 @@ struct DashboardView: View {
                 Tab("Folders", systemImage: "folder", value: .folders) {
                     NavigationStack(path: $navigationManager.foldersPath) {
                         VStack(spacing: 0) {
-                             if !viewModel.isSelectionMode {
-                                headerView(title: "Folders")
-                            }
+                            // Header is now handled inside FolderSectionView
+//                             if !viewModel.isSelectionMode {
+//                                headerView(title: "Folders")
+//                            }
                             FolderSectionView(viewModel: viewModel)
+                                .ignoresSafeArea(edges: .top)
                                 .background {
                                     AppGlobalBackground()
                                         .allowsHitTesting(false)

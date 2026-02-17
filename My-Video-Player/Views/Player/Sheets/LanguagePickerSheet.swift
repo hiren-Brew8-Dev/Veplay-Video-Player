@@ -28,7 +28,7 @@ struct LanguagePickerSheet: View {
                     .font(.headline)
                     .foregroundColor(.homeTextPrimary)
                 Spacer()
-                Button("Done") {
+                Button("Cancel") {
                     HapticsManager.shared.generate(.medium)
                     isPresented = false
                 }

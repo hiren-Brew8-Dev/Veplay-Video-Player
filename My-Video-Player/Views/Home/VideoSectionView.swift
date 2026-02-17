@@ -24,60 +24,76 @@ struct VideoSectionView: View {
         GeometryReader { geometry in
             let isLandscape = isIpad ? (geometry.size.width > geometry.size.height) : (geometry.size.width > 500)
             let currentWidth = geometry.size.width
+//            
+//            let isLandscape = isIpad ? (geometry.size.width > geometry.size.height) : (geometry.size.width > 500)
+//            let currentWidth = geometry.size.width
+            let safeAreaTop = geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top : (UIApplication.shared.windows.first?.safeAreaInsets.top ?? 47)
             
             ZStack {
-//            Color.clear.edgesIgnoringSafeArea(.all)
-            
-                VStack(spacing: 0) {
-                    // Header
-                    if viewModel.isSelectionMode {
-                        selectionHeader
-                    } else if !viewModel.groupedImportedVideos.isEmpty && !viewModel.isInitialLoading {
-                         Divider()
-                             .background(Color.white.opacity(0.1))
-                         
-                         // Utility Row (Sort, View Mode, Selection) - Fixed
-                        utilityRow
-                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-                            .padding(.top, 10)
-                            .padding(.bottom, 10)
-                    }
-                    
-                    if viewModel.importedVideos.isEmpty && !viewModel.isImporting && !viewModel.isInitialLoading {
-                        emptyStateView
-                    } else {
-                        ScrollViewReader { proxy in
-                            ScrollView(showsIndicators: false) {
-                                VStack(spacing: 24) {
-                                    if !viewModel.isInitialLoading || !viewModel.importedVideos.isEmpty {
-                                        if viewModel.isGridView {
-                                            videosGrid(isLandscape: isLandscape, width: currentWidth)
-                                        } else {
-                                            listView(isLandscape: isLandscape)
-                                        }
-                                    }
+                // Main Scrollable Content with Sticky Header
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 24) {
+                            if !viewModel.isInitialLoading || !viewModel.importedVideos.isEmpty {
+                                if viewModel.isGridView {
+                                    videosGrid(isLandscape: isLandscape, width: currentWidth)
+                                } else {
+                                    listView(isLandscape: isLandscape)
                                 }
-                                .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
                             }
-                            .scrollBounceBehavior(.basedOnSize)
-                            .onChange(of: viewModel.highlightVideoId) { oldId, newId in
-                                if let id = newId {
-                                    withAnimation(.spring()) {
-                                        proxy.scrollTo(id, anchor: .center)
-                                    }
+                        }
+                        .padding(.top, 20) // Extra padding between header and content
+                        .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
+                    }
+                    .scrollBounceBehavior(.basedOnSize)
+                    .safeAreaInset(edge: .top) {
+                        VStack(spacing: 0) {
+                            if viewModel.isSelectionMode {
+                                selectionHeader
+                                    .padding(.top, safeAreaTop)
+                            } else {
+                                mainHeader
+                                    .padding(.top, safeAreaTop)
+                                
+                                if !viewModel.groupedImportedVideos.isEmpty && !viewModel.isInitialLoading {
+                                    
+                                    utilityRow
+                                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                                        .padding(.top, 0)
+                                        .padding(.bottom, 0)
                                 }
+                            }
+                        }
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(stops: [
+                                       .init(color: .black, location: 0.0),
+                                       .init(color: .black.opacity(0.7), location: 0.8),
+                                       .init(color: .black.opacity(0), location: 1.0)
+                                   ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .ignoresSafeArea(edges: .top)
+                        )
+                    }
+                    .onChange(of: viewModel.highlightVideoId) { oldId, newId in
+                        if let id = newId {
+                            withAnimation(.spring()) {
+                                proxy.scrollTo(id, anchor: .center)
                             }
                         }
                     }
                 }
-                .frame(width: geometry.size.width, height: geometry.size.height)
+                
+                if viewModel.importedVideos.isEmpty && !viewModel.isImporting && !viewModel.isInitialLoading {
+                   emptyStateView
+                        .padding(.top, 100) // Push down below header
+                }
                 
                 if viewModel.isSelectionMode {
                     selectionActionBar
                 }
-                
-                // Syncing Overlay
-
             }
         }
 //        .background(Color.homeBackground.edgesIgnoringSafeArea(.all))
@@ -180,6 +196,60 @@ struct VideoSectionView: View {
     
     // Previous Folders Code Removed
 
+    // Previous Folders Code Removed
+
+    private var mainHeader: some View {
+        HStack(spacing: 0) {
+            // Title Only
+            HStack(spacing: 0) {
+                Text("Videos")
+                    .font(.system(size: AppDesign.Icons.headerSize + 4, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            .padding(.leading, AppDesign.Icons.horizontalPadding)
+            
+            Spacer()
+            
+            HStack(spacing: isIpad ? 20 : 5) {
+                // Settings Button
+                Button(action: {
+                    HapticsManager.shared.generate(.medium)
+                    navigationManager.push(.settings)
+                }) {
+                    ZStack {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: isIpad ? 22 : 18, weight: .medium))
+                            .frame(width: 30, height: 30)
+                    }
+                }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                
+                // Crown
+                if !Global.shared.getIsUserPro() {
+                    Button {
+                        HapticsManager.shared.generate(.medium)
+                        navigationManager.push(.paywall(isFromOnboarding: false))
+                    } label: {
+                        ZStack {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: isIpad ? 20 : 18, weight: .medium))
+                                .foregroundColor(.black)
+                                .frame(width: 30, height: 30)
+                        }
+                    }
+                    .buttonSizing(.automatic)
+                    .buttonStyle(.glassProminent)
+                    .buttonBorderShape(.circle)
+                    .tint(.premiumIconBackground)
+                }
+            }
+            .padding(.trailing, AppDesign.Icons.horizontalPadding)
+        }
+        .frame(height: AppDesign.Icons.headerHeight)
+        .padding(.vertical, 8)
+    }
+
     private var expandedHeader: some View {
         HStack {
             Text("Videos")
@@ -277,7 +347,7 @@ struct VideoSectionView: View {
             
             Spacer()
             
-            Button("Done") {
+            Button("Cancel") {
                 HapticsManager.shared.generate(.medium)
                 viewModel.isSelectionMode = false
                 viewModel.selectedVideoIds.removeAll()
