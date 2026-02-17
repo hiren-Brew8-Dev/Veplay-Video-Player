@@ -9,46 +9,11 @@ struct AlbumSectionView: View {
     
     
     var body: some View {
+        GeometryReader { geometry in
             let isLandscape = geometry.size.width > geometry.size.height
             let currentWidth = geometry.size.width
-            let safeAreaTop = geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top : (UIApplication.shared.windows.first?.safeAreaInsets.top ?? 47)
             
-            ZStack {
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        if !viewModel.galleryAlbums.isEmpty {
-                            LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
-                                ForEach(viewModel.galleryAlbums, id: \.localIdentifier) { album in
-                                    let folder = Folder(name: albumDestinationTitle(for: album), videoCount: album.estimatedAssetCount, videos: [], url: nil, albumIdentifier: album.localIdentifier, subfolders: [])
-                                    Button(action: {
-                                        HapticsManager.shared.generate(.light)
-                                        navigationManager.push(.folderDetail(folder))
-                                    }) {
-                                        AlbumCardView(album: album, isLandscape: isLandscape, availableWidth: currentWidth)
-                                    }
-                                    .buttonStyle(.scalable)
-                                }
-                            }
-                            .padding(.horizontal, GridLayout.horizontalPadding)
-                            .padding(.top, 20) // Extra padding
-                        }
-                    }
-                    .padding(.bottom, 100)
-                }
-                .scrollBounceBehavior(.basedOnSize)
-                .safeAreaInset(edge: .top) {
-                    mainHeader
-                        .padding(.top, safeAreaTop)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.black, Color.black.opacity(0.0)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                            .ignoresSafeArea(edges: .top)
-                        )
-                }
-                
+            VStack(spacing: 0) {
                 if viewModel.galleryAlbums.isEmpty {
                     VStack(spacing: 0) {
                         Spacer()
@@ -69,7 +34,7 @@ struct AlbumSectionView: View {
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(.white)
                                 
-                                Text(viewModel.showPermissionDenied ?
+                                Text(viewModel.showPermissionDenied ? 
                                      "Grant photo access in settings to view\nyour device's video albums." :
                                      "We couldn't find any video albums in your\nPhotos library.")
                                     .font(.system(size: 14))
@@ -108,9 +73,28 @@ struct AlbumSectionView: View {
                         Spacer()
                         Spacer()
                     }
-                    .padding(.top, 100)
+                }
+ else {
+                    ScrollView(showsIndicators: false) {
+                        LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
+                            ForEach(viewModel.galleryAlbums, id: \.localIdentifier) { album in
+                                let folder = Folder(name: albumDestinationTitle(for: album), videoCount: album.estimatedAssetCount, videos: [], url: nil, albumIdentifier: album.localIdentifier, subfolders: [])
+                                Button(action: {
+                                    HapticsManager.shared.generate(.light)
+                                    navigationManager.push(.folderDetail(folder))
+                                }) {
+                                    AlbumCardView(album: album, isLandscape: isLandscape, availableWidth: currentWidth)
+                                }
+                                .buttonStyle(.scalable)
+                            }
+                        }
+                        .padding(.horizontal, GridLayout.horizontalPadding)
+                        .padding(.bottom, 100)
+                    }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .background(Color.clear)
     }
@@ -118,60 +102,6 @@ struct AlbumSectionView: View {
     private func albumDestinationTitle(for album: PHAssetCollection) -> String {
         let displayTitle = (album.localizedTitle ?? "Gallery") == "Videos" ? "All Videos" : (album.localizedTitle ?? "Gallery")
         return displayTitle
-    }
-    
-    // MARK: - Header
-    
-    private var mainHeader: some View {
-        HStack(spacing: 0) {
-            // Title Only
-            HStack(spacing: 0) {
-                Text("Gallery")
-                    .font(.system(size: AppDesign.Icons.headerSize + 4, weight: .bold))
-                    .foregroundColor(.white)
-            }
-            .padding(.leading, AppDesign.Icons.horizontalPadding)
-            
-            Spacer()
-            
-            HStack(spacing: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 5) {
-                // Settings Button
-                Button(action: {
-                    HapticsManager.shared.generate(.medium)
-                    navigationManager.push(.settings)
-                }) {
-                    ZStack {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 22 : 18, weight: .medium))
-                            .frame(width: 30, height: 30)
-                    }
-                }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-                
-                // Crown
-                if !Global.shared.getIsUserPro() {
-                    Button {
-                        HapticsManager.shared.generate(.medium)
-                        navigationManager.push(.paywall(isFromOnboarding: false))
-                    } label: {
-                        ZStack {
-                            Image(systemName: "crown.fill")
-                                .font(.system(size: UIDevice.current.userInterfaceIdiom == .pad ? 20 : 18, weight: .medium))
-                                .foregroundColor(.black)
-                                .frame(width: 30, height: 30)
-                        }
-                    }
-                    .buttonSizing(.automatic)
-                    .buttonStyle(.glassProminent)
-                    .buttonBorderShape(.circle)
-                    .tint(.premiumIconBackground)
-                }
-            }
-            .padding(.trailing, AppDesign.Icons.horizontalPadding)
-        }
-        .frame(height: AppDesign.Icons.headerHeight)
-        .padding(.vertical, 8)
     }
     
 }

@@ -149,8 +149,10 @@ struct VideoSectionView: View {
                     viewModel.isSelectionMode = true
                 }
             }) {
-                Image(systemName: "pencil")
-                    .font(.system(size: 16, weight: .semibold))
+                Image("pencil")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
                     .frame(width: 30, height: 30)
             }
             .buttonStyle(.glass)

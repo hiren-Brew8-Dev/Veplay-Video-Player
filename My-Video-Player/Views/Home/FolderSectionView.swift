@@ -14,63 +14,29 @@ struct FolderSectionView: View {
     @State private var showDeleteSelectedAlert = false
     
     var body: some View {
-        GeometryReader { geometry in
-            let isLandscape = isIpad ? (geometry.size.width > geometry.size.height) : (geometry.size.width > 500)
-            let currentWidth = geometry.size.width
-            let safeAreaTop = geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top : (UIApplication.shared.windows.first?.safeAreaInsets.top ?? 47)
-            
-            ZStack {
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 20) {
-                        if !viewModel.folders.isEmpty {
-                            Group {
-                                if viewModel.isGridView {
-                                    foldersGrid(isLandscape: isLandscape, currentWidth: currentWidth)
-                                } else {
-                                    foldersList(isLandscape: isLandscape)
-                                }
-                            }
-                            .padding(.top, 20) // Extra padding
-                        }
-                    }
-                    .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
-                }
-                .scrollBounceBehavior(.basedOnSize)
-                .safeAreaInset(edge: .top) {
-                    VStack(spacing: 0) {
-                        if viewModel.isSelectionMode {
-                            selectionHeader
-                                .padding(.top, safeAreaTop)
-                        } else {
-                            mainHeader
-                                .padding(.top, safeAreaTop)
-                            
-                            if !viewModel.folders.isEmpty {
-                                utilityRow
-                                    .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-                                    .padding(.top, 0)
-                                    .padding(.bottom, 0)
-                            }
-                        }
-                    }
-                    .background(
-                        LinearGradient(
-                            colors: [Color.black, Color.black.opacity(0.0)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .ignoresSafeArea(edges: .top)
-                    )
+        ZStack {
+            VStack(spacing: 0) {
+                if viewModel.isSelectionMode {
+                    selectionHeader
+                } else if !viewModel.folders.isEmpty {
+                    Divider()
+                        .background(Color.white.opacity(0.1))
+                    
+                    utilityRow
+                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                        .padding(.top, 10)
+                        .padding(.bottom, 10)
                 }
                 
                 if viewModel.folders.isEmpty {
                     emptyStateView
-                        .padding(.top, 100)
+                } else {
+                    foldersScrollView
                 }
-                
-                if viewModel.isSelectionMode {
-                    selectionActionBar
-                }
+            }
+            
+            if viewModel.isSelectionMode {
+                selectionActionBar
             }
         }
         .alert("Rename Folder", isPresented: $viewModel.showRenameFolderAlert) {
@@ -133,60 +99,6 @@ struct FolderSectionView: View {
         return !viewModel.folders.isEmpty && viewModel.selectedFolderIds.count == viewModel.folders.count
     }
     
-    // MARK: - Header
-    
-    private var mainHeader: some View {
-        HStack(spacing: 0) {
-            // Title Only
-            HStack(spacing: 0) {
-                Text("Folders")
-                    .font(.system(size: AppDesign.Icons.headerSize + 4, weight: .bold))
-                    .foregroundColor(.white)
-            }
-            .padding(.leading, AppDesign.Icons.horizontalPadding)
-            
-            Spacer()
-            
-            HStack(spacing: isIpad ? 20 : 5) {
-                // Settings Button
-                Button(action: {
-                    HapticsManager.shared.generate(.medium)
-                    navigationManager.push(.settings)
-                }) {
-                    ZStack {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: isIpad ? 22 : 18, weight: .medium))
-                            .frame(width: 30, height: 30)
-                    }
-                }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-                
-                // Crown
-                if !Global.shared.getIsUserPro() {
-                    Button {
-                        HapticsManager.shared.generate(.medium)
-                        navigationManager.push(.paywall(isFromOnboarding: false))
-                    } label: {
-                        ZStack {
-                            Image(systemName: "crown.fill")
-                                .font(.system(size: isIpad ? 20 : 18, weight: .medium))
-                                .foregroundColor(.black)
-                                .frame(width: 30, height: 30)
-                        }
-                    }
-                    .buttonSizing(.automatic)
-                    .buttonStyle(.glassProminent)
-                    .buttonBorderShape(.circle)
-                    .tint(.premiumIconBackground)
-                }
-            }
-            .padding(.trailing, AppDesign.Icons.horizontalPadding)
-        }
-        .frame(height: AppDesign.Icons.headerHeight)
-        .padding(.vertical, 8)
-    }
-
     private var selectionHeader: some View {
         HStack {
             Button(action: {
@@ -402,7 +314,27 @@ struct FolderSectionView: View {
         .frame(maxWidth: .infinity)
     }
     
-    // foldersScrollView removed as it is now inline
+    private var foldersScrollView: some View {
+        GeometryReader { geometry in
+            let isLandscape = isIpad ? (geometry.size.width > geometry.size.height) : (geometry.size.width > 500)
+            let currentWidth = geometry.size.width
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 20) {
+                    Group {
+                        if viewModel.isGridView {
+                            foldersGrid(isLandscape: isLandscape, currentWidth: currentWidth)
+                        } else {
+                            foldersList(isLandscape: isLandscape)
+                        }
+                    }
+                    .padding(.top, 0)
+                }
+                .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+    }
     
     private func foldersGrid(isLandscape: Bool, currentWidth: CGFloat) -> some View {
         LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {

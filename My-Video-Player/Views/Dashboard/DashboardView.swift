@@ -62,12 +62,10 @@ struct DashboardView: View {
                 Tab("Gallery", systemImage: "photo.on.rectangle", value: .gallery) {
                     NavigationStack(path: $navigationManager.galleryPath) {
                         VStack(spacing: 0) {
-                            // Header is now handled inside AlbumSectionView
-//                            if !viewModel.isSelectionMode {
-//                                headerView(title: "Gallery")
-//                            }
+                            if !viewModel.isSelectionMode {
+                                headerView(title: "Gallery")
+                            }
                             AlbumSectionView(viewModel: viewModel)
-                                .ignoresSafeArea(edges: .top)
                                 .background {
                                     AppGlobalBackground()
                                         .allowsHitTesting(false)
@@ -84,12 +82,10 @@ struct DashboardView: View {
                 Tab("Folders", systemImage: "folder", value: .folders) {
                     NavigationStack(path: $navigationManager.foldersPath) {
                         VStack(spacing: 0) {
-                            // Header is now handled inside FolderSectionView
-//                             if !viewModel.isSelectionMode {
-//                                headerView(title: "Folders")
-//                            }
+                             if !viewModel.isSelectionMode {
+                                headerView(title: "Folders")
+                            }
                             FolderSectionView(viewModel: viewModel)
-                                .ignoresSafeArea(edges: .top)
                                 .background {
                                     AppGlobalBackground()
                                         .allowsHitTesting(false)
