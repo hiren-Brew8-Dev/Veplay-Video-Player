@@ -75,7 +75,6 @@ class DashboardViewModel: ObservableObject {
     @Published var importCurrentIndex: Int = 0
     @Published var isShowingSearch: Bool = false
     @Published var homeSelectedTab: String = "Video"
-    @Published var navigationPath = NavigationPath()
     
     var allVideosAcrossFolders: [VideoItem] {
         func getVideos(from folder: Folder) -> [VideoItem] {
@@ -90,37 +89,6 @@ class DashboardViewModel: ObservableObject {
     
     var allGallerySearchableVideos: [VideoItem] {
         return allGalleryVideos.sorted { $0.creationDate > $1.creationDate }
-    }
-    
-    enum NavigationDestination: Hashable {
-        case allFolders
-        case folderDetail(Folder)
-        case search(contextTitle: String, initialVideos: [VideoItem]?)
-        
-        func hash(into hasher: inout Hasher) {
-            switch self {
-            case .allFolders: 
-                hasher.combine("allFolders")
-            case .folderDetail(let folder): 
-                hasher.combine(folder.id)
-            case .search(let title, let videos):
-                hasher.combine("search")
-                hasher.combine(title)
-                if let count = videos?.count {
-                    hasher.combine(count)
-                }
-            }
-        }
-        
-        static func == (lhs: NavigationDestination, rhs: NavigationDestination) -> Bool {
-            switch (lhs, rhs) {
-            case (.allFolders, .allFolders): return true
-            case (.folderDetail(let f1), .folderDetail(let f2)): return f1.id == f2.id
-            case (.search(let t1, let v1), .search(let t2, let v2)):
-                return t1 == t2 && v1 == v2
-            default: return false
-            }
-        }
     }
     
     // Data Sources
@@ -1772,6 +1740,37 @@ class DashboardViewModel: ObservableObject {
     }
     
     // MARK: - Helpers
+    
+    func requestPhotoPermission(completion: @escaping (Bool) -> Void) {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        
+        switch status {
+        case .authorized, .limited:
+            self.showPermissionDenied = false
+            fetchAssets()
+            fetchAlbums()
+            completion(true)
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] newStatus in
+                DispatchQueue.main.async {
+                    if newStatus == .authorized || newStatus == .limited {
+                        self?.showPermissionDenied = false
+                        self?.fetchAssets()
+                        self?.fetchAlbums()
+                        completion(true)
+                    } else {
+                        self?.showPermissionDenied = true
+                        completion(false)
+                    }
+                }
+            }
+        case .denied, .restricted:
+            self.showPermissionDenied = true
+            completion(false)
+        @unknown default:
+            completion(false)
+        }
+    }
     
     private func checkPhotoLibraryPermission() {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)

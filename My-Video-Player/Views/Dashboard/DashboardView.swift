@@ -29,8 +29,7 @@ struct DashboardView: View {
         !viewModel.isHeaderExpanded &&
         !viewModel.isTabBarHidden &&
         !viewModel.showActionSheet &&
-        viewModel.playingVideo == nil &&
-        viewModel.navigationPath.isEmpty
+        viewModel.playingVideo == nil
     }
     
 
@@ -39,59 +38,80 @@ struct DashboardView: View {
             TabView(selection: $viewModel.selectedTab) {
                 // MARK: Home (Videos)
                 Tab("Videos", systemImage: "play.circle", value: .home) {
-                    VStack(spacing: 0) {
-                        if !viewModel.isSelectionMode {
-                            headerView(title: "Videos")
-                        }
-                        VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
-                            .background {
-                                AppGlobalBackground()
-                                    .allowsHitTesting(false)
+                    NavigationStack(path: $navigationManager.homePath) {
+                        VStack(spacing: 0) {
+                            if !viewModel.isSelectionMode {
+                                headerView(title: "Videos")
                             }
+                            VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
+                                .background {
+                                    AppGlobalBackground()
+                                        .allowsHitTesting(false)
+                                }
+                        }
+                        .navigationDestination(for: NavigationDestination.self) { destination in
+                            destinationView(for: destination)
+                        }
                     }
                     .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
                 
                 // MARK: Gallery
                 Tab("Gallery", systemImage: "photo.on.rectangle", value: .gallery) {
-                    VStack(spacing: 0) {
-                        if !viewModel.isSelectionMode {
-                            headerView(title: "Gallery")
-                        }
-                        AlbumSectionView(viewModel: viewModel)
-                            .background {
-                                AppGlobalBackground()
-                                    .allowsHitTesting(false)
+                    NavigationStack(path: $navigationManager.galleryPath) {
+                        VStack(spacing: 0) {
+                            if !viewModel.isSelectionMode {
+                                headerView(title: "Gallery")
                             }
+                            AlbumSectionView(viewModel: viewModel)
+                                .background {
+                                    AppGlobalBackground()
+                                        .allowsHitTesting(false)
+                                }
+                        }
+                        .navigationDestination(for: NavigationDestination.self) { destination in
+                            destinationView(for: destination)
+                        }
                     }
                     .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
 
                 // MARK: Folders
                 Tab("Folders", systemImage: "folder", value: .folders) {
-                    VStack(spacing: 0) {
-                         if !viewModel.isSelectionMode {
-                            headerView(title: "Folders")
-                        }
-                        FolderSectionView(viewModel: viewModel)
-                            .background {
-                                AppGlobalBackground()
-                                    .allowsHitTesting(false)
+                    NavigationStack(path: $navigationManager.foldersPath) {
+                        VStack(spacing: 0) {
+                             if !viewModel.isSelectionMode {
+                                headerView(title: "Folders")
                             }
+                            FolderSectionView(viewModel: viewModel)
+                                .background {
+                                    AppGlobalBackground()
+                                        .allowsHitTesting(false)
+                                }
+                        }
+                        .navigationDestination(for: NavigationDestination.self) { destination in
+                            destinationView(for: destination)
+                        }
                     }
                     .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
                 
                 // MARK: Search
                 Tab(value: .search, role: .search) {
-                    SearchView(viewModel: viewModel)
-                        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+                    NavigationStack(path: $navigationManager.searchPath) {
+                        SearchView(viewModel: viewModel)
+                            .navigationDestination(for: NavigationDestination.self) { destination in
+                                destinationView(for: destination)
+                            }
+                    }
+                    .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
                 }
             }
             .accentColor(.homeAccent)
             .background(Color.clear)
-            .onChange(of: viewModel.selectedTab) { _ in
+            .onChange(of: viewModel.selectedTab) { oldTab, newTab in
                 HapticsManager.shared.selectionVibrate()
+                navigationManager.currentTab = newTab
             }
             
             
@@ -159,7 +179,7 @@ struct DashboardView: View {
     }
 
     @ViewBuilder
-    private func destinationView(for destination: DashboardViewModel.NavigationDestination) -> some View {
+    private func destinationView(for destination: NavigationDestination) -> some View {
         switch destination {
         case .allFolders:
             FolderSectionView(viewModel: viewModel)
@@ -167,6 +187,15 @@ struct DashboardView: View {
             FolderDetailView(initialFolder: folder, viewModel: viewModel)
         case .search(let title, let videos):
             SearchView(viewModel: viewModel, contextTitle: title, initialVideos: videos)
+        case .settings:
+            SettingsView()
+                .environmentObject(viewModel)
+        case .paywall(let isFromOnboarding):
+            PaywallView(isFromOnboarding: isFromOnboarding)
+        case .rating:
+            RatingView()
+        case .onboarding1, .onboarding2, .onboarding3, .onboarding4, .thanksForDownloading, .dashboard:
+            EmptyView() // These shouldn't usually be targets within a tab stack
         }
     }
 

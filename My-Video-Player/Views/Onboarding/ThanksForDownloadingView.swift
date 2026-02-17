@@ -9,7 +9,6 @@ import SwiftUI
 
 struct ThanksForDownloadingView: View {
     @EnvironmentObject var navManager: NavigationManager
-    @EnvironmentObject var viewModel: DashboardViewModel
     @AppStorage("isOnboardingCompleted") private var isOnboardingCompleted = false
     @State private var isAnimating = false
     
@@ -119,7 +118,6 @@ struct ThanksForDownloadingView: View {
                 Button(action: {
                     HapticsManager.shared.generate(.medium)
                     isOnboardingCompleted = true
-                    viewModel.loadData()
                     if !Global.shared.getIsUserPro() {
                         navManager.push(.paywall(isFromOnboarding: true))
                     } else {

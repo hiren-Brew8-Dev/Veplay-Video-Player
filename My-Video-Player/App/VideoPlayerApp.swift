@@ -32,33 +32,32 @@ struct VideoPlayerApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                NavigationStack(path: $navigationManager.path) {
-                    SplashView()
-                        .navigationDestination(for: NavigationDestination.self) { destination in
-                            switch destination {
-                            case .onboarding1: Onboarding1View()
-                            case .onboarding2: Onboarding2View()
-                            case .onboarding3: Onboarding3View()
-                            case .onboarding4: Onboarding4View()
-                            case .thanksForDownloading: ThanksForDownloadingView()
-                                .environmentObject(dashboardViewModel)
-                            case .paywall(let isFromOnboarding): PaywallView(isFromOnboarding: isFromOnboarding)
-                                .hideNavigationBar()
-                            case .rating: RatingView()
-                            case .dashboard: DashboardView()
-                                .environmentObject(dashboardViewModel)
-                                .hideNavigationBar()
-                            case .settings: SettingsView()
-                                .environmentObject(dashboardViewModel)
-                                .hideNavigationBar()
-                            case .allFolders: FolderSectionView(viewModel: dashboardViewModel)
-                                .hideNavigationBar()
-                            case .folderDetail(let folder): FolderDetailView(initialFolder: folder, viewModel: dashboardViewModel)
-                                .hideNavigationBar()
-                            case .search(let title, let videos): SearchView(viewModel: dashboardViewModel, contextTitle: title, initialVideos: videos)
-                                .hideNavigationBar()
+                if navigationManager.isDashboardRoot {
+                    DashboardView()
+                        .environmentObject(dashboardViewModel)
+                } else {
+                    NavigationStack(path: $navigationManager.path) {
+                        SplashView()
+                            .navigationDestination(for: NavigationDestination.self) { destination in
+                                switch destination {
+                                case .onboarding1: Onboarding1View()
+                                case .onboarding2: Onboarding2View()
+                                case .onboarding3: Onboarding3View()
+                                case .onboarding4: Onboarding4View()
+                                case .thanksForDownloading: ThanksForDownloadingView()
+                                    .environmentObject(dashboardViewModel)
+                                case .paywall(let isFromOnboarding): PaywallView(isFromOnboarding: isFromOnboarding)
+                                    .hideNavigationBar()
+                                case .rating: RatingView()
+                                case .dashboard: EmptyView() // Handled by root switching
+                                case .settings: SettingsView()
+                                    .environmentObject(dashboardViewModel)
+                                    .hideNavigationBar()
+                                case .allFolders, .folderDetail, .search:
+                                    EmptyView()
+                                }
                             }
-                        }
+                    }
                 }
                 
                 // Global Action Sheet Overlay
@@ -76,6 +75,7 @@ struct VideoPlayerApp: App {
             .environment(\.managedObjectContext, cdManager.container.viewContext)
             .environmentObject(navigationManager)
             .environmentObject(ratingViewModel)
+            .environmentObject(dashboardViewModel)
             .blur(radius: (useFaceID && !authService.isUnlocked) ? 15 : 0)
             .animation(.spring(), value: authService.isUnlocked)
             .onChange(of: scenePhase) { oldPhase, newPhase in

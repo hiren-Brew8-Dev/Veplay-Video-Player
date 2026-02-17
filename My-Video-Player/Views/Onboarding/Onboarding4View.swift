@@ -10,6 +10,8 @@ import Photos
 
 struct Onboarding4View: View {
     @EnvironmentObject var navManager: NavigationManager
+    @EnvironmentObject var viewModel: DashboardViewModel
+    
     @State private var isAnimating = false
     
     var body: some View {
@@ -123,8 +125,7 @@ struct Onboarding4View: View {
                 // MARK: - Action Button
                 Button(action: {
                     HapticsManager.shared.generate(.medium)
-                    UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
-                    navManager.push(.thanksForDownloading)
+                    checkPhotoPermission()
                 }) {
                     Text("Continue")
                         .appFont(.figtreeBold, size: isIpad ? 26 : 20)
@@ -147,9 +148,23 @@ struct Onboarding4View: View {
             isAnimating = true
         }
     }
+    
+    private func checkPhotoPermission() {
+        viewModel.requestPhotoPermission { _ in
+            // Even if denied, we proceed in onboarding to keep flow,
+            // but user won't see videos until they fix it in settings.
+            proceedToNext()
+        }
+    }
+    
+    private func proceedToNext() {
+        UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
+        navManager.push(.thanksForDownloading)
+    }
 }
 
 #Preview {
     Onboarding4View()
         .environmentObject(NavigationManager())
+        .environmentObject(DashboardViewModel())
 }

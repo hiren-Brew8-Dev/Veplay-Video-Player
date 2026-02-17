@@ -27,29 +27,106 @@ enum NavigationDestination: Hashable {
 
 final class NavigationManager: ObservableObject {
     @Published var path: [NavigationDestination] = []
+    @Published var isDashboardRoot: Bool = false
+    
+    // Per-tab paths for Dashboard
+    @Published var homePath: [NavigationDestination] = []
+    @Published var galleryPath: [NavigationDestination] = []
+    @Published var foldersPath: [NavigationDestination] = []
+    @Published var searchPath: [NavigationDestination] = []
+    
+    // Track current tab to know which path to use
+    @Published var currentTab: DashboardViewModel.MainTabs = .home
     
     // MARK: - Standard navigation helpers
     
     func push(_ destination: NavigationDestination) {
         print("🧭 push called:", destination)
         HapticsManager.shared.generate(.light)
-        guard path.last != destination else { return }
-        path.append(destination)
-        print("🧭 path now:", path)
+        
+        if destination == .dashboard {
+            setDashboardRoot()
+            return
+        }
+        
+        // If we are in the dashboard, use tab-specific paths
+        if isDashboardRoot {
+            pushToCurrentTab(destination)
+        } else {
+            // Global navigation (Onboarding, Splash, etc.)
+            guard path.last != destination else { return }
+            path.append(destination)
+        }
+    }
+    
+    func setDashboardRoot() {
+        print("🧭 Setting Dashboard as Root")
+        path.removeAll()
+        isDashboardRoot = true
+    }
+    
+    private func pushToCurrentTab(_ destination: NavigationDestination) {
+        switch currentTab {
+        case .home:
+            guard homePath.last != destination else { return }
+            homePath.append(destination)
+        case .gallery:
+            guard galleryPath.last != destination else { return }
+            galleryPath.append(destination)
+        case .folders:
+            guard foldersPath.last != destination else { return }
+            foldersPath.append(destination)
+        case .search:
+            guard searchPath.last != destination else { return }
+            searchPath.append(destination)
+        }
     }
 
     func push(_ destinations: [NavigationDestination]) {
-        path.append(contentsOf: destinations)
+        if isDashboardRoot {
+            switch currentTab {
+            case .home: homePath.append(contentsOf: destinations)
+            case .gallery: galleryPath.append(contentsOf: destinations)
+            case .folders: foldersPath.append(contentsOf: destinations)
+            case .search: searchPath.append(contentsOf: destinations)
+            }
+        } else {
+            path.append(contentsOf: destinations)
+        }
     }
     
     func pop() {
-        if !path.isEmpty {
+        if isDashboardRoot {
+            popFromCurrentTab()
+        } else if !path.isEmpty {
             path.removeLast()
         }
     }
     
+    private func popFromCurrentTab() {
+        switch currentTab {
+        case .home: if !homePath.isEmpty { homePath.removeLast() }
+        case .gallery: if !galleryPath.isEmpty { galleryPath.removeLast() }
+        case .folders: if !foldersPath.isEmpty { foldersPath.removeLast() }
+        case .search: if !searchPath.isEmpty { searchPath.removeLast() }
+        }
+    }
+    
     func popToRoot() {
-        path.removeAll()
+        if isDashboardRoot {
+            popToRootOfCurrentTab()
+        } else {
+            path.removeAll()
+        }
+    }
+    
+    func popToRootOfCurrentTab() {
+        switch currentTab {
+        case .home: homePath.removeAll()
+        case .gallery: galleryPath.removeAll()
+        case .folders: foldersPath.removeAll()
+        case .search: searchPath.removeAll()
+        }
     }
     
     func setPath(_ destinations: [NavigationDestination]) {
@@ -57,14 +134,41 @@ final class NavigationManager: ObservableObject {
     }
     
     func pop(to destination: NavigationDestination) {
-        guard let index = path.firstIndex(of: destination) else {
-            return
+        // Implementation for tab-specific pop if needed
+        if isDashboardRoot {
+            // Local pop logic
+            popLocally(to: destination)
+        } else {
+            guard let index = path.firstIndex(of: destination) else { return }
+            path = Array(path.prefix(index + 1))
         }
-        path = Array(path.prefix(index + 1))
+    }
+    
+    private func popLocally(to destination: NavigationDestination) {
+        switch currentTab {
+        case .home:
+            if let index = homePath.firstIndex(of: destination) {
+                homePath = Array(homePath.prefix(index + 1))
+            }
+        case .gallery:
+            if let index = galleryPath.firstIndex(of: destination) {
+                galleryPath = Array(galleryPath.prefix(index + 1))
+            }
+        case .folders:
+            if let index = foldersPath.firstIndex(of: destination) {
+                foldersPath = Array(foldersPath.prefix(index + 1))
+            }
+        case .search:
+            if let index = searchPath.firstIndex(of: destination) {
+                searchPath = Array(searchPath.prefix(index + 1))
+            }
+        }
     }
     
     // MARK: - Debug
     func debugPrintPath() {
-        print("🧭 Current Path: \(path)")
+        print("🧭 Current Global Path: \(path)")
+        print("🏠 Home Path: \(homePath)")
+        print("📁 Folders Path: \(foldersPath)")
     }
 }
