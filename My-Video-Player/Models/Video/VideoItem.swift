@@ -9,7 +9,8 @@ struct VideoItem: Identifiable, Hashable {
     let asset: PHAsset?
     var title: String
     var duration: TimeInterval
-    let creationDate: Date
+    var creationDate: Date // Actual video creation date (from metadata)
+    var importDate: Date   // When it was imported into the app
     let fileSizeBytes: Int64
     var thumbnailPath: URL?
     let url: URL?
@@ -43,12 +44,13 @@ struct VideoItem: Identifiable, Hashable {
         return false
     }
     
-    init(id: UUID = UUID(), asset: PHAsset? = nil, title: String, duration: TimeInterval, creationDate: Date, fileSizeBytes: Int64, thumbnailPath: URL? = nil, url: URL? = nil) {
+    init(id: UUID = UUID(), asset: PHAsset? = nil, title: String, duration: TimeInterval, creationDate: Date, importDate: Date? = nil, fileSizeBytes: Int64, thumbnailPath: URL? = nil, url: URL? = nil) {
         self.id = id
         self.asset = asset
         self.title = title
         self.duration = duration
         self.creationDate = creationDate
+        self.importDate = importDate ?? creationDate
         self.fileSizeBytes = fileSizeBytes
         self.thumbnailPath = thumbnailPath
         self.url = url

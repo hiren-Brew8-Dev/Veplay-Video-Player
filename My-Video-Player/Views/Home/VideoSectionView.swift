@@ -158,6 +158,11 @@ struct VideoSectionView: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             
+            Rectangle()
+                .fill(Color.white.opacity(0.15))
+                .frame(width: 1, height: 16)
+                .padding(.horizontal, 5)
+            
             // Sort Button
             Button(action: {
                 HapticsManager.shared.generate(.selection)
@@ -373,13 +378,13 @@ struct VideoSectionView: View {
                     deleteSelected()
                 })
                 
-                selectionBarItem(icon: "doc.on.doc", title: "Copy", action: {
+                selectionBarItem(icon: "doc.on.doc", title: "Copy to", action: {
                     HapticsManager.shared.generate(.medium)
                     viewModel.copyVideos(ids: viewModel.selectedVideoIds, isCut: false, sourceURL: viewModel.importedVideosDirectory)
                     viewModel.showMovePicker = true
                 })
 
-                selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: {
+                selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move to", action: {
                     HapticsManager.shared.generate(.medium)
                     viewModel.copyVideos(ids: viewModel.selectedVideoIds, isCut: true, sourceURL: viewModel.importedVideosDirectory)
                     viewModel.showMovePicker = true
@@ -563,27 +568,13 @@ struct VideoSectionView: View {
     }
     
     private func listView(isLandscape: Bool) -> some View {
-        LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+        LazyVStack(spacing: 12, pinnedViews: [.sectionHeaders]) {
             ForEach(viewModel.groupedImportedVideos) { section in
                 Section {
-                    VStack(spacing: 0) {
-                        ForEach(section.videos.indices, id: \.self) { index in
-                            videoRow(section.videos[index])
-                            
-                            if index < section.videos.count - 1 {
-                                Divider()
-                                    .background(Color.white.opacity(0.1))
-                                    .padding(.leading, 124)
-                            }
-                        }
+                    ForEach(section.videos) { video in
+                        videoRow(video)
+                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                     }
-                    .background(Color.premiumCardBackground)
-                    .cornerRadius(20)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.premiumCardBorder, lineWidth: 1)
-                    )
-                    .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                 } header: {
                     sectionHeader(for: section.date)
                 }
@@ -673,12 +664,12 @@ struct VideoSectionView: View {
             viewModel.shareVideo(item: video)
         }))
         
-        items.append(CustomActionItem(title: "Copy", icon: "doc.on.doc", role: nil, action: {
+        items.append(CustomActionItem(title: "Copy to", icon: "doc.on.doc", role: nil, action: {
             viewModel.copyVideos(ids: Set([video.id]), isCut: false, sourceURL: viewModel.importedVideosDirectory)
             viewModel.showMovePicker = true
         }))
         
-        items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
+        items.append(CustomActionItem(title: "Move to", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
             viewModel.copyVideos(ids: Set([video.id]), isCut: true, sourceURL: viewModel.importedVideosDirectory)
             viewModel.showMovePicker = true
         }))

@@ -84,11 +84,11 @@ class DashboardViewModel: ObservableObject {
     }
     
     var allLocalSearchableVideos: [VideoItem] {
-        return (importedVideos + allVideosAcrossFolders).sorted { $0.creationDate > $1.creationDate }
+        return (importedVideos + allVideosAcrossFolders).sorted { $0.importDate > $1.importDate }
     }
     
     var allGallerySearchableVideos: [VideoItem] {
-        return allGalleryVideos.sorted { $0.creationDate > $1.creationDate }
+        return allGalleryVideos.sorted { $0.importDate > $1.importDate }
     }
     
     // Data Sources
@@ -479,8 +479,8 @@ class DashboardViewModel: ObservableObject {
     private func sortVideos(_ items: [VideoItem], by option: SortOption) -> [VideoItem] {
         return items.sorted {
             switch option {
-            case .recents, .dateDesc: return $0.creationDate > $1.creationDate
-            case .dateAsc: return $0.creationDate < $1.creationDate
+            case .recents, .dateDesc: return $0.importDate > $1.importDate
+            case .dateAsc: return $0.importDate < $1.importDate
             case .nameAsc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
             case .nameDesc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending
             case .sizeDesc: return $0.fileSizeBytes > $1.fileSizeBytes
@@ -499,7 +499,7 @@ class DashboardViewModel: ObservableObject {
         switch currentSort {
         case .recents, .dateDesc, .dateAsc:
             let grouped = Dictionary(grouping: sorted) { video -> Date in
-                calendar.startOfDay(for: video.creationDate)
+                calendar.startOfDay(for: video.importDate)
             }
             
             let sortedDates = grouped.keys.sorted(by: { 
@@ -631,7 +631,7 @@ class DashboardViewModel: ObservableObject {
                         }
                         return getVideos(from: folder)
                     }
-                    self.backgroundFetchDurations(for: allFolderVideos)
+                    self.backgroundFetchMetadata(for: allFolderVideos)
                 }
             } catch {
                 print("Error loading folders: \(error)")
@@ -652,7 +652,7 @@ class DashboardViewModel: ObservableObject {
         let name = resourceValues.name ?? url.lastPathComponent
         
         // Scan for contents inside
-        let creationDate = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date()
+        let creationDate = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date()
         let lastAccessed = folderAccessTimes[url.path]
         
         guard let fileURLs = try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: resourceKeys, options: .skipsHiddenFiles) else {
@@ -728,6 +728,7 @@ class DashboardViewModel: ObservableObject {
             title: url.lastPathComponent,
             duration: duration,
             creationDate: creationDate,
+            importDate: creationDate, // For local files, the file date is the import date
             fileSizeBytes: size,
             thumbnailPath: nil,
             url: url
@@ -745,6 +746,7 @@ class DashboardViewModel: ObservableObject {
             title: VideoItem.titlePlaceholder, 
             duration: asset.duration,
             creationDate: asset.creationDate ?? Date(),
+            importDate: asset.creationDate ?? Date(), // Use capture date for Gallery sorting till it is imported
             fileSizeBytes: 0
         )
     }
@@ -1466,7 +1468,7 @@ class DashboardViewModel: ObservableObject {
             self.shareVideo(item: video)
         }))
         
-        items.append(CustomActionItem(title: "Copy", icon: "doc.on.doc", role: nil, action: {
+        items.append(CustomActionItem(title: "Copy to", icon: "doc.on.doc", role: nil, action: {
             self.copyVideos(ids: Set([video.id]), isCut: false, sourceURL: sourceURL, sourceAlbumId: sourceAlbumId)
             // Sheet is opened after a short delay to allow background state to settle
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -1474,7 +1476,7 @@ class DashboardViewModel: ObservableObject {
             }
         }))
         
-        items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
+        items.append(CustomActionItem(title: "Move to", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
             self.copyVideos(ids: Set([video.id]), isCut: true, sourceURL: sourceURL, sourceAlbumId: sourceAlbumId)
             // Sheet is opened after a short delay to allow background state to settle
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -1641,6 +1643,8 @@ class DashboardViewModel: ObservableObject {
                             print("⚡ Moved (instant): \(filename)")
                         } else {
                             try fileManager.copyItem(at: url, to: destinationURL)
+                            // Update creation date to 'now' to reflect arrival time in app
+                            try? fileManager.setAttributes([.creationDate: Date()], ofItemAtPath: destinationURL.path)
                             if let item = await self.videoItemAsync(from: destinationURL) {
                                 successfulItems.append(item)
                             }
@@ -1651,6 +1655,8 @@ class DashboardViewModel: ObservableObject {
                         if shouldMove {
                             do {
                                 try fileManager.copyItem(at: url, to: destinationURL)
+                                // Update creation date to 'now' to reflect arrival time in app
+                                try? fileManager.setAttributes([.creationDate: Date()], ofItemAtPath: destinationURL.path)
                                 if let item = await self.videoItemAsync(from: destinationURL) {
                                     successfulItems.append(item)
                                 }
@@ -1891,9 +1897,9 @@ class DashboardViewModel: ObservableObject {
                         self.isImporting = false
                     }
                     
-                    // Start background metadata fetching (Titles and Durations)
+                    // Start background metadata fetching (Titles, Durations, and Actual Creation Dates)
                     self.backgroundFetchTitles(for: loadedVideos)
-                    self.backgroundFetchDurations(for: loadedVideos)
+                    self.backgroundFetchMetadata(for: loadedVideos)
                     
                     // Pre-warm thumbnail cache in background
                     DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
@@ -1927,6 +1933,7 @@ class DashboardViewModel: ObservableObject {
             title: item.title ?? "Unknown",
             duration: item.duration,
             creationDate: item.timestamp ?? Date(),
+            importDate: item.timestamp ?? Date(), // Use stored timestamp as import date
             fileSizeBytes: item.fileSizeBytes,
             thumbnailPath: nil,
             url: videoURL
@@ -1968,42 +1975,62 @@ class DashboardViewModel: ObservableObject {
         }
     }
     
-    private func backgroundFetchDurations(for videos: [VideoItem]) {
-        let localVideos = videos.filter { $0.url != nil && ($0.duration <= 0 || $0.duration.isNaN) }
+    private func backgroundFetchMetadata(for videos: [VideoItem]) {
+        // We fetch for all local videos to ensure actual creation date is retrieved
+        let localVideos = videos.filter { $0.url != nil }
         guard !localVideos.isEmpty else { return }
         
         DispatchQueue.global(qos: .utility).async {
             for video in localVideos {
                 guard let url = video.url else { continue }
                 
-                // Check if VLC Format (basically anything not natively supported by AVAsset)
                 let ext = url.pathExtension.lowercased()
                 let nativeExtensions = ["mp4", "mov", "m4v"]
+                
                 if !nativeExtensions.contains(ext) {
-                    // Use Helper to fetch duration asynchronously via Delegate
+                    // VLC/Non-native: Only duration for now as metadata date extraction is tougher for these
                     let helper = VLCDurationHelper()
-                    // We need to keep a reference to helper until it finishes. 
-                    // Since we are in a loop in a background queue, we can't easily wait.
-                    // We will create a standalone Task or method to handle this life cycle.
-                    
                     Task {
                         let duration = await helper.fetchDuration(for: url)
                         if duration > 0 {
                             await MainActor.run {
-                                self.updateDuration(for: video.id, duration: duration)
+                                self.updateVideoMetadata(for: video.id, duration: duration, creationDate: nil)
                             }
                         }
                     }
                     continue
                 }
                 
-                // Native Formats
+                // Native Formats: Fetch Duration and Creation Date
                 let asset = AVURLAsset(url: url)
                 Task {
+                    var fetchedDuration: Double? = nil
+                    var fetchedDate: Date? = nil
+                    
+                    // 1. Load Duration
                     if let d = try? await asset.load(.duration) {
-                        let duration = CMTimeGetSeconds(d)
+                        fetchedDuration = CMTimeGetSeconds(d)
+                    }
+                    
+                    // 2. Load Creation Date from Metadata
+                    if let metadata = try? await asset.load(.metadata) {
+                        // Priority 1: Common Key Creation Date
+                        if let dateItem = AVMetadataItem.metadataItems(from: metadata, withKey: AVMetadataKey.commonKeyCreationDate, keySpace: .common).first,
+                           let dateString = dateItem.value as? String {
+                            fetchedDate = self.parseISO8601Date(dateString)
+                        }
+                        
+                        // Priority 2: QuickTime Creation Date
+                        if fetchedDate == nil,
+                           let dateItem = AVMetadataItem.metadataItems(from: metadata, withKey: AVMetadataKey.quickTimeMetadataKeyCreationDate, keySpace: .quickTimeMetadata).first,
+                           let dateString = dateItem.value as? String {
+                            fetchedDate = self.parseISO8601Date(dateString)
+                        }
+                    }
+                    
+                    if fetchedDuration != nil || fetchedDate != nil {
                         await MainActor.run {
-                            self.updateDuration(for: video.id, duration: duration)
+                            self.updateVideoMetadata(for: video.id, duration: fetchedDuration, creationDate: fetchedDate)
                         }
                     }
                 }
@@ -2011,17 +2038,56 @@ class DashboardViewModel: ObservableObject {
         }
     }
     
-    private func updateDuration(for id: UUID, duration: Double) {
-        if let index = self.importedVideos.firstIndex(where: { $0.id == id }) {
-            self.importedVideos[index].duration = duration
-        }
-        if let index = self.videos.firstIndex(where: { $0.id == id }) {
-            self.videos[index].duration = duration
+    private func parseISO8601Date(_ dateString: String) -> Date? {
+        let formatters = [
+            "yyyy-MM-dd'T'HH:mm:ssZ",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd"
+        ]
+        
+        for format in formatters {
+            let formatter = DateFormatter()
+            formatter.dateFormat = format
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            if let date = formatter.date(from: dateString) {
+                return date
+            }
         }
         
+        // Try ISO8601DateFormatter
+        let isoFormatter = ISO8601DateFormatter()
+        return isoFormatter.date(from: dateString)
+    }
+
+    private func updateVideoMetadata(for id: UUID, duration: Double?, creationDate: Date?) {
+        var didChange = false
+        
+        func updateItem(_ item: inout VideoItem) {
+            if let duration = duration, duration > 0 {
+                item.duration = duration
+                didChange = true
+            }
+            if let creationDate = creationDate {
+                item.creationDate = creationDate
+                didChange = true
+            }
+        }
+        
+        // Update in importedVideos
+        if let index = self.importedVideos.firstIndex(where: { $0.id == id }) {
+            updateItem(&self.importedVideos[index])
+        }
+        
+        // Update in master videos list
+        if let index = self.videos.firstIndex(where: { $0.id == id }) {
+            updateItem(&self.videos[index])
+        }
+        
+        // Update in folders recursively
         func updateFolderRecursively(_ folder: inout Folder) {
             if let vIndex = folder.videos.firstIndex(where: { $0.id == id }) {
-                folder.videos[vIndex].duration = duration
+                updateItem(&folder.videos[vIndex])
             }
             for i in 0..<folder.subfolders.count {
                 updateFolderRecursively(&folder.subfolders[i])
@@ -2032,7 +2098,11 @@ class DashboardViewModel: ObservableObject {
             updateFolderRecursively(&self.folders[i])
         }
         
-        self.objectWillChange.send()
+        if didChange {
+            // Trigger re-sorting if needed
+            self.updateGroupedVideos()
+            self.objectWillChange.send()
+        }
     }
     
     private func fetchAsset(for identifier: String?) -> PHAsset? {

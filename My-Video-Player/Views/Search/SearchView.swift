@@ -261,9 +261,8 @@ struct SearchView: View {
                     }
                     .padding(.horizontal, 15)
                 } else {
-                    LazyVStack(spacing: 0) {
-                        ForEach(filtered.indices, id: \.self) { index in
-                            let video = filtered[index]
+                    LazyVStack(spacing: 12) {
+                        ForEach(filtered) { video in
                             Button(action: {
                                 HapticsManager.shared.generate(.selection)
                                 isSearchFocused = false
@@ -282,21 +281,9 @@ struct SearchView: View {
                                 )
                             }
                             .buttonStyle(.scalable)
-                            
-                            if index < filtered.count - 1 {
-                                Divider()
-                                    .background(Color.white.opacity(0.1))
-                                    .padding(.leading, 124)
-                            }
+                            .padding(.horizontal, 10)
                         }
                     }
-                    .background(Color.premiumCardBackground)
-                    .cornerRadius(20)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.premiumCardBorder, lineWidth: 1)
-                    )
-                    .padding(.horizontal, 10)
                 }
             }
         }

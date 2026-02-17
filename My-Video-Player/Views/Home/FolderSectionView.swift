@@ -18,42 +18,42 @@ struct FolderSectionView: View {
             let safeAreaTop = geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top : (UIApplication.shared.windows.first?.safeAreaInsets.top ?? 47)
             
             ZStack {
+                foldersScrollView
+                    .safeAreaInset(edge: .top) {
+                        VStack(spacing: 0) {
+                            if viewModel.isSelectionMode {
+                                selectionHeader
+                                    .padding(.top, safeAreaTop)
+                            } else {
+                                mainHeader
+                                    .padding(.top, safeAreaTop)
+                                
+                                if !viewModel.folders.isEmpty {
+                                    // Utility Row (Sort, View Mode, Selection)
+                                    utilityRow
+                                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                                        .padding(.top, 0)
+                                        .padding(.bottom, 0)
+                                }
+                            }
+                        }
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(stops: [
+                                    .init(color: .black, location: 0.0),
+                                    .init(color: .black.opacity(0.7), location: 0.7),
+                                    .init(color: .black.opacity(0), location: 1.0)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .ignoresSafeArea(edges: .top)
+                        )
+                    }
+
                 if viewModel.folders.isEmpty && !viewModel.isInitialLoading {
                     emptyStateView
                         .padding(.top, 100)
-                } else {
-                    foldersScrollView
-                        .safeAreaInset(edge: .top) {
-                            VStack(spacing: 0) {
-                                if viewModel.isSelectionMode {
-                                    selectionHeader
-                                        .padding(.top, safeAreaTop)
-                                } else {
-                                    mainHeader
-                                        .padding(.top, safeAreaTop)
-                                    
-                                    if !viewModel.folders.isEmpty {
-                                        // Utility Row (Sort, View Mode, Selection)
-                                        utilityRow
-                                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-                                            .padding(.top, 0)
-                                            .padding(.bottom, 0)
-                                    }
-                                }
-                            }
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(stops: [
-                                        .init(color: .black, location: 0.0),
-                                        .init(color: .black.opacity(0.7), location: 0.7),
-                                        .init(color: .black.opacity(0), location: 1.0)
-                                    ]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                                .ignoresSafeArea(edges: .top)
-                            )
-                        }
                 }
                 
                 if viewModel.isSelectionMode {
@@ -234,6 +234,11 @@ struct FolderSectionView: View {
             }
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
+            
+            Rectangle()
+                .fill(Color.white.opacity(0.15))
+                .frame(width: 1, height: 16)
+                .padding(.horizontal, 5)
             
             // Sort Button
             Button(action: {
@@ -434,50 +439,36 @@ struct FolderSectionView: View {
     }
     
     private func foldersList(isLandscape: Bool) -> some View {
-        LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+        LazyVStack(spacing: 12, pinnedViews: [.sectionHeaders]) {
             ForEach(viewModel.groupedFolders) { section in
                 Section(header: sectionHeader(for: section.date)) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(section.folders.enumerated()), id: \.element.id) { index, folder in
-                            Button(action: {
-                                handleFolderTap(folder)
-                            }) {
-                                FolderRowView(
-                                    folder: folder,
-                                    viewModel: viewModel,
-                                    onMenuAction: {
-                                        viewModel.actionSheetTarget = .folder(folder)
-                                        viewModel.actionSheetItems = folderActions(for: folder)
-                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                            viewModel.showActionSheet = true
-                                        }
-                                    },
-                                    isSelectionMode: viewModel.isSelectionMode,
-                                    isSelected: viewModel.selectedFolderIds.contains(folder.id)
-                                )
-                            }
-                            .buttonStyle(.scalable)
-                            .id(folder.id)
-                            .simultaneousGesture(TapGesture().onEnded {
-                                if !viewModel.isSelectionMode {
-                                    viewModel.markFolderAsAccessed(folder)
-                                }
-                            })
-                            
-                            if index < section.folders.count - 1 {
-                                Divider()
-                                    .background(Color.white.opacity(0.1))
-                                    .padding(.leading, viewModel.isSelectionMode ? 120 : 80)
-                            }
+                    ForEach(section.folders) { folder in
+                        Button(action: {
+                            handleFolderTap(folder)
+                        }) {
+                            FolderRowView(
+                                folder: folder,
+                                viewModel: viewModel,
+                                onMenuAction: {
+                                    viewModel.actionSheetTarget = .folder(folder)
+                                    viewModel.actionSheetItems = folderActions(for: folder)
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                        viewModel.showActionSheet = true
+                                    }
+                                },
+                                isSelectionMode: viewModel.isSelectionMode,
+                                isSelected: viewModel.selectedFolderIds.contains(folder.id)
+                            )
                         }
+                        .buttonStyle(.scalable)
+                        .id(folder.id)
+                        .simultaneousGesture(TapGesture().onEnded {
+                            if !viewModel.isSelectionMode {
+                                viewModel.markFolderAsAccessed(folder)
+                            }
+                        })
+                        .padding(.horizontal, GridLayout.horizontalPadding)
                     }
-                    .background(Color.premiumCardBackground)
-                    .cornerRadius(20)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.premiumCardBorder, lineWidth: 1)
-                    )
-                    .padding(.horizontal, GridLayout.horizontalPadding)
                 }
             }
         }

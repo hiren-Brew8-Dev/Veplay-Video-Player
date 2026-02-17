@@ -75,23 +75,11 @@ struct FolderRowView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(
-            ZStack {
-                if viewModel?.highlightFolderId == folder.id {
-                    Color.orange.opacity(0.1)
-                } else {
-                    Color.homeBackground.opacity(0.001) // Capture taps
-                }
-            }
-        )
-        .cornerRadius(16)
+        .background(Color.premiumCardBackground)
+        .cornerRadius(20)
         .overlay(
-            Group {
-                if viewModel?.highlightFolderId == folder.id {
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.orange, lineWidth: 1)
-                }
-            }
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(viewModel?.highlightFolderId == folder.id ? Color.orange : Color.premiumCardBorder, lineWidth: 1)
         )
         .contentShape(Rectangle())
     }

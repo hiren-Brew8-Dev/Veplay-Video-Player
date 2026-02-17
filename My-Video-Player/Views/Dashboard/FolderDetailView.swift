@@ -60,8 +60,8 @@ struct FolderDetailView: View {
     var sortedVideos: [VideoItem] {
         let sorted = displayVideos.sorted {
             switch sortOption {
-            case .recents, .dateDesc: return $0.creationDate > $1.creationDate
-            case .dateAsc: return $0.creationDate < $1.creationDate
+            case .recents, .dateDesc: return $0.importDate > $1.importDate
+            case .dateAsc: return $0.importDate < $1.importDate
             case .nameAsc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
             case .nameDesc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending
             case .sizeDesc: return $0.fileSizeBytes > $1.fileSizeBytes
@@ -250,6 +250,11 @@ struct FolderDetailView: View {
             }
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
+            
+            Rectangle()
+                .fill(Color.white.opacity(0.15))
+                .frame(width: 1, height: 16)
+                .padding(.horizontal, 5)
             
             // Sort Button
             Button(action: {
@@ -463,24 +468,11 @@ struct FolderDetailView: View {
                     // ALBUM MODE: Show Date Sections
                     ForEach(groupedVideos, id: \.id) { section in
                         Section {
-                            VStack(spacing: 0) {
-                                ForEach(section.videos.indices, id: \.self) { index in
-                                    videoRow(liveVideo(section.videos[index]))
-                                    
-                                    if index < section.videos.count - 1 {
-                                        Divider()
-                                            .background(Color.white.opacity(0.1))
-                                            .padding(.leading, 124)
-                                    }
-                                }
+                            ForEach(section.videos, id: \.id) { video in
+                                videoRow(liveVideo(video))
+                                    .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                                    .padding(.bottom, 12)
                             }
-                            .background(Color.premiumCardBackground)
-                            .cornerRadius(20)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.premiumCardBorder, lineWidth: 1)
-                            )
-                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                         } header: {
                             sectionHeader(for: section.date)
                         }
@@ -488,24 +480,11 @@ struct FolderDetailView: View {
                 } else {
                     // Video list - ALL in ONE section card
                     Section {
-                        VStack(spacing: 0) {
-                            ForEach(sortedVideos.indices, id: \.self) { index in
-                                videoRow(liveVideo(sortedVideos[index]))
-                                
-                                if index < sortedVideos.count - 1 {
-                                    Divider()
-                                        .background(Color.white.opacity(0.1))
-                                        .padding(.leading, 124)
-                                }
-                            }
+                        ForEach(sortedVideos, id: \.id) { video in
+                            videoRow(liveVideo(video))
+                                .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                                .padding(.bottom, 12)
                         }
-                        .background(Color.premiumCardBackground)
-                        .cornerRadius(20)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.premiumCardBorder, lineWidth: 1)
-                        )
-                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                     }
                 }
             }
@@ -580,14 +559,14 @@ struct FolderDetailView: View {
                     deleteSelected()
                 })
                 
-                selectionBarItem(icon: "doc.on.doc", title: "Copy", action: {
+                selectionBarItem(icon: "doc.on.doc", title: "Copy to", action: {
                     HapticsManager.shared.generate(.medium)
                     viewModel.copyVideos(ids: selectedVideoIds, isCut: false, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
                     viewModel.showMovePicker = true
                 })
 
                 if folder.albumIdentifier == nil {
-                    selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move", action: {
+                    selectionBarItem(icon: "arrow.right.doc.on.clipboard", title: "Move to", action: {
                         HapticsManager.shared.generate(.medium)
                         viewModel.copyVideos(ids: selectedVideoIds, isCut: true, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
                         viewModel.showMovePicker = true
@@ -686,7 +665,7 @@ struct FolderDetailView: View {
     var groupedVideos: [VideoSection] {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: displayVideos) { video -> Date in
-            calendar.startOfDay(for: video.creationDate)
+            calendar.startOfDay(for: video.importDate)
         }
         let sortedDates = grouped.keys.sorted {
             return (sortOption == .dateAsc) ? $0 < $1 : $0 > $1
@@ -695,9 +674,9 @@ struct FolderDetailView: View {
             let videosInDate = grouped[date] ?? []
             let sortedInDate = videosInDate.sorted { v1, v2 in
                 if sortOption == .dateAsc {
-                    return v1.creationDate < v2.creationDate
+                    return v1.importDate < v2.importDate
                 } else {
-                    return v1.creationDate > v2.creationDate
+                    return v1.importDate > v2.importDate
                 }
             }
             return VideoSection(date: date, videos: sortedInDate)
@@ -719,13 +698,13 @@ struct FolderDetailView: View {
             viewModel.shareVideo(item: video)
         }))
         
-        items.append(CustomActionItem(title: "Copy", icon: "doc.on.doc", role: nil, action: {
+        items.append(CustomActionItem(title: "Copy to", icon: "doc.on.doc", role: nil, action: {
             viewModel.copyVideos(ids: Set([video.id]), isCut: false, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
             viewModel.showMovePicker = true
         }))
         
         if folder.albumIdentifier == nil {
-            items.append(CustomActionItem(title: "Move", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
+            items.append(CustomActionItem(title: "Move to", icon: "arrow.right.doc.on.clipboard", role: nil, action: {
                 viewModel.copyVideos(ids: Set([video.id]), isCut: true, sourceURL: folder.url, sourceAlbumId: folder.albumIdentifier)
                 viewModel.showMovePicker = true
             }))

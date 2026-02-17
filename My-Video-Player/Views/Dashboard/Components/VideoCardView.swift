@@ -115,7 +115,7 @@ struct VideoCardView: View {
                                 .cornerRadius(8)
                         }
                         
-                        Text("\(formatDate(video.creationDate)) • \(formatBytes(video.fileSizeBytes))")
+                        Text("\(formatDate(video.importDate)) • \(formatBytes(video.fileSizeBytes))")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.white.opacity(0.8))
                             .lineLimit(1)

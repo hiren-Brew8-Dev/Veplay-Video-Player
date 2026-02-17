@@ -72,7 +72,7 @@ struct VideoRowView: View {
                     .truncationMode(.tail)
                 
                 HStack(spacing: 4) {
-                    Text(formattedDate(video.creationDate))
+                    Text(formattedDate(video.importDate))
                     if video.asset == nil { // Only show file size for imported/local videos
                         Text("•")
                         Text(formatBytes(video.fileSizeBytes))
@@ -98,7 +98,12 @@ struct VideoRowView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color.homeBackground.opacity(0.001)) // Foolproof tap capture
+        .background(Color.premiumCardBackground)
+        .cornerRadius(20)
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.premiumCardBorder, lineWidth: 1)
+        )
         .contentShape(Rectangle())
         .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.02 : 1.0)
         .animation(.spring(), value: viewModel?.highlightVideoId)

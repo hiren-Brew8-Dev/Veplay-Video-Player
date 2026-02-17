@@ -263,7 +263,7 @@ import UIKit
         }
     }
     
-    @MainActor @Published var playingMode: PlayingMode = .playInOrder
+    @MainActor @Published var playingMode: PlayingMode = .oneTrack
 
     @MainActor
     func performDoubleTapSeek(forward: Bool) {
