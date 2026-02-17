@@ -14,29 +14,51 @@ struct FolderSectionView: View {
     @State private var showDeleteSelectedAlert = false
     
     var body: some View {
-        ZStack {
-            VStack(spacing: 0) {
-                if viewModel.isSelectionMode {
-                    selectionHeader
-                } else if !viewModel.folders.isEmpty {
-                    Divider()
-                        .background(Color.white.opacity(0.1))
-                    
-                    utilityRow
-                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-                        .padding(.top, 10)
-                        .padding(.bottom, 10)
-                }
-                
-                if viewModel.folders.isEmpty {
+        GeometryReader { geometry in
+            let safeAreaTop = geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top : (UIApplication.shared.windows.first?.safeAreaInsets.top ?? 47)
+            
+            ZStack {
+                if viewModel.folders.isEmpty && !viewModel.isInitialLoading {
                     emptyStateView
+                        .padding(.top, 100)
                 } else {
                     foldersScrollView
+                        .safeAreaInset(edge: .top) {
+                            VStack(spacing: 0) {
+                                if viewModel.isSelectionMode {
+                                    selectionHeader
+                                        .padding(.top, safeAreaTop)
+                                } else {
+                                    mainHeader
+                                        .padding(.top, safeAreaTop)
+                                    
+                                    if !viewModel.folders.isEmpty {
+                                        // Utility Row (Sort, View Mode, Selection)
+                                        utilityRow
+                                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                                            .padding(.top, 0)
+                                            .padding(.bottom, 0)
+                                    }
+                                }
+                            }
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(stops: [
+                                        .init(color: .black, location: 0.0),
+                                        .init(color: .black.opacity(0.7), location: 0.7),
+                                        .init(color: .black.opacity(0), location: 1.0)
+                                    ]),
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                                .ignoresSafeArea(edges: .top)
+                            )
+                        }
                 }
-            }
-            
-            if viewModel.isSelectionMode {
-                selectionActionBar
+                
+                if viewModel.isSelectionMode {
+                    selectionActionBar
+                }
             }
         }
         .alert("Rename Folder", isPresented: $viewModel.showRenameFolderAlert) {
@@ -148,55 +170,53 @@ struct FolderSectionView: View {
         .background(Color.clear)
     }
 
-    private var selectionActionBar: some View {
-        VStack(spacing: 0) {
+    private var mainHeader: some View {
+        HStack(spacing: 0) {
+            Text("Folders")
+                .font(.system(size: AppDesign.Icons.headerSize + 4, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.leading, AppDesign.Icons.horizontalPadding)
+            
             Spacer()
-            HStack(spacing: 0) {
+            
+            HStack(spacing: isIpad ? 20 : 5) {
                 Button(action: {
                     HapticsManager.shared.generate(.medium)
-                    showDeleteSelectedAlert = true
+                    navigationManager.push(.settings)
                 }) {
-                    VStack(spacing: 8) {
-                        ZStack {
-                            Circle()
-                                .fill(viewModel.selectedFolderIds.isEmpty ? Color.white.opacity(0.05) : Color.orange.opacity(0.1))
-                                .frame(width: isIpad ? 60 : 44, height: isIpad ? 60 : 44)
-                            
-                            Image(systemName: "trash")
-                                .font(.system(size: isIpad ? 28 : 20, weight: .semibold))
-                                .foregroundColor(viewModel.selectedFolderIds.isEmpty ? .white.opacity(0.3) : .orange)
-                        }
-                        
-                        Text("Delete")
-                            .font(.system(size: isIpad ? 14 : 11, weight: .bold))
-                            .foregroundColor(viewModel.selectedFolderIds.isEmpty ? .white.opacity(0.3) : .white)
+                    ZStack {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: isIpad ? 22 : 18, weight: .medium))
+                            .frame(width: 30, height: 30)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
                 }
-                .disabled(viewModel.selectedFolderIds.isEmpty)
-                .opacity(viewModel.selectedFolderIds.isEmpty ? 0.5 : 1.0)
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                
+                if !Global.shared.getIsUserPro() {
+                    Button {
+                        HapticsManager.shared.generate(.medium)
+                        navigationManager.push(.paywall(isFromOnboarding: false))
+                    } label: {
+                        ZStack {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: isIpad ? 20 : 18, weight: .medium))
+                                .foregroundColor(.black)
+                                .frame(width: 30, height: 30)
+                        }
+                    }
+                    .buttonSizing(.automatic)
+                    .buttonStyle(.glassProminent)
+                    .buttonBorderShape(.circle)
+                    .tint(.premiumIconBackground)
+                }
             }
-            .padding(.top, isIpad ? 20 : 12)
-            .padding(.bottom, max(10, UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0))
-            
-            .background(Color.homeSheetBackground)
-            
-            .overlay(
-                VStack {
-                    Rectangle()
-                        .fill(Color.premiumCardBorder)
-                        .frame(height: 1)
-                    Spacer()
-                }
-            )
-            .clipShape(RoundedCorner(radius: 32, corners: [.topLeft, .topRight]))
-            .shadow(color: Color.black.opacity(0.3), radius: 15, x: 0, y: -5)
+            .padding(.trailing, AppDesign.Icons.horizontalPadding)
         }
-        .ignoresSafeArea(.all, edges: .bottom)
-        .transition(.move(edge: .bottom))
+        .frame(height: AppDesign.Icons.headerHeight)
+        .padding(.vertical, 10)
     }
-    
+
     private var utilityRow: some View {
         HStack(spacing: isIpad ? 12 : 8) {
             // Selection Mode (Leading)
@@ -206,16 +226,14 @@ struct FolderSectionView: View {
                     viewModel.isSelectionMode = true
                 }
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.1))
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: "pencil")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                }
+                Image("pencil")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                    .frame(width: 30, height: 30)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
             
             // Sort Button
             Button(action: {
@@ -230,12 +248,11 @@ struct FolderSectionView: View {
                     Text("Sort by")
                         .font(.system(size: 14, weight: .medium))
                 }
-                .padding(.horizontal, 16)
-                .frame(height: 40)
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(20)
-                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .frame(height: 30)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.capsule)
             
             Spacer()
             
@@ -246,16 +263,12 @@ struct FolderSectionView: View {
                     viewModel.isGridView.toggle()
                 }
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.1))
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: viewModel.isGridView ? "list.bullet" : "square.grid.2x2")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: viewModel.isGridView ? "list.bullet" : "square.grid.2x2")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 30, height: 30)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
         }
     }
     
@@ -321,15 +334,13 @@ struct FolderSectionView: View {
             
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 20) {
-                    Group {
-                        if viewModel.isGridView {
-                            foldersGrid(isLandscape: isLandscape, currentWidth: currentWidth)
-                        } else {
-                            foldersList(isLandscape: isLandscape)
-                        }
+                    if viewModel.isGridView {
+                        foldersGrid(isLandscape: isLandscape, currentWidth: currentWidth)
+                    } else {
+                        foldersList(isLandscape: isLandscape)
                     }
-                    .padding(.top, 0)
                 }
+                .padding(.top, 20)
                 .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
             }
             .scrollBounceBehavior(.basedOnSize)

@@ -47,7 +47,7 @@ struct VideoSectionView: View {
                     }
                     .scrollBounceBehavior(.basedOnSize)
                     .safeAreaInset(edge: .top) {
-                        VStack(spacing: 0) {
+                        VStack(spacing: 5) {
                             if viewModel.isSelectionMode {
                                 selectionHeader
                                     .padding(.top, safeAreaTop)

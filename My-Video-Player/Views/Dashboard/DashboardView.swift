@@ -84,10 +84,12 @@ struct DashboardView: View {
                 Tab("Folders", systemImage: "folder", value: .folders) {
                     NavigationStack(path: $navigationManager.foldersPath) {
                         VStack(spacing: 0) {
-                             if !viewModel.isSelectionMode {
-                                headerView(title: "Folders")
-                            }
+                            // Header is handled inside FolderSectionView
+//                            if !viewModel.isSelectionMode {
+//                                 headerView(title: "Folders")
+//                             }
                             FolderSectionView(viewModel: viewModel)
+                                .ignoresSafeArea(edges: .top)
                                 .background {
                                     AppGlobalBackground()
                                         .allowsHitTesting(false)
