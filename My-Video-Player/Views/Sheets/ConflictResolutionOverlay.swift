@@ -11,6 +11,7 @@ struct ConflictResolutionOverlay: View {
                     .transition(.opacity)
                 
                 ConflictResolutionView(viewModel: viewModel, conflict: conflict)
+                    .id(conflict.id)
                     .transition(AnyTransition.scale.combined(with: .opacity))
                     .zIndex(300)
             }

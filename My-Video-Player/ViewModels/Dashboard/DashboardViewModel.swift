@@ -1279,6 +1279,10 @@ class DashboardViewModel: ObservableObject {
                 // We don't remove from pending loop here safely, so just let the queue finish
             }
             
+            // Clear pending since we've handled all
+            pendingPasteItems.removeAll()
+            pendingPasteNames.removeAll()
+
             // Clear queue effectively
             conflictQueue.removeAll()
             currentConflict = nil
@@ -1353,7 +1357,8 @@ class DashboardViewModel: ObservableObject {
                 let pName = pendingImportNames[pIndex]
                 
                 switch action {
-                case .skip: break
+                case .skip:
+                    break
                 case .replace:
                     processedImportURLs.append(pURL)
                     processedImportNames.append(pName)
@@ -1373,6 +1378,11 @@ class DashboardViewModel: ObservableObject {
                     processedImportNames.append(uniqueName)
                 }
             }
+            
+            // Clear pending since we've handled all
+            pendingImportURLs.removeAll()
+            pendingImportNames.removeAll()
+            
             conflictQueue.removeAll()
             currentConflict = nil
             showConflictResolution = false
@@ -2535,7 +2545,11 @@ extension DashboardViewModel {
         // Start session immediately
         self.startImportSession(count: totalCount)
         
-        Task.detached(priority: .userInitiated) {
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
+            
+            var collectedURLs: [URL] = []
+            var collectedNames: [String] = []
             
             for (index, item) in items.enumerated() {
                 // 1. Resolve Filename (Background)
@@ -2548,56 +2562,43 @@ extension DashboardViewModel {
                     }
                 }
                 
-                // 2. Setup Live Progress Reporting (Simulated)
+                // 2. Setup Live Progress Reporting
                 await MainActor.run {
                     self.importCurrentIndex = index + 1
-                    self.importStatusMessage = "Preparing inputs..."
+                    self.importStatusMessage = "Preparing items..."
                     self.importProgress = Double(index) / Double(totalCount)
                 }
                 
-                // Start a background task to simulate progress for the download/export phase
                 let progressTask = Task {
                     var simulatedProgress = 0.0
-                    // Increment progress every 100ms
                     while !Task.isCancelled && simulatedProgress < 0.9 {
-                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
-                        simulatedProgress += 0.01 // +1%
-                        
-                        // Update UI on MainActor
+                        try? await Task.sleep(nanoseconds: 100_000_000)
+                        simulatedProgress += 0.01
                         await MainActor.run {
                             let base = Double(index) / Double(totalCount)
                             let currentItemContribution = simulatedProgress * (1.0 / Double(totalCount))
                             self.importProgress = min(base + currentItemContribution, Double(index + 1) / Double(totalCount) - 0.01)
-                            self.importStatusMessage = "Downloading: \(Int(simulatedProgress * 100))%"
+                            self.importStatusMessage = "Exporting: \(Int(simulatedProgress * 100))%"
                         }
                     }
                 }
                 
-                // 3. Load Transferable (Heavy I/O)
+                // 3. Load Transferable
                 if let movie = try? await item.loadTransferable(type: VideoTransferable.self) {
-                    progressTask.cancel() // Stop the simulator
-                    
-                    // 4. Update UI: Finalizing
-                    await MainActor.run {
-                        self.importStatusMessage = "Finalizing: \(fileName ?? movie.url.lastPathComponent)"
-                    }
-                    
-                    // 5. Perform Import (using conflict flow)
-                    self.initiateImportFlow(urls: [movie.url], names: [fileName ?? movie.url.lastPathComponent])
-                    
-                    // 6. Item Complete
-                    await MainActor.run {
-                        self.importProgress = Double(index + 1) / Double(totalCount)
-                    }
+                    progressTask.cancel()
+                    collectedURLs.append(movie.url)
+                    collectedNames.append(fileName ?? movie.url.lastPathComponent)
                 } else {
                     progressTask.cancel()
-                    print("Failed to load transferable for item \(index)")
                 }
             }
             
-            // Finalize
+            // Finalize Session and Start Conflict Flow
             await MainActor.run {
                 self.finalizeImportSession()
+                if !collectedURLs.isEmpty {
+                    self.initiateImportFlow(urls: collectedURLs, names: collectedNames)
+                }
             }
         }
     }

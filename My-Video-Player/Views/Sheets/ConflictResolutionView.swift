@@ -72,18 +72,36 @@ struct ConflictResolutionView: View {
             // Apply to all
             if viewModel.conflictQueue.count > 1 {
                 Button(action: {
-                    applyToAll.toggle()
+                    HapticsManager.shared.generate(.selection)
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        applyToAll.toggle()
+                    }
                 }) {
-                    HStack {
-                        Image(systemName: applyToAll ? "checkmark.square.fill" : "square")
-                            .font(.system(size: 20))
-                            .foregroundColor(applyToAll ? .blue : .white.opacity(0.5))
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1.5)
+                                .frame(width: 22, height: 22)
+                            
+                            if applyToAll {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.blue)
+                                    .frame(width: 22, height: 22)
+                                
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                        }
                         
                         Text("Apply to all remaining conflicts")
                             .font(.system(size: 16))
-                            .foregroundColor(.white)
+                            .foregroundColor(.white.opacity(0.9))
                     }
+                    .padding(.vertical, 8)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .padding(.bottom, 8)
             }
             
@@ -136,8 +154,9 @@ struct ConflictResolutionView: View {
         .shadow(color: Color.black.opacity(0.5), radius: 20, x: 0, y: 10)
         .frame(maxWidth: 400)
         .padding(.horizontal, 20)
-        .task {
+        .task(id: conflict.id) {
             // Load thumbnail
+            self.thumbnail = nil
             await loadThumbnail()
         }
     }
