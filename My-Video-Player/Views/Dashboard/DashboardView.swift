@@ -62,10 +62,12 @@ struct DashboardView: View {
                 Tab("Gallery", systemImage: "photo.on.rectangle", value: .gallery) {
                     NavigationStack(path: $navigationManager.galleryPath) {
                         VStack(spacing: 0) {
-                            if !viewModel.isSelectionMode {
-                                headerView(title: "Gallery")
-                            }
+                            // Header is handled inside AlbumSectionView
+//                            if !viewModel.isSelectionMode {
+//                                headerView(title: "Gallery")
+//                            }
                             AlbumSectionView(viewModel: viewModel)
+                                .ignoresSafeArea(edges: .top)
                                 .background {
                                     AppGlobalBackground()
                                         .allowsHitTesting(false)

@@ -152,7 +152,7 @@ struct VideoSectionView: View {
                 Image("pencil")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 16, height: 16)
+                    .frame(width: 20, height: 20)
                     .frame(width: 30, height: 30)
             }
             .buttonStyle(.glass)
