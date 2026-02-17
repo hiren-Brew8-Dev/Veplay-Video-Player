@@ -133,16 +133,12 @@ struct VideoSectionView: View {
                     viewModel.isSelectionMode = true
                 }
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.1))
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: "pencil")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: "pencil")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 30, height: 30)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
             
             // Sort Button
             Button(action: {
@@ -153,17 +149,15 @@ struct VideoSectionView: View {
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.up.arrow.down")
-                    // ... (rest of content)
                         .font(.system(size: 14, weight: .semibold))
                     Text("Sort by")
                         .font(.system(size: 14, weight: .medium))
                 }
-                .padding(.horizontal, 16)
-                .frame(height: 40)
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(20)
-                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .frame(height: 30)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.capsule)
             
             Spacer()
             
@@ -174,18 +168,15 @@ struct VideoSectionView: View {
                     viewModel.isGridView.toggle()
                 }
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.1))
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: viewModel.isGridView ? "list.bullet" : "square.grid.2x2")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: viewModel.isGridView ? "list.bullet" : "square.grid.2x2")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 30, height: 30)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
         }
     }
+
     
     // Previous Folders Code Removed
 
