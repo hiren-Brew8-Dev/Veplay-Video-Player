@@ -260,48 +260,55 @@ struct FolderSectionView: View {
     }
     
     private var emptyStateView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 24) {
             Spacer()
             ZStack {
                 Circle()
                     .fill(Color.white.opacity(0.05))
-                    .frame(width: 120, height: 120)
+                    .frame(width: 100, height: 100)
                 
                 Image(systemName: "folder.badge.plus")
-                    .font(.system(size: 50))
+                    .font(.system(size: 40))
                     .foregroundColor(.white.opacity(0.2))
             }
             
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Text("No folders yet")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white)
                 
                 Text("Create a folder to organize your videos")
-                    .font(.system(size: 15))
+                    .font(.system(size: 14))
                     .foregroundColor(.white.opacity(0.5))
+                    .multilineTextAlignment(.center)
             }
+            .padding(.horizontal, 40)
             
             Button(action: {
                 HapticsManager.shared.generate(.medium)
                 viewModel.showCreateFolderAlert = true
             }) {
-                Text("Create Folder")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 30)
-                    .padding(.vertical, 12)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+                HStack(spacing: 8) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .bold))
+                    Text("Create Folder")
+                        .font(.system(size: 16, weight: .bold))
+                }
+                .foregroundColor(.black)
+                .padding(.horizontal, 40)
+                .padding(.vertical, 16)
+                .background(
+                    LinearGradient(
+                        colors: [Color.homeAccent, Color.homeAccent.opacity(0.8)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
-                    .cornerRadius(25)
+                )
+                .cornerRadius(30)
             }
-            .padding(.top, 10)
+            .padding(.top, 8)
             
+            Spacer()
             Spacer()
         }
         .frame(maxWidth: .infinity)

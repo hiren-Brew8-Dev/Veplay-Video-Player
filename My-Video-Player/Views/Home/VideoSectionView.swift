@@ -43,36 +43,34 @@ struct VideoSectionView: View {
                             .padding(.bottom, 10)
                     }
                     
-                    ScrollViewReader { proxy in
-                        ScrollView(showsIndicators: false) {
-                            VStack(spacing: 24) {
-                                // Content Start
-                                
-                                // Imported Videos Section
-                                if viewModel.importedVideos.isEmpty && !viewModel.isImporting && !viewModel.isInitialLoading {
-                                    emptyStateView
-                                        .frame(minHeight: geometry.size.height * 0.6)
-                                } else if !viewModel.isInitialLoading || !viewModel.importedVideos.isEmpty {
-                                   
-                                    if viewModel.isGridView {
-                                        videosGrid(isLandscape: isLandscape, width: currentWidth)
-                                    } else {
-                                        listView(isLandscape: isLandscape)
+                    if viewModel.importedVideos.isEmpty && !viewModel.isImporting && !viewModel.isInitialLoading {
+                        emptyStateView
+                    } else {
+                        ScrollViewReader { proxy in
+                            ScrollView(showsIndicators: false) {
+                                VStack(spacing: 24) {
+                                    if !viewModel.isInitialLoading || !viewModel.importedVideos.isEmpty {
+                                        if viewModel.isGridView {
+                                            videosGrid(isLandscape: isLandscape, width: currentWidth)
+                                        } else {
+                                            listView(isLandscape: isLandscape)
+                                        }
                                     }
                                 }
+                                .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
                             }
-                            .padding(.bottom, viewModel.isSelectionMode ? 140 : 100)
-                        }
-                        .scrollBounceBehavior(.basedOnSize)
-                        .onChange(of: viewModel.highlightVideoId) { oldId, newId in
-                            if let id = newId {
-                                withAnimation(.spring()) {
-                                    proxy.scrollTo(id, anchor: .center)
+                            .scrollBounceBehavior(.basedOnSize)
+                            .onChange(of: viewModel.highlightVideoId) { oldId, newId in
+                                if let id = newId {
+                                    withAnimation(.spring()) {
+                                        proxy.scrollTo(id, anchor: .center)
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                .frame(width: geometry.size.width, height: geometry.size.height)
                 
                 if viewModel.isSelectionMode {
                     selectionActionBar
@@ -377,13 +375,15 @@ struct VideoSectionView: View {
     
     private var emptyStateView: some View {
         VStack(spacing: 24) {
+            Spacer()
+            
             ZStack {
                 Circle()
                     .fill(Color.white.opacity(0.05))
                     .frame(width: 100, height: 100)
                 
                 Image(systemName: "video.slash")
-                    .font(.system(size: 44))
+                    .font(.system(size: 40))
                     .foregroundColor(.white.opacity(0.2))
             }
             
@@ -435,13 +435,14 @@ struct VideoSectionView: View {
                         )
                     )
                     .cornerRadius(30)
-//                    .shadow(color: Color.homeAccent.opacity(0.4), radius: 15, x: 0, y: 8)
                 }
                 .padding(.top, 8)
             }
+            
+            Spacer()
+            Spacer()
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 20)
     }
     
     

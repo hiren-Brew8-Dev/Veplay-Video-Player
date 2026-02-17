@@ -17,7 +17,6 @@ struct AlbumSectionView: View {
                 if viewModel.galleryAlbums.isEmpty {
                     VStack(spacing: 0) {
                         Spacer()
-                            .frame(height: 80)
                         
                         VStack(spacing: 24) {
                             ZStack {
@@ -26,7 +25,7 @@ struct AlbumSectionView: View {
                                     .frame(width: 100, height: 100)
                                 
                                 Image(systemName: viewModel.showPermissionDenied ? "photo.on.rectangle.angled" : "video.slash")
-                                    .font(.system(size: 44))
+                                    .font(.system(size: 40))
                                     .foregroundColor(.white.opacity(0.2))
                             }
                             
@@ -65,7 +64,6 @@ struct AlbumSectionView: View {
                                             )
                                         )
                                         .cornerRadius(30)
-//                                        .shadow(color: Color.homeAccent.opacity(0.4), radius: 15, x: 0, y: 8)
                                 }
                                 .buttonStyle(.scalable)
                                 .padding(.top, 8)
@@ -73,8 +71,10 @@ struct AlbumSectionView: View {
                         }
                         
                         Spacer()
+                        Spacer()
                     }
-                } else {
+                }
+ else {
                     ScrollView(showsIndicators: false) {
                         LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
                             ForEach(viewModel.galleryAlbums, id: \.localIdentifier) { album in
