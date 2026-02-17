@@ -20,7 +20,7 @@ struct FolderSectionView: View {
             ZStack {
                 foldersScrollView
                     .safeAreaInset(edge: .top) {
-                        VStack(spacing: 0) {
+                        VStack(spacing: 5) {
                             if viewModel.isSelectionMode {
                                 selectionHeader
                                     .padding(.top, safeAreaTop)
@@ -218,7 +218,7 @@ struct FolderSectionView: View {
     }
 
     private var utilityRow: some View {
-        HStack(spacing: isIpad ? 12 : 8) {
+        HStack(spacing: isIpad ? 6 : 4) {
             // Selection Mode (Leading)
             Button(action: {
                 HapticsManager.shared.generate(.medium)
@@ -229,7 +229,7 @@ struct FolderSectionView: View {
                 Image("pencil")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 16, height: 16)
+                    .frame(width: 20, height: 20)
                     .frame(width: 30, height: 30)
             }
             .buttonStyle(.glass)
@@ -238,7 +238,7 @@ struct FolderSectionView: View {
             Rectangle()
                 .fill(Color.white.opacity(0.15))
                 .frame(width: 1, height: 16)
-                .padding(.horizontal, 5)
+                
             
             // Sort Menu
             Menu {
@@ -307,7 +307,7 @@ struct FolderSectionView: View {
             }
             .buttonStyle(.glass)
             .buttonBorderShape(.capsule)
-            
+            .padding(.leading, 4)
             Spacer()
             
             // View Mode Toggle (Trailing)

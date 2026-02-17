@@ -109,7 +109,7 @@ struct AlbumSectionView: View {
             .padding(.trailing, AppDesign.Icons.horizontalPadding)
         }
         .frame(height: AppDesign.Icons.headerHeight)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
         
     }
 

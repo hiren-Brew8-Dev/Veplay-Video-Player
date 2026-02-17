@@ -7,10 +7,14 @@ import AVFoundation
 import CoreData
 import MobileVLCKit
 
-struct VideoSection: Identifiable {
+struct VideoSection: Identifiable, Equatable {
     let date: Date
     let videos: [VideoItem]
     var id: Date { date }
+    
+    static func == (lhs: VideoSection, rhs: VideoSection) -> Bool {
+        return lhs.date == rhs.date && lhs.videos == rhs.videos
+    }
 }
 
 struct FolderSection: Identifiable {
@@ -84,11 +88,11 @@ class DashboardViewModel: ObservableObject {
     }
     
     var allLocalSearchableVideos: [VideoItem] {
-        return (importedVideos + allVideosAcrossFolders).sorted { $0.importDate > $1.importDate }
+        return sortVideos(importedVideos + allVideosAcrossFolders, by: videoSortOption)
     }
     
     var allGallerySearchableVideos: [VideoItem] {
-        return allGalleryVideos.sorted { $0.importDate > $1.importDate }
+        return sortVideos(allGalleryVideos, by: gallerySortOption)
     }
     
     // Data Sources
@@ -506,13 +510,20 @@ class DashboardViewModel: ObservableObject {
                 currentSort == .dateAsc ? $0 < $1 : $0 > $1 
             })
             
-            self.groupedImportedVideos = sortedDates.map { date in
+            let newSections = sortedDates.map { date in
                 let videosInDate = grouped[date] ?? []
                 return VideoSection(date: date, videos: videosInDate)
             }
+            
+            if self.groupedImportedVideos != newSections {
+                self.groupedImportedVideos = newSections
+            }
         default:
             // Non-date sorting: provide a single section with a sentinel date for a flat list
-            self.groupedImportedVideos = [VideoSection(date: .distantPast, videos: sorted)]
+            let newSections = [VideoSection(date: .distantPast, videos: sorted)]
+            if self.groupedImportedVideos != newSections {
+                self.groupedImportedVideos = newSections
+            }
         }
     }
     

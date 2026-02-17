@@ -141,7 +141,7 @@ struct VideoSectionView: View {
     // MARK: - Headers
     
     private var utilityRow: some View {
-        HStack(spacing: isIpad ? 12 : 8) {
+        HStack(spacing: isIpad ? 6 : 4) {
             // Selection Mode (Leading)
             Button(action: {
                 HapticsManager.shared.generate(.medium)
@@ -161,7 +161,7 @@ struct VideoSectionView: View {
             Rectangle()
                 .fill(Color.white.opacity(0.15))
                 .frame(width: 1, height: 16)
-                .padding(.horizontal, 5)
+                
             
             // Sort Menu
             Menu {
@@ -264,7 +264,7 @@ struct VideoSectionView: View {
             }
             .buttonStyle(.glass)
             .buttonBorderShape(.capsule)
-            
+            .padding(.leading, 4)
             Spacer()
             
             // View Mode Toggle (Trailing)
@@ -337,7 +337,7 @@ struct VideoSectionView: View {
             .padding(.trailing, AppDesign.Icons.horizontalPadding)
         }
         .frame(height: AppDesign.Icons.headerHeight)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
     }
 
     private var expandedHeader: some View {
