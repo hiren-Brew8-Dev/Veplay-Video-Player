@@ -138,6 +138,9 @@ struct DashboardView: View {
             .environmentObject(viewModel)
         }
         
+        .fullScreenCover(item: $navigationManager.fullScreenDestination) { destination in
+            fullScreenView(for: destination)
+        }
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: viewModel.showActionSheet)
         .environmentObject(viewModel)
         .preferredColorScheme(isDarkMode ? .dark : .light)
@@ -179,6 +182,19 @@ struct DashboardView: View {
     }
 
     @ViewBuilder
+    private func fullScreenView(for destination: NavigationDestination) -> some View {
+        switch destination {
+        case .settings:
+            SettingsView()
+                .environmentObject(viewModel)
+        case .paywall(let isFromOnboarding):
+            PaywallView(isFromOnboarding: isFromOnboarding)
+        default:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
     private func destinationView(for destination: NavigationDestination) -> some View {
         switch destination {
         case .allFolders:
@@ -187,15 +203,10 @@ struct DashboardView: View {
             FolderDetailView(initialFolder: folder, viewModel: viewModel)
         case .search(let title, let videos):
             SearchView(viewModel: viewModel, contextTitle: title, initialVideos: videos)
-        case .settings:
-            SettingsView()
-                .environmentObject(viewModel)
-        case .paywall(let isFromOnboarding):
-            PaywallView(isFromOnboarding: isFromOnboarding)
         case .rating:
             RatingView()
-        case .onboarding1, .onboarding2, .onboarding3, .onboarding4, .thanksForDownloading, .dashboard:
-            EmptyView() // These shouldn't usually be targets within a tab stack
+        default:
+            EmptyView()
         }
     }
 

@@ -138,6 +138,7 @@ struct SettingsView: View {
             .iPad { $0.frame(maxWidth: .infinity, alignment: .center) }
             
         }
+        .hideNavigationBar()
         .background(AppGlobalBackground().ignoresSafeArea())
         .fullScreenCover(item: $webViewData) { data in
             URLWebView(titleName: data.title, urlString: data.url)

@@ -424,7 +424,7 @@ struct VideoSectionView: View {
                         Text("Import Videos")
                             .font(.system(size: 16, weight: .bold))
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(.black)
                     .padding(.horizontal, 40)
                     .padding(.vertical, 16)
                     .background(

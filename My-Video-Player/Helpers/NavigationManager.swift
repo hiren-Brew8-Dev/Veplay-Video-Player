@@ -8,7 +8,7 @@
 import Foundation
 import Combine
 
-enum NavigationDestination: Hashable {
+enum NavigationDestination: Hashable, Identifiable {
     case onboarding1
     case onboarding2
     case onboarding3
@@ -21,6 +21,23 @@ enum NavigationDestination: Hashable {
     case allFolders
     case folderDetail(Folder)
     case search(contextTitle: String, initialVideos: [VideoItem]?)
+    
+    var id: String {
+        switch self {
+        case .onboarding1: return "onboarding1"
+        case .onboarding2: return "onboarding2"
+        case .onboarding3: return "onboarding3"
+        case .onboarding4: return "onboarding4"
+        case .thanksForDownloading: return "thanksForDownloading"
+        case .rating: return "rating"
+        case .dashboard: return "dashboard"
+        case .paywall(let onboarding): return "paywall_\(onboarding)"
+        case .settings: return "settings"
+        case .allFolders: return "allFolders"
+        case .folderDetail(let folder): return "folder_\(folder.id.uuidString)"
+        case .search(let title, _): return "search_\(title)"
+        }
+    }
 }
 
 
@@ -28,6 +45,7 @@ enum NavigationDestination: Hashable {
 final class NavigationManager: ObservableObject {
     @Published var path: [NavigationDestination] = []
     @Published var isDashboardRoot: Bool = false
+    @Published var fullScreenDestination: NavigationDestination? = nil
     
     // Per-tab paths for Dashboard
     @Published var homePath: [NavigationDestination] = []
@@ -47,6 +65,17 @@ final class NavigationManager: ObservableObject {
         if destination == .dashboard {
             setDashboardRoot()
             return
+        }
+        
+        // Settings and Paywall should be full screen in Dashboard
+        if isDashboardRoot {
+            switch destination {
+            case .settings, .paywall:
+                fullScreenDestination = destination
+                return
+            default:
+                break
+            }
         }
         
         // If we are in the dashboard, use tab-specific paths
@@ -96,6 +125,11 @@ final class NavigationManager: ObservableObject {
     }
     
     func pop() {
+        if fullScreenDestination != nil {
+            fullScreenDestination = nil
+            return
+        }
+        
         if isDashboardRoot {
             popFromCurrentTab()
         } else if !path.isEmpty {

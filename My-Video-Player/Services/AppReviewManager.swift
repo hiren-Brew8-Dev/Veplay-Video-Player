@@ -11,7 +11,7 @@ import StoreKit
 enum AppReviewManager {
 
     // MARK: - Keys
-    private static let reviewAttemptKey = "review_attempt_count"
+    private static let reviewAttemptKey = "review_attempt_count_video_player"
 
     // MARK: - Storage
     private static let userDefaults = UserDefaults.standard

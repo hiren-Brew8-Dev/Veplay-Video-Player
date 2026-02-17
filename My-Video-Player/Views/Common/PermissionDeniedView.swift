@@ -30,7 +30,7 @@ struct PermissionDeniedView: View {
                 }) {
                     Text("Open Settings")
                         .fontWeight(.bold)
-                        .foregroundColor(.homeTextPrimary)
+                        .foregroundColor(.black)
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(Color.homeTint)

@@ -122,7 +122,7 @@ struct CastDevicePickerView: View {
             }) {
                 Text("Open Settings")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.sheetTextPrimary)
+                    .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
                     .background(Color.themeAccent)
