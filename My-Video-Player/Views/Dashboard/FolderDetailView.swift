@@ -74,45 +74,77 @@ struct FolderDetailView: View {
     }
     
     var body: some View {
-        ZStack {
-            AppGlobalBackground()
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            let safeAreaTop = geometry.safeAreaInsets.top > 0 ? geometry.safeAreaInsets.top : (UIApplication.shared.windows.first?.safeAreaInsets.top ?? 47)
             
-            VStack(spacing: 0) {
-                // Header
-                if viewModel.isSelectionMode {
-                    selectionHeader
-                } else {
-                    standardHeader
-                }
+            ZStack {
+                AppGlobalBackground()
+                    .ignoresSafeArea()
                 
-                if !viewModel.isSelectionMode && !displayVideos.isEmpty {
-                    utilityRow
-                        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-                        .padding(.top, 10)
-                        .padding(.bottom, 10)
-                }
-                
-                if isLoading {
-                    ProgressView()
-                        .padding(.top, 50)
-                } else if isGridView {
-                    gridView
-                } else {
-                    ScrollView(.vertical, showsIndicators: false) {
-                        listView
-                            .padding(.bottom, viewModel.isSelectionMode ? 140 : 90)
+                VStack(spacing: 0) {
+                    if isLoading {
+                        ProgressView()
+                            .padding(.top, 100)
+                    } else if isGridView {
+                        gridView
+                    } else {
+                        ScrollView(.vertical, showsIndicators: false) {
+                            listView
+                                .padding(.top, 20)
+                                .padding(.bottom, viewModel.isSelectionMode ? 140 : 90)
+                        }
+                        .scrollBounceBehavior(.basedOnSize)
                     }
-                    .scrollBounceBehavior(.basedOnSize)
+                }
+                .safeAreaInset(edge: .top) {
+                    VStack(spacing: 0) {
+                        if viewModel.isSelectionMode {
+                            selectionHeader
+                                .padding(.top, safeAreaTop)
+                        } else {
+                            mainHeader
+                                .padding(.top, safeAreaTop)
+                            
+                            if !displayVideos.isEmpty {
+                                utilityRow
+                                    .padding(.horizontal, AppDesign.Icons.horizontalPadding)
+                                    .padding(.top, 0)
+                                    .padding(.bottom, 0)
+                            }
+                        }
+                    }
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(stops: [
+                                .init(color: .black, location: 0.0),
+                                .init(color: .black.opacity(0.7), location: 0.7),
+                                .init(color: .black.opacity(0), location: 1.0)
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .ignoresSafeArea(edges: .top)
+                    )
+                }
+                
+                if viewModel.isSelectionMode {
+                    selectionActionBar
                 }
             }
+            .ignoresSafeArea(edges: .top)
+        }
+        .onAppear {
+            viewModel.isTabBarHidden = false // Ensure floating button shows
+            viewModel.activeImportFolderURL = folder.url // Set target for floating button
             
-            if viewModel.isSelectionMode {
-                selectionActionBar
+            viewModel.markFolderAsAccessed(folder)
+            // Resolve titles for album videos if not already done
+            if folder.url == nil {
+                viewModel.preFetchTitles(for: folder.videos)
             }
-
-            // Syncing Overlay
-
+        }
+        .onDisappear {
+            viewModel.activeImportFolderURL = nil // Reset target
         }
         .sheet(isPresented: $showSortSheet) {
             if folder.url == nil {
@@ -210,16 +242,14 @@ struct FolderDetailView: View {
                     viewModel.isSelectionMode = true
                 }
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.1))
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: "pencil")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                }
+                Image("pencil")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                    .frame(width: 30, height: 30)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
             
             // Sort Button
             Button(action: {
@@ -234,12 +264,11 @@ struct FolderDetailView: View {
                     Text("Sort by")
                         .font(.system(size: 14, weight: .medium))
                 }
-                .padding(.horizontal, 16)
-                .frame(height: 40)
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(20)
-                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .frame(height: 30)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.capsule)
             
             Spacer()
             
@@ -250,70 +279,54 @@ struct FolderDetailView: View {
                     isGridView.toggle()
                 }
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.1))
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 30, height: 30)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
         }
     }
 
-    var standardHeader: some View {
-        HStack {
+    var mainHeader: some View {
+        HStack(spacing: 0) {
             Button(action: {
                 HapticsManager.shared.generate(.medium)
                 navigationManager.pop()
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.premiumCircleBackground)
-                        .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
-                    
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: isIpad ? 22 : 16, weight: .bold))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: "chevron.left")
+                    .font(.system(size: isIpad ? 20 : 18, weight: .bold))
+                    .frame(width: 30, height: 30)
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .padding(.leading, AppDesign.Icons.horizontalPadding)
             
             Text(folder.name)
                 .font(.system(size: isIpad ? 24 : 18, weight: .bold))
                 .foregroundColor(.white)
-                .padding(.leading, 8)
+                .padding(.leading, 12)
+                .lineLimit(1)
             
             Spacer()
             
             if !displayVideos.isEmpty {
-                HStack(spacing: 12) {
-                    Button(action: {
-                        HapticsManager.shared.generate(.medium)
-                        let updatedVideos = displayVideos.map { liveVideo($0) }
-                        navigationManager.push(.search(contextTitle: folder.name, initialVideos: updatedVideos))
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.premiumCircleBackground)
-                                .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
-                            
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: isIpad ? 22 : 16, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                    
+                Button(action: {
+                    HapticsManager.shared.generate(.medium)
+                    let updatedVideos = displayVideos.map { liveVideo($0) }
+                    navigationManager.push(.search(contextTitle: folder.name, initialVideos: updatedVideos))
+                }) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: isIpad ? 20 : 18, weight: .bold))
+                        .frame(width: 30, height: 30)
                 }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .padding(.trailing, AppDesign.Icons.horizontalPadding)
             }
         }
-        
-        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-        .padding(.bottom, isIpad ? 20 : 10)
-        .padding(.top, isIpad ? 20 : 0)
-        .background(Color.clear)
-    
+        .frame(height: AppDesign.Icons.headerHeight)
+        .padding(.vertical, 10)
     }
     
     var selectionHeader: some View {
@@ -346,7 +359,7 @@ struct FolderDetailView: View {
             Spacer()
             
             Text("Selected (\(selectedVideoIds.count)/\(displayVideos.count))")
-                .font(.system(size: isIpad ? 24 : 17, weight: .bold))
+                .font(.system(size: isIpad ? 22 : 17, weight: .bold))
                 .foregroundColor(.white)
             
             Spacer()
@@ -355,14 +368,12 @@ struct FolderDetailView: View {
                 viewModel.isSelectionMode = false
                 selectedVideoIds.removeAll()
             }
-            .font(.system(size: isIpad ? 20 : 15, weight: .bold))
+            .font(.system(size: isIpad ? 18 : 15, weight: .bold))
             .foregroundColor(.orange)
             .padding(.trailing, AppDesign.Icons.horizontalPadding)
         }
-        .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-        .padding(.bottom, 10)
-        .background(Color.clear)
-    
+        .frame(height: AppDesign.Icons.headerHeight)
+        .padding(.vertical, 10)
     }
     
     private var gridView: some View {
@@ -402,11 +413,6 @@ struct FolderDetailView: View {
                     } else {
                         // FOLDER MODE: Flat List (User Preference)
                         Section {
-                            // Import Button (independent item)
-                            if !viewModel.isSelectionMode && folder.url != nil {
-                                importButton(isLandscape: isLandscape, width: currentWidth)
-                            }
-                            
                             ForEach(sortedVideos, id: \.id) { video in
                                 gridVideoItem(liveVideo(video), isLandscape: isLandscape, width: currentWidth)
                             }
@@ -414,6 +420,7 @@ struct FolderDetailView: View {
                     }
                 }
                 .padding(.horizontal, GridLayout.horizontalPadding)
+                .padding(.top, 20)
                 .padding(.bottom, viewModel.isSelectionMode ? 140 : 90)
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -479,25 +486,6 @@ struct FolderDetailView: View {
                         }
                     }
                 } else {
-                    // FOLDER MODE: Import New section
-                    if !viewModel.isSelectionMode && folder.url != nil {
-                        Section {
-                            VStack(spacing: 0) {
-                                AddVideoRowView(action: {
-                                    showImportOptions = true
-                                })
-                            }
-                            .background(Color.premiumCardBackground)
-                            .cornerRadius(20)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.premiumCardBorder, lineWidth: 1)
-                            )
-                            .padding(.horizontal, AppDesign.Icons.horizontalPadding)
-                            .padding(.bottom, 20)
-                        }
-                    }
-                    
                     // Video list - ALL in ONE section card
                     Section {
                         VStack(spacing: 0) {

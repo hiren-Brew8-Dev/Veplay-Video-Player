@@ -343,6 +343,7 @@ struct DashboardView: View {
 
 private struct PlusButtonOverlay: View {
     @ObservedObject var viewModel: DashboardViewModel
+    @EnvironmentObject var navigationManager: NavigationManager
     var isIpad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
     var body: some View {
@@ -354,8 +355,8 @@ private struct PlusButtonOverlay: View {
                 
                 ZStack {
                     // Interactive Menu or Direct Button
-                    if viewModel.selectedTab == .folders {
-                        // Direct Button for Folders
+                    if viewModel.selectedTab == .folders && navigationManager.foldersPath.isEmpty {
+                        // Direct Button for Folders (Root only)
                         Button(action: { 
                             HapticsManager.shared.generate(.medium)
                             viewModel.showCreateFolderAlert = true 
@@ -367,7 +368,7 @@ private struct PlusButtonOverlay: View {
                         .buttonSizing(.fitted)
                         .tint(Color.homeAccent)
                     } else {
-                        // Menu for Videos (Home)
+                        // Menu for Videos (Home tab OR Subfolders)
                         Menu {
                             Button(action: {
                                 HapticsManager.shared.generate(.selection)
