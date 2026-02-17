@@ -211,6 +211,7 @@ struct VideoSectionView: View {
                         .appIconStyle(size: AppDesign.Icons.toolbarSize + 4, weight: .bold, color: .homeAccent)
                 }
                 
+                
                 Menu {
                     Button(action: { viewModel.isSelectionMode = true }) {
                         Label("Select", systemImage: "checkmark.circle")

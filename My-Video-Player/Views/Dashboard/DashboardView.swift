@@ -226,22 +226,21 @@ struct DashboardView: View {
             
             Spacer()
             
-            HStack(spacing: isIpad ? 20 : 16) {
+            HStack(spacing: isIpad ? 20 : 5) {
                 // Settings Button (Trailing, before 3-dots)
                 Button(action: {
                     HapticsManager.shared.generate(.medium)
                     navigationManager.push(.settings)
                 }) {
                     ZStack {
-                        Circle()
-                            .fill(Color.premiumCircleBackground)
-                            .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
-                        
                         Image(systemName: "gearshape")
-                            .font(.system(size: isIpad ? 22 : 16, weight: .bold))
-                            .foregroundColor(.white)
+                            .font(.system(size: isIpad ? 22 : 18, weight: .medium))
+                            .frame(width: 30, height: 30)
                     }
                 }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+               
                 
                 if !Global.shared.getIsUserPro() {
                     Button {
@@ -249,16 +248,19 @@ struct DashboardView: View {
                         navigationManager.push(.paywall(isFromOnboarding: false))
                     } label: {
                         ZStack {
-                            Circle()
-                                .fill(Color.premiumIconBackground)
-                                .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
                             
                             Image(systemName: "crown.fill")
-                                .font(.system(size: isIpad ? 20 : 14, weight: .bold))
+                                .font(.system(size: isIpad ? 20 : 18, weight: .medium))
                                 .foregroundColor(.black)
-                            
+                                .frame(width: 30, height: 30)
                         }
                     }
+                    
+                    .buttonSizing(.automatic)
+                    .buttonStyle(.glassProminent)
+                    .buttonBorderShape(.circle)
+                    .tint(.premiumIconBackground)
+                    
                 }
             }
             .padding(.trailing, AppDesign.Icons.horizontalPadding)
@@ -372,6 +374,9 @@ private struct PlusButtonOverlay: View {
                         } label: {
                             plusButtonLabel
                         }
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
+                        .buttonSizing(.fitted)
                     }
                 }
             }
@@ -411,3 +416,10 @@ struct RoundedCorner: Shape {
         return Path(path.cgPath)
     }
 }
+
+#Preview {
+    DashboardView()
+        .environmentObject(DashboardViewModel())
+        .environmentObject(NavigationManager())
+}
+
