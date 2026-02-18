@@ -6,17 +6,20 @@
 //
 
 import SwiftUI
-import Photos
 
 struct Onboarding4View: View {
     @EnvironmentObject var navManager: NavigationManager
-    @EnvironmentObject var viewModel: DashboardViewModel
-    
     @State private var isAnimating = false
+    @State private var currentTime: Double = 0
+    
+    private var formattedCurrentTime: String {
+        let minutes = Int(currentTime) / 60
+        let seconds = Int(currentTime) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
     
     var body: some View {
         ZStack {
-            // ... (rest of the view)
             // MARK: - Background
             Color.black
                 .ignoresSafeArea()
@@ -39,93 +42,150 @@ struct Onboarding4View: View {
             .animation(.easeIn(duration: 1.0), value: isAnimating)
             
             VStack(spacing: 0) {
-                Spacer()
-                
-                // MARK: - Central Illustration
-                ZStack {
-                    // Large Transparent Circle
-                    Circle()
-                        .fill(Color.white.opacity(0.06))
-                        .frame(width: isIpad ? 240 : 160, height: isIpad ? 240 : 160)
-                        .scaleEffect(isAnimating ? 1 : 0.5)
-                        .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.1), value: isAnimating)
-                    
-                    // Main Icon (Stacked Effect)
-                    VStack(spacing: isIpad ? 12 : 8) {
-                        // Top line
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.white.opacity(0.5))
-                            .frame(width: isIpad ? 67 : 45, height: isIpad ? 6 : 4)
-                        
-                        // Middle line
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.white.opacity(0.8))
-                            .frame(width: isIpad ? 94 : 63, height: isIpad ? 6 : 4)
-                        
-                        // Main Block
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(Color.white)
-                                .frame(width: isIpad ? 120 : 80, height: isIpad ? 85 : 57)
-                            
-                            Image(systemName: "play.fill")
-                                .font(.system(size: isIpad ? 48 : 32))
-                                .foregroundColor(Color(red: 0.09, green: 0.06, blue: 0.03))
+                // MARK: - Header (Pagination Dots)
+                HStack {
+                    Spacer()
+                    HStack(spacing: isIpad ? 6 : 4) {
+                        ForEach(0..<5) { index in
+                            Rectangle()
+                                .foregroundColor(.clear)
+                                .frame(width: index == 3 ? (isIpad ? 48 : 32) : (isIpad ? 10 : 7), height: isIpad ? 10 : 7)
+                                .background(index == 3 ? Color.premiumAccent : Color.white.opacity(0.30))
+                                .cornerRadius(24)
                         }
                     }
-                    .scaleEffect(isAnimating ? 1 : 0.3)
-                    .opacity(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.5).delay(0.2), value: isAnimating)
-                    
-                    // Lock Overlay (Pill Shape)
-                    ZStack {
-                        VStack {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: isIpad ? 36 : 24, weight: .bold))
-                                .foregroundColor(Color(red: 0.09, green: 0.06, blue: 0.03))
-                        }
-                        .padding(.vertical, isIpad ? 20 : 13)
-                        .padding(.horizontal, isIpad ? 15 : 10)
-                        .background(Color.premiumAccent)
-                        .cornerRadius(56)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 56)
-                                .stroke(Color(red: 0.09, green: 0.06, blue: 0.03), lineWidth: 3)
-                        )
-                    }
-                    .offset(x: isIpad ? 90 : 60, y: isIpad ? 80 : 55)
-                    .scaleEffect(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.6).delay(0.5), value: isAnimating)
+                    .responsivePadding(edge: .top, fraction: isIpad ? 50 : 30)
+                    .responsivePadding(edge: .trailing, fraction: isIpad ? 50 : 30)
                 }
-                .responsivePadding(edge: .bottom, fraction: isIpad ? 80 : 50)
-                
-                // MARK: - Description Text
-                Text("Allow access to your videos to begin.")
-                    .appFont(.figtreeMedium, size: isIpad ? 18 : 16)
-                    .foregroundColor(Color.white.opacity(0.80))
-                    .multilineTextAlignment(.center)
-                    .offset(y: isAnimating ? 0 : 20)
-                    .opacity(isAnimating ? 1 : 0)
-                    .animation(.easeOut(duration: 0.5).delay(0.6), value: isAnimating)
                 
                 Spacer()
-                    .responsiveHeight(iphoneHeight: isIpad ? 150 : 100)
                 
-                // MARK: - Main Title
-                Text("Let’s Get Started")
-                    .appFont(.figtreeBold, size: isIpad ? 60 : 40)
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .scaleEffect(isAnimating ? 1 : 0.9)
+                // MARK: - Player Preview Section
+                VStack(spacing: isIpad ? 40 : 24) {
+                    // Main Player Card
+                    ZStack {
+                        Image("VideoPlayerThumbnail")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: isIpad ? 480 : 355, height: isIpad ? 400 : 296)
+                            .clipped()
+                        
+                        // Play Overlay
+                        Circle()
+                            .fill(Color.black.opacity(0.5))
+                            .frame(width: isIpad ? 72 : 52, height: isIpad ? 72 : 52)
+                            .scaleEffect(isAnimating ? 1 : 0.5)
+                            .opacity(isAnimating ? 1 : 0)
+                            .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.4), value: isAnimating)
+                            .overlay(
+                                Image(systemName: "play.fill")
+                                    .foregroundColor(.white)
+                                    .font(.system(size: isIpad ? 28 : 20, weight: .bold))
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 0.5)
+                            )
+                        
+                        // Progress Bar & Controls
+                        VStack {
+                            Spacer()
+                            
+                            // Progress Bar
+                            ZStack(alignment: .leading) {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.3))
+                                    .frame(width: isIpad ? 440 : 323, height: isIpad ? 6 : 4)
+                                    .cornerRadius(16)
+                                
+                                Rectangle()
+                                    .fill(Color.premiumAccent)
+                                    .frame(width: isAnimating ? (isIpad ? 160 : 120) : 0, height: isIpad ? 6 : 4)
+                                    .cornerRadius(16)
+                            }
+                            .padding(.bottom, isIpad ? 12 : 8)
+                            .animation(.easeOut(duration: 1.0).delay(0.6), value: isAnimating)
+                            
+                            HStack {
+                                Text(formattedCurrentTime)
+                                    .appFont(.figtreeSemiBold, size: isIpad ? 18 : 14)
+                                    .foregroundColor(.white)
+                                    .frame(width: isIpad ? 60 : 45, alignment: .leading) // Fixed width to prevent shifting
+                                Spacer()
+                                Text("02:23")
+                                    .appFont(.figtreeSemiBold, size: isIpad ? 18 : 14)
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, isIpad ? 24 : 16)
+                            .padding(.bottom, isIpad ? 24 : 16)
+                            .opacity(isAnimating ? 1 : 0)
+                            .animation(.easeIn(duration: 0.5).delay(0.7), value: isAnimating)
+                        }
+                    }
+                    .frame(width: isIpad ? 480 : 355, height: isIpad ? 400 : 296)
+                    .background(Color.black.opacity(0.5))
+                    .cornerRadius(isIpad ? 40 : 32)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: isIpad ? 40 : 32)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
+                    .scaleEffect(isAnimating ? 1 : 0.8)
+                    .rotation3DEffect(.degrees(isAnimating ? 0 : 10), axis: (x: 1, y: 0, z: 0))
+                    .offset(y: isAnimating ? 0 : -50)
                     .opacity(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.7), value: isAnimating)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
+                    
+                    // Feature Tags (Centered Row)
+                    HStack(alignment: .center, spacing: isIpad ? 20 : 12) {
+                        OnboardingTag(icon: "rectangle.inset.filled", text: "Fill")
+                            .rotationEffect(.degrees(-6))
+                            .offset(y: 5)
+                            .scaleEffect(isAnimating ? 1 : 0.5)
+                            .opacity(isAnimating ? 1 : 0)
+                            .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.4), value: isAnimating)
+                        
+                        OnboardingTag(icon: "text.bubble.fill", text: "Audio & CC")
+                            .scaleEffect(isAnimating ? 1 : 0.5)
+                            .opacity(isAnimating ? 1 : 0)
+                            .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.5), value: isAnimating)
+                        
+                        OnboardingTag(text: "1.0x")
+                            .rotationEffect(.degrees(6))
+                            .offset(y: 5)
+                            .scaleEffect(isAnimating ? 1 : 0.5)
+                            .opacity(isAnimating ? 1 : 0)
+                            .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.6), value: isAnimating)
+                    }
+                }
+                .responsivePadding(edge: .top, fraction: isIpad ? 20 : 10)
+                .responsivePadding(edge: .bottom, fraction: isIpad ? 40 : 20)
+                
+                Spacer()
+                
+                // MARK: - Text Content
+                VStack(alignment: .leading, spacing: isIpad ? 18 : 12) {
+                    Text("Clean Playback\nExperience")
+                        .appFont(.figtreeBold, size: isIpad ? 40 : 40)
+                        .foregroundColor(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .scaleEffect(isAnimating ? 1 : 0.95, anchor: .leading)
+                    
+                    Text("A simple player with clear controls.")
+                        .appFont(.figtreeRegular, size: isIpad ? 16 : 16)
+                        .foregroundColor(Color.white.opacity(0.80))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .responsivePadding(edge: .horizontal, fraction: isIpad ? 60 : 30)
+                .offset(y: isAnimating ? 0 : 30)
+                .opacity(isAnimating ? 1 : 0)
+                .animation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.7), value: isAnimating)
                 
                 Spacer()
                 
                 // MARK: - Action Button
                 Button(action: {
                     HapticsManager.shared.generate(.medium)
-                    checkPhotoPermission()
+                    navManager.push(.onboarding5)
                 }) {
                     Text("Continue")
                         .appFont(.figtreeBold, size: isIpad ? 26 : 20)
@@ -136,35 +196,81 @@ struct Onboarding4View: View {
                         .background(Color.premiumAccent)
                         .cornerRadius(isIpad ? 50 : 40)
                 }
+                .responsivePadding(edge: .horizontal, fraction: isIpad ? 60 : 30)
                 .responsivePadding(edge: .bottom, fraction: isIpad ? 30 : 10)
-                .scaleEffect(isAnimating ? 1 : 0.8)
+                .scaleEffect(isAnimating ? 1 : 0.9)
                 .opacity(isAnimating ? 1 : 0)
                 .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.8), value: isAnimating)
             }
-            .responsivePadding(edge: .horizontal, fraction: 30)
         }
         .hideNavigationBar()
         .onAppear {
             isAnimating = true
+            
+            // Sync current time label with progress bar animation
+            // Progress bar animation starts at 0.6s delay and lasts 1.0s
+            // Total duration is 02:23 (143s). Progress is ~37% (120/323)
+            let totalSeconds: Double = 143
+            let progress = isIpad ? (160.0 / 440.0) : (120.0 / 323.0)
+            let targetSeconds = totalSeconds * progress
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                let steps = 30
+                let interval = 1.0 / Double(steps)
+                let increment = targetSeconds / Double(steps)
+                
+                Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in
+                    if currentTime < targetSeconds {
+                        currentTime += increment
+                    } else {
+                        currentTime = targetSeconds
+                        timer.invalidate()
+                    }
+                }
+            }
         }
     }
+}
+
+struct OnboardingTag: View {
+    var icon: String? = nil
+    let text: String
     
-    private func checkPhotoPermission() {
-        viewModel.requestPhotoPermission { _ in
-            // Even if denied, we proceed in onboarding to keep flow,
-            // but user won't see videos until they fix it in settings.
-            proceedToNext()
+    var body: some View {
+        HStack(spacing: isIpad ? 12 : 8) {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: isIpad ? 18 : 14))
+                    .foregroundColor(.white)
+            }
+            Text(text)
+                .appFont(.figtreeSemiBold, size: isIpad ? 18 : 14)
+                .foregroundColor(.white)
         }
-    }
-    
-    private func proceedToNext() {
-        UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
-        navManager.push(.thanksForDownloading)
+        .padding(.horizontal, isIpad ? 24 : 16)
+        .padding(.vertical, isIpad ? 15 : 10)
+        .background(Color.white.opacity(0.12))
+        .cornerRadius(isIpad ? 50 : 40)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            .white.opacity(0.6),
+                            .white.opacity(0.1),
+                            .white.opacity(0.05),
+                            .white.opacity(0.3)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
     }
 }
 
 #Preview {
     Onboarding4View()
         .environmentObject(NavigationManager())
-        .environmentObject(DashboardViewModel())
 }

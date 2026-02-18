@@ -19,10 +19,10 @@ struct AlbumSectionView: View {
                     VStack(spacing: 0) {
                         Spacer()
                         emptyStateView
+                            .responsivePadding(edge: .top, fraction: 0)
                         Spacer()
                         Spacer()
                     }
-                    .padding(.top, 100)
                 } else {
                     ScrollView(showsIndicators: false) {
                         LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
@@ -43,26 +43,26 @@ struct AlbumSectionView: View {
                         .padding(.bottom, 100)
                     }
                     .scrollBounceBehavior(.basedOnSize)
-                    .onAppear {
-                        viewModel.fetchAlbums()
-                    }
-                    .safeAreaInset(edge: .top) {
-                        mainHeader
-                            .padding(.top, safeAreaTop)
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(stops: [
-                                        .init(color: .black, location: 0.0),
-                                        .init(color: .black.opacity(0.7), location: 0.7),
-                                        .init(color: .black.opacity(0), location: 1.0)
-                                    ]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                                .ignoresSafeArea(edges: .top)
-                            )
-                    }
                 }
+            }
+            .safeAreaInset(edge: .top) {
+                mainHeader
+                    .padding(.top, safeAreaTop)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(stops: [
+                                .init(color: .black, location: 0.0),
+                                .init(color: .black.opacity(0.8), location: 0.8),
+                                .init(color: .black.opacity(0), location: 1.0)
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .ignoresSafeArea(edges: .top)
+                    )
+            }
+            .onAppear {
+                viewModel.fetchAlbums()
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }

@@ -13,6 +13,8 @@ enum NavigationDestination: Hashable, Identifiable {
     case onboarding2
     case onboarding3
     case onboarding4
+    case onboarding5
+    case photoLibraryAccess
     case thanksForDownloading
     case rating
     case dashboard
@@ -28,6 +30,8 @@ enum NavigationDestination: Hashable, Identifiable {
         case .onboarding2: return "onboarding2"
         case .onboarding3: return "onboarding3"
         case .onboarding4: return "onboarding4"
+        case .onboarding5: return "onboarding5"
+        case .photoLibraryAccess: return "photoLibraryAccess"
         case .thanksForDownloading: return "thanksForDownloading"
         case .rating: return "rating"
         case .dashboard: return "dashboard"

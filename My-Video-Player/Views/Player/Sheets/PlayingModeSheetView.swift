@@ -28,6 +28,7 @@ struct PlayingModeSheetView: View {
             }
             .scrollBounceBehavior(.basedOnSize)
         }
+        .padding(.vertical, isIpad ? 20 : 0)
         .background(Color.homeSheetBackground.ignoresSafeArea())
         .overlay(
             Group {

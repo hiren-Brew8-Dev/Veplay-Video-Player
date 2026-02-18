@@ -21,35 +21,48 @@ struct SplashView : View {
         ZStack {
             Color.black.ignoresSafeArea()
             
-            VStack(spacing: 20) {
-                // App Icon / Logo
-                ZStack {
-                    Circle()
-                        .fill(Color.premiumAccent.opacity(0.1))
-                        .frame(width: 140, height: 140)
-                        .blur(radius: 20)
-                    
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.premiumAccent)
-                        .shadow(color: .premiumAccent.opacity(0.4), radius: 15)
-                }
-                .scaleEffect(logoScale)
-                .opacity(logoOpacity)
+            // Decorative background circles
+            Group {
+                Circle()
+                    .fill(Color.bgBlurOrange1.opacity(0.12))
+                    .responsiveWidth(iphoneWidth: 280, ipadWidth: 500)
+                    .blur(radius: isIpad ? 100 : 70)
+                    .offset(x: isIpad ? -150 : -80, y: isIpad ? -300 : -200)
                 
-                // App Name
-                VStack(spacing: 8) {
-                    Text("My Video Player")
-                        .appFont(.figtreeBold, size: 28)
-                        .foregroundColor(.white)
-                    
-                    Text("Pro Media Experience")
-                        .appFont(.figtreeRegular, size: 14)
-                        .foregroundColor(.white.opacity(0.6))
-                        .kerning(2)
+                Circle()
+                    .fill(Color.bgBlurOrange2.opacity(0.12))
+                    .responsiveWidth(iphoneWidth: 280, ipadWidth: 500)
+                    .blur(radius: isIpad ? 150 : 80)
+                    .offset(x: isIpad ? 150 : 80, y: isIpad ? 300 : 200)
+            }
+            .opacity(logoOpacity)
+            
+            ZStack {
+                // Logo perfectly centered on screen
+                Image("splash_app_icon")
+                    .resizable()
+                    .aspectRatio(1.0, contentMode: .fit)
+                    .responsiveWidth(iphoneWidth: 120, ipadWidth: 100)
+                    .scaleEffect(logoScale)
+                    .opacity(logoOpacity)
+                
+                // App Name at the bottom
+                VStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Text("Veeplay")
+                            .appFont(.figtreeBold, size: 28)
+                            .foregroundColor(.white)
+                        
+                        Text("Video Player")
+                            .appFont(.figtreeRegular, size: 14)
+                            .foregroundColor(.white.opacity(0.6))
+                            .kerning(2)
+                    }
+                    .responsivePadding(edge: .bottom, fraction: 40)
+                    .offset(y: textOffset)
+                    .opacity(textOpacity)
                 }
-                .offset(y: textOffset)
-                .opacity(textOpacity)
             }
         }
         .hideNavigationBar()

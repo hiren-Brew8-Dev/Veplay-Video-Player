@@ -88,7 +88,7 @@ struct VideoSectionView: View {
                 
                 if viewModel.importedVideos.isEmpty && !viewModel.isImporting && !viewModel.isInitialLoading {
                    emptyStateView
-                        .padding(.top, 100) // Push down below header
+                        .responsivePadding(edge: .top, fraction: -10)
                 }
                 
                 if viewModel.isSelectionMode {
@@ -588,7 +588,7 @@ struct VideoSectionView: View {
             }
             
             Spacer()
-            Spacer()
+//            Spacer()
         }
         .frame(maxWidth: .infinity)
     }

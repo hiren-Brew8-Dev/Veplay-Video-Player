@@ -2,7 +2,7 @@
 //  Onboarding2View.swift
 //  My-Video-Player
 //
-//  Created by Shivshankar T Tiwari on 13/02/26.
+//  Created by Shivshankar T Tiwari on 18/02/26.
 //
 
 import SwiftUI
@@ -10,6 +10,12 @@ import SwiftUI
 struct Onboarding2View: View {
     @EnvironmentObject var navManager: NavigationManager
     @State private var isAnimating = false
+    
+    // File formats to display
+    let formatsTop = ["webm", "m4v", "mgp"]
+    let formatsMid1 = ["mp4", "swf", "mov"]
+    let formatsMid2 = ["ogv", "mkv", "mts"]
+    let formatsBottom = ["avi", "ts", "3gp"]
     
     var body: some View {
         ZStack {
@@ -39,23 +45,13 @@ struct Onboarding2View: View {
                 HStack {
                     Spacer()
                     HStack(spacing: isIpad ? 6 : 4) {
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(width: isIpad ? 10 : 7, height: isIpad ? 10 : 7)
-                            .background(Color.white.opacity(0.50))
-                            .cornerRadius(24)
-                        
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(width: isIpad ? 48 : 32, height: isIpad ? 10 : 7)
-                            .background(Color.premiumAccent)
-                            .cornerRadius(24)
-                        
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(width: isIpad ? 10 : 7, height: isIpad ? 10 : 7)
-                            .background(Color.white.opacity(0.50))
-                            .cornerRadius(24)
+                        ForEach(0..<5) { index in
+                            Rectangle()
+                                .foregroundColor(.clear)
+                                .frame(width: index == 1 ? (isIpad ? 48 : 32) : (isIpad ? 10 : 7), height: isIpad ? 10 : 7)
+                                .background(index == 1 ? Color.premiumAccent : Color.white.opacity(0.30))
+                                .cornerRadius(24)
+                        }
                     }
                     .responsivePadding(edge: .top, fraction: isIpad ? 50 : 30)
                     .responsivePadding(edge: .trailing, fraction: isIpad ? 50 : 30)
@@ -63,65 +59,129 @@ struct Onboarding2View: View {
                 
                 Spacer()
                 
-                // MARK: - Folder Cards Section (Zigzagged and Tilted)
-                VStack(spacing: isIpad ? 35 : 25) {
-                    // Card 1: Downloads
-                    OnboardingFolderRow(title: "Downloads", count: "16 Videos", gradientSide: .right)
-                        .rotationEffect(.degrees(-1))
-                        .rotation3DEffect(.degrees(isAnimating ? 0 : 20), axis: (x: 0, y: 1, z: 0))
-                        .scaleEffect(isAnimating ? 1 : 0.8)
-                        .offset(x: isAnimating ? -20 : -100)
-                        .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: isAnimating)
+                // MARK: - Formats Badges Section
+                VStack(spacing: isIpad ? 30 : 20) {
+                    // Top Row
+                    HStack(spacing: isIpad ? 25 : 15) {
+                        FormatBadge(text: "webm", isAnimating: isAnimating)
+                            .offset(y: isAnimating ? 10 : 30)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: isAnimating)
+                        
+                        FormatBadge(text: "m4v", isPrimary: true, isAnimating: isAnimating)
+                            .offset(y: isAnimating ? 0 : 40)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
+                        
+                        FormatBadge(text: "mgp", isAnimating: isAnimating)
+                            .offset(y: isAnimating ? 10 : 35)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.15), value: isAnimating)
+                    }
                     
-                    // Card 2: Vacation 2025
-                    OnboardingFolderRow(title: "Vacation 2025", count: "42 Videos", gradientSide: .left)
-                        .rotationEffect(.degrees(2))
-                        .rotation3DEffect(.degrees(isAnimating ? 0 : -20), axis: (x: 0, y: 1, z: 0))
-                        .scaleEffect(isAnimating ? 1 : 0.8)
-                        .offset(x: isAnimating ? 20 : 100)
-                        .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
+                    // Middle Row 1
+                    HStack(spacing: isIpad ? 25 : 15) {
+                        FormatBadge(text: "mp4", isPrimary: true, isAnimating: isAnimating)
+                            .offset(y: isAnimating ? 0 : 45)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.25), value: isAnimating)
+                        
+                        FormatBadge(text: "swf", isAnimating: isAnimating)
+                            .offset(y: isAnimating ? -10 : 25)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: isAnimating)
+                        
+                        FormatBadge(text: "mov", isPrimary: true, isAnimating: isAnimating)
+                            .offset(y: isAnimating ? 0 : 50)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.3), value: isAnimating)
+                    }
                     
-                    // Card 3: Office Work
-                    OnboardingFolderRow(title: "Office Work", count: "12 Videos", gradientSide: .right)
-                        .rotationEffect(.degrees(-1))
-                        .rotation3DEffect(.degrees(isAnimating ? 0 : 20), axis: (x: 0, y: 1, z: 0))
-                        .scaleEffect(isAnimating ? 1 : 0.8)
-                        .offset(x: isAnimating ? -20 : -100)
-                        .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.3), value: isAnimating)
+                    // Middle Row 2
+                    HStack(spacing: isIpad ? 25 : 15) {
+                        FormatBadge(text: "ogv", isAnimating: isAnimating)
+                            .offset(y: isAnimating ? -5 : 40)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
+                        
+                        FormatBadge(text: "mkv", isPrimary: true, isAnimating: isAnimating)
+                            .offset(y: isAnimating ? 0 : 30)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.35), value: isAnimating)
+                        
+                        FormatBadge(text: "mts", isAnimating: isAnimating)
+                            .offset(y: isAnimating ? -5 : 45)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.15), value: isAnimating)
+                    }
                     
-                    // Card 4: College Documentary
-                    OnboardingFolderRow(title: "College Documentary", count: "20 Videos", gradientSide: .left)
-                        .rotationEffect(.degrees(2))
-                        .rotation3DEffect(.degrees(isAnimating ? 0 : -20), axis: (x: 0, y: 1, z: 0))
-                        .scaleEffect(isAnimating ? 1 : 0.8)
-                        .offset(x: isAnimating ? 20 : 100)
-                        .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.4), value: isAnimating)
+                    // Bottom Row
+                    HStack(spacing: isIpad ? 25 : 15) {
+                        FormatBadge(text: "avi", isPrimary: true, isAnimating: isAnimating)
+                            .offset(y: isAnimating ? 0 : 35)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.4), value: isAnimating)
+                        
+                        FormatBadge(text: "ts", isAnimating: isAnimating)
+                            .offset(y: isAnimating ? -10 : 50)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
+                        
+                        FormatBadge(text: "3gp", isPrimary: true, isAnimating: isAnimating)
+                            .offset(y: isAnimating ? 0 : 40)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.3), value: isAnimating)
+                    }
                 }
-                .frame(height: isIpad ? 420 : 420)
+                // "+20 More" badge
+                ZStack {
+                    // Orange Blur Glow
+                    Circle()
+                        .fill(Color.premiumAccent.opacity(0.4))
+                        .frame(width: isIpad ? 150 : 100, height: isIpad ? 80 : 50)
+                        .blur(radius: isIpad ? 40 : 25)
+                        .offset(y: 10)
+                    
+                    Text("+20 More")
+                        .appFont(.figtreeBold, size: isIpad ? 28 : 20)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, isIpad ? 35 : 25)
+                        .padding(.vertical, isIpad ? 16 : 12)
+                        .background(
+                            Color.white.opacity(0.1)
+                                .background(BlurView(style: .systemThinMaterialDark).opacity(0.6))
+                        )
+                        .cornerRadius(40)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 40)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [
+                                            .white.opacity(0.6),
+                                            .white.opacity(0.1),
+                                            .white.opacity(0.05),
+                                            .white.opacity(0.3)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
+                        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
+                }
+                .responsivePadding(edge: .top, fraction: isIpad ? 30 : 20)
+                .scaleEffect(isAnimating ? 1 : 0.5)
+                .opacity(isAnimating ? 1 : 0)
+                .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.5), value: isAnimating)
                 
                 Spacer()
                 
                 // MARK: - Text Content
-                VStack(alignment: .leading, spacing: isIpad ? 12 : 12) {
-                    Text("Organize Easily\nIn Folders")
+                VStack(alignment: .leading, spacing: isIpad ? 18 : 12) {
+                    Text("Supports\nAll Formats")
                         .appFont(.figtreeBold, size: isIpad ? 40 : 40)
                         .foregroundColor(.white)
                         .fixedSize(horizontal: false, vertical: true)
                         .scaleEffect(isAnimating ? 1 : 0.95, anchor: .leading)
                     
-                    Text("Create folders to keep your videos arranged.")
+                    Text("Compatible with major video formats.")
                         .appFont(.figtreeRegular, size: isIpad ? 16 : 16)
                         .foregroundColor(Color.white.opacity(0.80))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .responsivePadding(edge: .horizontal, fraction: isIpad ? 30 : 30)
+                .responsivePadding(edge: .horizontal, fraction: isIpad ? 60 : 30)
                 .offset(y: isAnimating ? 0 : 30)
                 .opacity(isAnimating ? 1 : 0)
-                .animation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.5), value: isAnimating)
+                .animation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.7), value: isAnimating)
                 
                 Spacer()
                 
@@ -139,12 +199,18 @@ struct Onboarding2View: View {
                         .background(Color.premiumAccent)
                         .cornerRadius(isIpad ? 50 : 40)
                 }
-                .responsivePadding(edge: .bottom, fraction: isIpad ? 10 : 10)
+                .responsivePadding(edge: .horizontal, fraction: isIpad ? 60 : 30)
+                .responsivePadding(edge: .bottom, fraction: isIpad ? 30 : 10)
                 .scaleEffect(isAnimating ? 1 : 0.9)
                 .opacity(isAnimating ? 1 : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.6), value: isAnimating)
+                .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.8), value: isAnimating)
             }
+            .scaleEffect(isAnimating ? 1 : 0.8)
+            .opacity(isAnimating ? 1 : 0)
+            
+           
         }
+        
         .hideNavigationBar()
         .onAppear {
             isAnimating = true
@@ -152,68 +218,67 @@ struct Onboarding2View: View {
     }
 }
 
-enum GradientSide {
-    case left, right
-}
-
-struct OnboardingFolderRow: View {
-    let title: String
-    let count: String
-    let gradientSide: GradientSide
+struct FormatBadge: View {
+    let text: String
+    var isPrimary: Bool = false
+    var isAnimating: Bool
+    
+    @State private var floatOffset: CGFloat = 0
     
     var body: some View {
-        HStack(spacing: isIpad ? 24 : 16) {
-            // Icon Section
-            ZStack {
-                RoundedRectangle(cornerRadius: isIpad ? 16 : 12)
-                    .fill(Color.black.opacity(0.4))
-                    .frame(width: isIpad ? 72 : 52, height: isIpad ? 72 : 52)
-                
-                Image(systemName: "folder.fill")
-                    .font(.system(size: isIpad ? 32 : 24))
-                    .foregroundColor(.premiumAccent)
+        Text(text)
+            .appFont(.figtreeBold, size: isPrimary ? (isIpad ? 30 : 30) : (isIpad ? 26 : 28))
+            .foregroundColor(isPrimary ? .black : .white)
+            .padding(.horizontal, isPrimary ? (isIpad ? 35 : 25) : (isIpad ? 30 : 20))
+            .padding(.vertical, isPrimary ? (isIpad ? 16 : 12) : (isIpad ? 14 : 10))
+            .background(
+                ZStack {
+                    if isPrimary {
+                        Color.white
+                    } else {
+                        Color.white.opacity(0.1)
+                            .background(BlurView(style: .systemThinMaterialDark).opacity(0.6))
+                    }
+                }
+            )
+            .cornerRadius(40)
+            .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
+            .scaleEffect(isAnimating ? 1 : 0.5)
+            .opacity(isAnimating ? 1 : 0)
+            .offset(y: floatOffset)
+            .onAppear {
+                if isAnimating {
+                    withAnimation(
+                        .easeInOut(duration: Double.random(in: 2.0...4.0))
+                        .repeatForever(autoreverses: true)
+                    ) {
+                        floatOffset = CGFloat.random(in: -10...10)
+                    }
+                }
             }
-            
-            // Info Section
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .appFont(.figtreeBold, size: 16)
-                    .foregroundColor(.white)
-                
-                Text(count)
-                    .appFont(.figtreeMedium, size:  14)
-                    .foregroundColor(Color.white.opacity(0.5))
+            .onChange(of: isAnimating) { newValue in
+                if newValue {
+                    withAnimation(
+                        .easeInOut(duration: Double.random(in: 2.0...4.0))
+                        .repeatForever(autoreverses: true)
+                    ) {
+                        floatOffset = CGFloat.random(in: -10...10)
+                    }
+                }
             }
-            
-            Spacer()
-            
-            // Actions (Ellipsis)
-            Image(systemName: "ellipsis")
-                .rotationEffect(.degrees(90))
-                .font(.system(size: isIpad ? 18 : 14, weight: .bold))
-                .foregroundColor(.white.opacity(0.6))
-        }
-        .padding(.horizontal, isIpad ? 18 : 12)
-        .padding(.vertical, isIpad ? 12 : 8)
-        .responsiveWidth(iphoneWidth: 310, ipadWidth: 220)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color(white: 1.0).opacity(0.08))
-                .overlay(
-                    // Alternating Gradient Highlight
-                    LinearGradient(
-                        colors: gradientSide == .right ? [.clear, .premiumAccent.opacity(0.2)] : [.premiumAccent.opacity(0.2), .clear],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .cornerRadius(18)
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-        )
     }
+}
+
+// Add a helper for animation in subviews
+extension EnvironmentValues {
+    var isAnimating: Bool {
+        get { self[IsAnimatingKey.self] }
+        set { self[IsAnimatingKey.self] = newValue }
+    }
+}
+
+struct IsAnimatingKey: EnvironmentKey {
+    static var defaultValue: Bool = false
 }
 
 #Preview {

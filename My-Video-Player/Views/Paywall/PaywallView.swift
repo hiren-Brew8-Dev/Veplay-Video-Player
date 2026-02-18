@@ -120,85 +120,69 @@ struct PaywallView: View {
                     .animation(.easeIn(duration: 0.3).delay(0.6), value: isAnimating)
                        
                     // MARK: - Header "Unlock Premium"
-                    HStack(spacing: 12) {
+                    VStack(spacing: 12) {
                         Text("Unlock")
                             .appFont(.figtreeExtraBold, size: 44)
                             .foregroundColor(.white)
+                            .frame(maxWidth: .infinity, alignment : .leading)
                         
                         Text("Premium")
                             .appFont(.figtreeExtraBold, size: 44)
                             .foregroundColor(.black)
                             .padding(.horizontal, 8)
                             .background(Color.premiumAccent)
+                            .frame(maxWidth: .infinity, alignment : .leading)
                     }
-                    .responsivePadding(edge: .top, fraction: 15)
+                    .responsivePadding(edge: .top, fraction: -35)
+                    .responsivePadding(edge: .horizontal, fraction: 25)
+                    .frame(maxWidth: .infinity, alignment : .leading)
                     .offset(y: isAnimating ? 0 : 20)
                     .opacity(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.05), value: isAnimating)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.05), value: isAnimating)
                     
-                    // MARK: - Features
-                    VStack(alignment: .leading, spacing: 16) {
-                        FeatureRow(icon: "feature_1_paywall", text: "Unlimited Folders")
-                            .offset(x: isAnimating ? 0 : -30)
-                            .opacity(isAnimating ? 1 : 0)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.1), value: isAnimating)
-                        
-                        FeatureRow(icon: "feature_2_paywall", text: "Background Playback")
-                            .offset(x: isAnimating ? 0 : -30)
-                            .opacity(isAnimating ? 1 : 0)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.15), value: isAnimating)
-                        
-                        FeatureRow(icon: "feature_3_paywall", text: "Ad-Free Experience")
-                            .offset(x: isAnimating ? 0 : -30)
-                            .opacity(isAnimating ? 1 : 0)
-                            .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.2), value: isAnimating)
-                    }
-                    .responsivePadding(edge: .top, fraction: 40)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .responsivePadding(edge: .leading, fraction: 55)
-                    /*
-                    if remoteConfigManager.isTrialPriceUnabled {
-                        HStack {
-                            Text("Not sure? Enable free trial")
-                                .appFont(.figtreeMedium, size: 14)
-                                .foregroundColor(.white)
-                            
-                            Spacer()
-                            
-                            CustomToggle(isOn: remoteConfigManager.currentSelectedPaywallPlan == remoteConfigManager.paywallFreeTrialPlan)
-                                .onTapGesture {
-                                    HapticsManager.shared.generate(.selection)
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        let trialPlan = remoteConfigManager.paywallFreeTrialPlan
-                                        
-                                        if remoteConfigManager.currentSelectedPaywallPlan != trialPlan {
-                                            
-                                            // Turn ON trial → switch to trial plan
-                                            remoteConfigManager.currentSelectedPaywallPlan = trialPlan
-                                            
-                                        } else {
-                                            
-                                            // Turn OFF trial → switch to first non-trial plan
-                                            if let firstNonTrialPlan = [0,1,2].first(where: { $0 != trialPlan }) {
-                                                remoteConfigManager.currentSelectedPaywallPlan = firstNonTrialPlan
-                                            }
-                                        }
-                                        
-                                    }
-                                }
-                        }
-                        .padding(isIpad ? 25 : 16)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(isIpad ? 30 : 20)
-                        .padding(.horizontal)
-                        
-                        .responsivePadding(edge: .top, fraction: 40)
-                        .offset(y: isAnimating ? 0 : 20)
+                    // Feature rows with staggered entrance
+                    VStack(alignment: .leading, spacing: 24) {
+                        FeatureRow(
+                            icon: "feature_1_paywall",
+                            title: "Supports 20+ Video Formats",
+                            subtitle: "MKV, MP4, AVI & more without transcoding."
+                        )
+                        .offset(x: isAnimating ? 0 : 20)
                         .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.25), value: isAnimating)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1), value: isAnimating)
                         
+                        FeatureRow(
+                            icon: "feature_2_paywall",
+                            title: "Secure with Face ID",
+                            subtitle: "Lock your app with face authentication."
+                        )
+                        .offset(x: isAnimating ? 0 : 20)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.15), value: isAnimating)
+                        
+                        FeatureRow(
+                            icon: "feature_3_paywall",
+                            title: "Background Audio Playback",
+                            subtitle: "Keep listening even when screen is locked."
+                        )
+                        .offset(x: isAnimating ? 0 : 20)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.2), value: isAnimating)
+                        
+                        FeatureRow(
+                            icon: "feature_4_paywall",
+                            title: "Seamless AirPlay Support",
+                            subtitle: "Cast 4K content to any device wirelessly."
+                        )
+                        .offset(x: isAnimating ? 0 : 20)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.25), value: isAnimating)
                     }
-                     */
+
+                    .responsivePadding(edge: .top, fraction: 30)
+                    .responsivePadding(edge: .horizontal, fraction: 25)
+                    .frame(maxWidth: .infinity, alignment : .leading)
+                   
                     
                     // MARK: - Subscription Plans
                     let weeklyPlan = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.weekly" }
@@ -214,9 +198,9 @@ struct PaywallView: View {
                             description: remoteConfigManager.weekly_plan_description,
                             onSelect: { selectPlan(0) }
                         )
-                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .scaleEffect(isAnimating ? 1 : 0.85)
                         .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.3), value: isAnimating)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.35), value: isAnimating)
                         
                         SubscriptionOption(
                             title: "Yearly",
@@ -226,9 +210,9 @@ struct PaywallView: View {
                             description: remoteConfigManager.yearly_plan_description,
                             onSelect: { selectPlan(1) }
                         )
-                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .scaleEffect(isAnimating ? 1 : 0.85)
                         .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.35), value: isAnimating)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.4), value: isAnimating)
                         
                         SubscriptionOption(
                             title: "Lifetime",
@@ -238,13 +222,13 @@ struct PaywallView: View {
                             description: remoteConfigManager.lifetime_plan_description,
                             onSelect: { selectPlan(2) }
                         )
-                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .scaleEffect(isAnimating ? 1 : 0.85)
                         .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.4), value: isAnimating)
+                        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.45), value: isAnimating)
                     }
                     
                     .responsivePadding(edge: .top, fraction: 30)
-                    .padding(.horizontal)
+                    .responsivePadding(edge: .horizontal, fraction: 20)
                     
                     // Status text
                     VStack(spacing: 4) {
@@ -285,9 +269,9 @@ struct PaywallView: View {
                     .responsivePadding(edge: .horizontal, fraction: 20)
                     .responsivePadding(edge: .top, fraction: 30)
                     .disabled(isProccesing)
-                    .scaleEffect(isAnimating ? 1 : 0.9)
+                    .scaleEffect(isAnimating ? 1 : 0.95)
                     .opacity(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.5), value: isAnimating)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.55), value: isAnimating)
                     
                     Text("🔒 Secured with iTunes. Cancel anytime")
                         .appFont(.figtreeMedium, size: 11)
@@ -306,12 +290,12 @@ struct PaywallView: View {
                         Text("|").foregroundColor(.white.opacity(0.3))
                         FooterLinkButton(text: "Privacy policy") {
                             HapticsManager.shared.generate(.light)
-                            openWebPage("https://sites.google.com/view/shivshankarapps/privacy-policy", title: "Privacy Policy")
+                            openWebPage("https://sites.google.com/view/shivshankarttiwari/privacy-policy", title: "Privacy Policy")
                         }
                         Text("|").foregroundColor(.white.opacity(0.3))
                         FooterLinkButton(text: "Terms of use") {
                             HapticsManager.shared.generate(.light)
-                            openWebPage("https://sites.google.com/view/shivshankarapps/terms-conditions", title: "Terms & Conditions")
+                            openWebPage("https://sites.google.com/view/shivshankarttiwari/terms-conditions", title: "Terms & Conditions")
                         }
                     }
                     .responsivePadding(edge: .top, fraction: 15)
@@ -322,8 +306,8 @@ struct PaywallView: View {
                         .appFont(.figtreeRegular, size: 8)
                         .foregroundColor(.white.opacity(0.5))
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 30)
-                        .padding(.vertical, 20)
+                        .responsivePadding(edge: .horizontal, fraction: 30)
+                        .responsivePadding(edge: .vertical, fraction: 20)
                         .opacity(isAnimating ? 1 : 0)
                         .animation(.easeIn(duration: 0.3).delay(0.65), value: isAnimating)
                     
@@ -331,7 +315,7 @@ struct PaywallView: View {
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
-            .responsiveWidth(iphoneWidth: 393, ipadWidth: 280)
+            .responsiveWidth(iphoneWidth: 393, ipadWidth: 300)
             
             
             if !subscriptionStore.isReady || isProccesing {
@@ -590,18 +574,35 @@ struct FooterLinkButton: View {
 
 struct FeatureRow: View {
     let icon: String
-    let text: String
+    let title: String
+    let subtitle: String
     
     var body: some View {
-        HStack(spacing: 12) {
-            Image(icon)
-                .font(.system(size: 20))
-                .foregroundColor(.white)
-                .frame(width: isIpad ? 40 : 24, height: isIpad ? 40 : 24)
+        HStack(spacing: 16) {
+            ZStack {
+                
+                Image(icon)
+                    .resizable()
+                    .aspectRatio(1.0,contentMode: .fit)
+                    .responsiveWidth(iphoneWidth: 48, ipadWidth: 35)
+                    .foregroundColor(Color.premiumAccent) // Design shows icon is orange-ish in dark theme usually, but code said white. Let's stick to design code: foregroundColor(.white) or the specific color?
+                    // Figma code for icon container doesn't specify icon color, but context implies it.
+                    // Actually, the previous inline code I wrote used .white. Let's use .premiumAccent if it's the icon color, or .white.
+                    // The screenshot shows Golden/Orange icons!
+                    .foregroundColor(Color.premiumAccent)
+            }
             
-            Text(text)
-                .appFont(.figtreeSemiBold, size: 18)
-                .foregroundColor(.white)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .appFont(.figtreeSemiBold, size: 19)
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                Text(subtitle)
+                    .appFont(.figtreeRegular, size: 13)
+                    .foregroundColor(Color(red: 0.62, green: 0.62, blue: 0.62))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 }

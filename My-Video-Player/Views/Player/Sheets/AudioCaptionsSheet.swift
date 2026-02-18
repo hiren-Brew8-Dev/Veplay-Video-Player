@@ -107,6 +107,8 @@ struct AudioCaptionsSheet: View {
                     }
                 }
             }
+            .padding(.bottom, isIpad ? 20 : 0)
+           
         }
         .applyIf(isIpad) { $0.cornerRadius(28) }
         .applyIf(isLandscape && !isIpad) { view in
@@ -247,6 +249,24 @@ struct AudioCaptionsSheet: View {
                     .foregroundColor(.white)
                 
                 Spacer()
+                
+                if abs(viewModel.audioDelay) > 0.001 {
+                    Button(action: {
+                        HapticsManager.shared.generate(.medium)
+                        withAnimation(.spring()) {
+                            viewModel.audioDelay = 0.0
+                        }
+                    }) {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.orange)
+                            .frame(width: 32, height: 32)
+                            .background(Color.orange.opacity(0.15))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.scale.combined(with: .opacity))
+                }
                 
                 Text(String(format: "%.2fs", viewModel.audioDelay))
                     .font(.system(size: 16, weight: .bold))

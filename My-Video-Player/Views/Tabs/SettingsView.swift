@@ -51,7 +51,7 @@ struct SettingsView: View {
                         VStack(spacing: 0) {
                             settingsToggleRow(
                                 icon: "lock.shield.fill",
-                                title: "App Lock",
+                                title: "Face ID Protection",
                                 subtitle: "Secure app with device authentication",
                                 isOn: Binding(
                                     get: { useFaceID },

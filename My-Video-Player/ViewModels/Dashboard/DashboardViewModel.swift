@@ -492,8 +492,11 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         setupSearchHistoryObserver()
         setupGroupedVideosObserver()
         
-        // Register for Photos library changes to handle system-level deletions
-        PHPhotoLibrary.shared().register(self)
+        // Register for Photos library changes only if authorized to avoid premature permission prompt
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if status == .authorized || status == .limited {
+            PHPhotoLibrary.shared().register(self)
+        }
     }
     
     deinit {
@@ -2273,13 +2276,15 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         case .notDetermined:
             PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] newStatus in
                 DispatchQueue.main.async {
+                    guard let self = self else { return }
                     if newStatus == .authorized || newStatus == .limited {
-                        self?.showPermissionDenied = false
-                        self?.fetchAssets()
-                        self?.fetchAlbums()
+                        PHPhotoLibrary.shared().register(self)
+                        self.showPermissionDenied = false
+                        self.fetchAssets()
+                        self.fetchAlbums()
                         completion(true)
                     } else {
-                        self?.showPermissionDenied = true
+                        self.showPermissionDenied = true
                         completion(false)
                     }
                 }
@@ -2296,6 +2301,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         switch status {
         case .authorized, .limited:
+            PHPhotoLibrary.shared().register(self)
             self.showPermissionDenied = false
             fetchAssets()
             fetchAlbums()
@@ -2304,21 +2310,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 self.showPermissionDenied = true
             }
         case .notDetermined:
-            // Don't request permission during onboarding — Onboarding4View handles it
-            let isOnboardingCompleted = UserDefaults.standard.bool(forKey: "isOnboardingCompleted")
-            guard isOnboardingCompleted else { return }
-            
-            PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] newStatus in
-                DispatchQueue.main.async {
-                    if newStatus == .authorized || newStatus == .limited {
-                        self?.showPermissionDenied = false
-                        self?.fetchAssets()
-                        self?.fetchAlbums()
-                    } else {
-                        self?.showPermissionDenied = true
-                    }
-                }
-            }
+            // Don't request permission here. Let PhotoLibraryAccessView handle it.
+            return
         @unknown default:
             break
         }
@@ -2626,6 +2619,13 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     
     private func fetchAsset(for identifier: String?) -> PHAsset? {
         guard let identifier = identifier else { return nil }
+        
+        // Safety check: Don't call fetchAssets if permission is not granted yet to avoid auto-prompt
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else {
+            return nil
+        }
+        
         let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
         return fetchResult.firstObject
     }

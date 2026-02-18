@@ -39,23 +39,13 @@ struct Onboarding3View: View {
                 HStack {
                     Spacer()
                     HStack(spacing: isIpad ? 6 : 4) {
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(width: isIpad ? 10 : 7, height: isIpad ? 10 : 7)
-                            .background(Color.white.opacity(0.50))
-                            .cornerRadius(24)
-                        
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(width: isIpad ? 10 : 7, height: isIpad ? 10 : 7)
-                            .background(Color.white.opacity(0.50))
-                            .cornerRadius(24)
-                        
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(width: isIpad ? 48 : 32, height: isIpad ? 10 : 7)
-                            .background(Color.premiumAccent)
-                            .cornerRadius(24)
+                        ForEach(0..<5) { index in
+                            Rectangle()
+                                .foregroundColor(.clear)
+                                .frame(width: index == 2 ? (isIpad ? 48 : 32) : (isIpad ? 10 : 7), height: isIpad ? 10 : 7)
+                                .background(index == 2 ? Color.premiumAccent : Color.white.opacity(0.30))
+                                .cornerRadius(24)
+                        }
                     }
                     .responsivePadding(edge: .top, fraction: isIpad ? 50 : 30)
                     .responsivePadding(edge: .trailing, fraction: isIpad ? 50 : 30)
@@ -63,124 +53,65 @@ struct Onboarding3View: View {
                 
                 Spacer()
                 
-                // MARK: - Player Preview Section
-                VStack(spacing: isIpad ? 40 : 24) {
-                    // Main Player Card
-                    ZStack {
-                        Image("VideoPlayerThumbnail")
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: isIpad ? 480 : 355, height: isIpad ? 400 : 296)
-                            .clipped()
-                        
-                        // Play Overlay
-                        Circle()
-                            .fill(Color.black.opacity(0.5))
-                            .frame(width: isIpad ? 72 : 52, height: isIpad ? 72 : 52)
-                            .scaleEffect(isAnimating ? 1 : 0.5)
-                            .opacity(isAnimating ? 1 : 0)
-                            .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.4), value: isAnimating)
-                            .overlay(
-                                Image(systemName: "play.fill")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: isIpad ? 28 : 20, weight: .bold))
-                            )
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: 0.5)
-                            )
-                        
-                        // Progress Bar & Controls
-                        VStack {
-                            Spacer()
-                            
-                            // Progress Bar
-                            ZStack(alignment: .leading) {
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.3))
-                                    .frame(width: isIpad ? 440 : 323, height: isIpad ? 6 : 4)
-                                    .cornerRadius(16)
-                                
-                                Rectangle()
-                                    .fill(Color.premiumAccent)
-                                    .frame(width: isAnimating ? (isIpad ? 160 : 120) : 0, height: isIpad ? 6 : 4)
-                                    .cornerRadius(16)
-                            }
-                            .padding(.bottom, isIpad ? 12 : 8)
-                            .animation(.easeOut(duration: 1.0).delay(0.6), value: isAnimating)
-                            
-                            HStack {
-                                Text("00:00")
-                                    .appFont(.figtreeSemiBold, size: isIpad ? 18 : 14)
-                                    .foregroundColor(.white)
-                                Spacer()
-                                Text("02:23")
-                                    .appFont(.figtreeSemiBold, size: isIpad ? 18 : 14)
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.horizontal, isIpad ? 24 : 16)
-                            .padding(.bottom, isIpad ? 24 : 16)
-                            .opacity(isAnimating ? 1 : 0)
-                            .animation(.easeIn(duration: 0.5).delay(0.7), value: isAnimating)
-                        }
-                    }
-                    .frame(width: isIpad ? 480 : 355, height: isIpad ? 400 : 296)
-                    .background(Color.black.opacity(0.5))
-                    .cornerRadius(isIpad ? 40 : 32)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: isIpad ? 40 : 32)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
-                    .scaleEffect(isAnimating ? 1 : 0.8)
-                    .rotation3DEffect(.degrees(isAnimating ? 0 : 10), axis: (x: 1, y: 0, z: 0))
-                    .offset(y: isAnimating ? 0 : -50)
-                    .opacity(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
+                // MARK: - Folder Cards Section (Zigzagged and Tilted)
+                VStack(spacing: isIpad ? 35 : 25) {
+                    // Card 1: Downloads
+                    OnboardingFolderRow(title: "Downloads", count: "16 Videos", gradientSide: .right)
+                        .rotationEffect(.degrees(-1))
+                        .rotation3DEffect(.degrees(isAnimating ? 0 : 20), axis: (x: 0, y: 1, z: 0))
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .offset(x: isAnimating ? -20 : -100)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: isAnimating)
                     
-                    // Feature Tags (Centered Row)
-                    HStack(alignment: .center, spacing: isIpad ? 20 : 12) {
-                        OnboardingTag(icon: "rectangle.inset.filled", text: "Fill")
-                            .rotationEffect(.degrees(-6))
-                            .offset(y: 5)
-                            .scaleEffect(isAnimating ? 1 : 0.5)
-                            .opacity(isAnimating ? 1 : 0)
-                            .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.4), value: isAnimating)
-                        
-                        OnboardingTag(icon: "text.bubble.fill", text: "Audio & CC")
-                            .scaleEffect(isAnimating ? 1 : 0.5)
-                            .opacity(isAnimating ? 1 : 0)
-                            .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.5), value: isAnimating)
-                        
-                        OnboardingTag(text: "1.0x")
-                            .rotationEffect(.degrees(6))
-                            .offset(y: 5)
-                            .scaleEffect(isAnimating ? 1 : 0.5)
-                            .opacity(isAnimating ? 1 : 0)
-                            .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.6), value: isAnimating)
-                    }
+                    // Card 2: Vacation 2025
+                    OnboardingFolderRow(title: "Vacation 2025", count: "42 Videos", gradientSide: .left)
+                        .rotationEffect(.degrees(2))
+                        .rotation3DEffect(.degrees(isAnimating ? 0 : -20), axis: (x: 0, y: 1, z: 0))
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .offset(x: isAnimating ? 20 : 100)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
+                    
+                    // Card 3: Office Work
+                    OnboardingFolderRow(title: "Office Work", count: "12 Videos", gradientSide: .right)
+                        .rotationEffect(.degrees(-1))
+                        .rotation3DEffect(.degrees(isAnimating ? 0 : 20), axis: (x: 0, y: 1, z: 0))
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .offset(x: isAnimating ? -20 : -100)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.3), value: isAnimating)
+                    
+                    // Card 4: College Documentary
+                    OnboardingFolderRow(title: "College Documentary", count: "20 Videos", gradientSide: .left)
+                        .rotationEffect(.degrees(2))
+                        .rotation3DEffect(.degrees(isAnimating ? 0 : -20), axis: (x: 0, y: 1, z: 0))
+                        .scaleEffect(isAnimating ? 1 : 0.8)
+                        .offset(x: isAnimating ? 20 : 100)
+                        .opacity(isAnimating ? 1 : 0)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.4), value: isAnimating)
                 }
-                .responsivePadding(edge: .top, fraction: isIpad ? 20 : 10)
-                .responsivePadding(edge: .bottom, fraction: isIpad ? 40 : 20)
+                .frame(height: isIpad ? 420 : 420)
                 
                 Spacer()
                 
                 // MARK: - Text Content
                 VStack(alignment: .leading, spacing: isIpad ? 18 : 12) {
-                    Text("Clean Playback\nExperience")
+                    Text("Organize Easily\nIn Folders")
                         .appFont(.figtreeBold, size: isIpad ? 40 : 40)
                         .foregroundColor(.white)
                         .fixedSize(horizontal: false, vertical: true)
                         .scaleEffect(isAnimating ? 1 : 0.95, anchor: .leading)
                     
-                    Text("A simple player with clear controls.")
+                    Text("Create folders to keep your videos arranged.")
                         .appFont(.figtreeRegular, size: isIpad ? 16 : 16)
                         .foregroundColor(Color.white.opacity(0.80))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .responsivePadding(edge: .horizontal, fraction: isIpad ? 30 : 30)
+                .responsivePadding(edge: .horizontal, fraction: isIpad ? 60 : 30)
                 .offset(y: isAnimating ? 0 : 30)
                 .opacity(isAnimating ? 1 : 0)
-                .animation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.7), value: isAnimating)
+                .animation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.5), value: isAnimating)
                 
                 Spacer()
                 
@@ -198,10 +129,11 @@ struct Onboarding3View: View {
                         .background(Color.premiumAccent)
                         .cornerRadius(isIpad ? 50 : 40)
                 }
-                .responsivePadding(edge: .bottom, fraction: isIpad ? 10 : 10)
+                .responsivePadding(edge: .horizontal, fraction: isIpad ? 60 : 30)
+                .responsivePadding(edge: .bottom, fraction: isIpad ? 30 : 10)
                 .scaleEffect(isAnimating ? 1 : 0.9)
                 .opacity(isAnimating ? 1 : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.8), value: isAnimating)
+                .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.6), value: isAnimating)
             }
         }
         .hideNavigationBar()
@@ -211,25 +143,82 @@ struct Onboarding3View: View {
     }
 }
 
-struct OnboardingTag: View {
-    var icon: String? = nil
-    let text: String
+enum GradientSide {
+    case left, right
+}
+
+struct OnboardingFolderRow: View {
+    let title: String
+    let count: String
+    let gradientSide: GradientSide
     
     var body: some View {
-        HStack(spacing: isIpad ? 12 : 8) {
-            if let icon = icon {
-                Image(systemName: icon)
-                    .font(.system(size: isIpad ? 18 : 14))
-                    .foregroundColor(.white)
+        HStack(spacing: isIpad ? 24 : 16) {
+            // Icon Section
+            ZStack {
+                RoundedRectangle(cornerRadius: isIpad ? 16 : 12)
+                    .fill(Color.black.opacity(0.4))
+                    .frame(width: isIpad ? 72 : 52, height: isIpad ? 72 : 52)
+                
+                Image(systemName: "folder.fill")
+                    .font(.system(size: isIpad ? 32 : 24))
+                    .foregroundColor(.premiumAccent)
             }
-            Text(text)
-                .appFont(.figtreeSemiBold, size: isIpad ? 18 : 14)
-                .foregroundColor(.white)
+            
+            // Info Section
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .appFont(.figtreeBold, size: 16)
+                    .foregroundColor(.white)
+                
+                Text(count)
+                    .appFont(.figtreeMedium, size:  14)
+                    .foregroundColor(Color.white.opacity(0.5))
+            }
+            
+            Spacer()
+            
+            // Actions (Ellipsis)
+            Image(systemName: "ellipsis")
+                .rotationEffect(.degrees(90))
+                .font(.system(size: isIpad ? 18 : 14, weight: .bold))
+                .foregroundColor(.white.opacity(0.6))
         }
-        .padding(.horizontal, isIpad ? 24 : 16)
-        .padding(.vertical, isIpad ? 15 : 10)
-        .background(Color.white.opacity(0.12))
-        .cornerRadius(isIpad ? 50 : 40)
+        .padding(.horizontal, isIpad ? 18 : 12)
+        .padding(.vertical, isIpad ? 12 : 8)
+        .responsiveWidth(iphoneWidth: 310, ipadWidth: 220)
+        .background(
+            ZStack {
+                Color.white.opacity(0.1)
+                    .background(BlurView(style: .systemThinMaterialDark).opacity(0.6))
+                
+                // Alternating Gradient Highlight
+                LinearGradient(
+                    colors: gradientSide == .right ? [.clear, .premiumAccent.opacity(0.15)] : [.premiumAccent.opacity(0.15), .clear],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            }
+        )
+    
+        .cornerRadius(18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            .white.opacity(0.6),
+                            .white.opacity(0.1),
+                            .white.opacity(0.05),
+                            .white.opacity(0.3)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
     }
 }
 

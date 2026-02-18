@@ -11,6 +11,7 @@ struct ThanksForDownloadingView: View {
     @EnvironmentObject var navManager: NavigationManager
     @AppStorage("isOnboardingCompleted") private var isOnboardingCompleted = false
     @State private var isAnimating = false
+    @State private var heartRotation: Double = 0
     
     var body: some View {
         ZStack {
@@ -18,131 +19,114 @@ struct ThanksForDownloadingView: View {
             Color.black
                 .ignoresSafeArea()
             
-            // Decorative Blurred Circles
+            // Decorative Background Accents
             Group {
                 Circle()
-                    .foregroundColor(.bgBlurOrange1.opacity(0.2))
-                    .responsiveWidth(iphoneWidth: 256)
-                    .responsiveHeight(iphoneHeight: 256)
-                    .blur(radius: 80)
-                    .offset(x: -164.50, y: 410)
+                    .foregroundColor(Color(red: 0.98, green: 0.69, blue: 0.27).opacity(0.12))
+                    .responsiveWidth(iphoneWidth: 256, ipadWidth: 400)
+                    .responsiveHeight(iphoneHeight: 256, ipadHeight: 400)
+                    .blur(radius: isIpad ? 120 : 80)
+                    .offset(x: isIpad ? -250 : -164.50, y: isIpad ? 600 : 410)
                 
                 Circle()
-                    .foregroundColor(.bgBlurOrange2.opacity(0.2))
-                    .responsiveWidth(iphoneWidth: 256)
-                    .responsiveHeight(iphoneHeight: 256)
-                    .blur(radius: 80)
-                    .offset(x: 161.50, y: -410)
+                    .foregroundColor(Color(red: 1, green: 0.67, blue: 0.21).opacity(0.12))
+                    .responsiveWidth(iphoneWidth: 256, ipadWidth: 400)
+                    .responsiveHeight(iphoneHeight: 256, ipadHeight: 400)
+                    .blur(radius: isIpad ? 120 : 80)
+                    .offset(x: isIpad ? 250 : 161.50, y: isIpad ? -600 : -410)
             }
+            .opacity(isAnimating ? 1 : 0)
+            .animation(.easeIn(duration: 1.0), value: isAnimating)
             
             VStack(spacing: 0) {
                 Spacer()
-                    .responsiveHeight(iphoneHeight: 80)
+                    .responsiveHeight(iphoneHeight: 50, ipadHeight: 80)
                 
                 // MARK: - Title
-                Text("Thanks for\nDownloading")
+                Text("Thanks For\nRating Us")
                     .appFont(.figtreeBold, size: 52)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-                    .scaleEffect(isAnimating ? 1 : 0.9)
+                    .scaleEffect(isAnimating ? 1 : 0.95)
+                    .offset(y: isAnimating ? 0 : 30)
                     .opacity(isAnimating ? 1 : 0)
                     .animation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.1), value: isAnimating)
                 
                 Spacer()
                 
-                // MARK: - Message Card
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack(alignment: .top, spacing: 0) {
-                        // Message Text
-                        Text("You’ve not just downloaded our app, but you’ve given us the opportunity to help you make your phone clean. We’re glad to have you here!")
-                            .appFont(.figtreeMedium, size: 18)
-                            .lineSpacing(10)
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.leading)
+                // MARK: - Central Illustration (Hand + Heart)
+                ZStack {
+                    // Illustration Group
+                    ZStack(alignment: .top) {
+                        // Heart with Animation
+                        Image("heart_tfr")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .responsiveWidth(iphoneWidth: 130, ipadWidth: 120)
+                            .responsivePadding(edge: .leading, fraction: -10)
+                            .offset(y: isIpad ? -80 : -60)
+                            .rotation3DEffect(
+                                .degrees(heartRotation),
+                                axis: (x: 0.0, y: 1.0, z: 0.0)
+                            )
+                            .animation(
+                                Animation.linear(duration: 5.0)
+                                    .repeatForever(autoreverses: false),
+                                value: 0
+                            )
                         
-                        Spacer()
-                            .responsiveWidth(iphoneWidth: 15)
-                        
-                        // Hand/Heart Illustration Group
-                        ZStack (alignment: .top){
-                            // Orange Glow
-                            
-                            VStack(spacing: -30) {
-                                Image("heart_tfr")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .responsiveWidth(iphoneWidth: 60)
-                                    .responsiveHeight(iphoneHeight: 60)
-                                
-                                Image("hand_tfr")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .responsiveWidth(iphoneWidth: 70)
-                                    .responsiveHeight(iphoneHeight: 120)
-                            }
-                            .responsivePadding(edge: .top, fraction: -20)
-                        }
-                        .scaleEffect(isAnimating ? 1 : 0.6)
-                        .opacity(isAnimating ? 1 : 0)
-                        .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.4), value: isAnimating)
+                        // Hand
+                        Image("hand_tfr")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .responsiveWidth(iphoneWidth: 170, ipadWidth: 240)
                     }
                     
-                    
-                    Spacer()
-                    
-                    // Team Signature
-                    Text("~Team Video Player")
-                        .appFont(.figtreeBold, size: 20)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    // Specific Red Blur behind Heart
+                    Circle()
+                        .fill(Color(red: 1, green: 0.36, blue: 0.36).opacity(0.20))
+                        .responsiveWidth(iphoneWidth: 100, ipadWidth: 150)
+                        .responsiveHeight(iphoneHeight: 100, ipadHeight: 150)
+                        .blur(radius: 40)
+                        .offset(y: isIpad ? -80 : -60)
                 }
-                
-                .responsivePadding(edge: .all, fraction: 20)
-                .aspectRatio(321/365, contentMode: .fit)
-                .responsiveWidth(iphoneWidth: 321, ipadWidth : 230)
-                .background(
-                    ZStack {
-                        Color(red: 1, green: 1, blue: 1).opacity(0.10)
-                        
-    
-                    }
-                )
-                .cornerRadius(isIpad ? 27 : 24)
+                .scaleEffect(isAnimating ? 1 : 0.7)
                 .offset(y: isAnimating ? 0 : 50)
                 .opacity(isAnimating ? 1 : 0)
-                .animation(.spring(response: 0.8, dampingFraction: 0.8).delay(0.3), value: isAnimating)
+                .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.3), value: isAnimating)
                 
                 Spacer()
+                
+              
                 
                 // MARK: - Action Button
                 Button(action: {
                     HapticsManager.shared.generate(.medium)
-                    isOnboardingCompleted = true
-                   
-                    if !Global.shared.getIsUserPro() {
-                        navManager.push(.paywall(isFromOnboarding: true))
-                    } else {
-                        navManager.push(.dashboard)
-                    }
+                    navManager.push(.paywall(isFromOnboarding: true))
                 }) {
                     Text("Continue")
-                        .appFont(.figtreeBold, size: 20)
+                        .appFont(.figtreeBold, size: isIpad ? 26 : 20)
                         .foregroundColor(Color(red: 0.05, green: 0.05, blue: 0.06))
-                        .responsiveWidth(iphoneWidth: 321)
-                        .responsiveHeight(iphoneHeight: 52)
+                        .aspectRatio(321/52, contentMode: .fit)
+                        .responsiveWidth(iphoneWidth: 321, ipadWidth: 321)
+                        .responsiveHeight(iphoneHeight: 52, ipadHeight: 52)
                         .background(Color.premiumAccent)
-                        .cornerRadius(40)
+                        .cornerRadius(isIpad ? 50 : 40)
                 }
-                .responsivePadding(edge: .bottom, fraction: 20)
-                .scaleEffect(isAnimating ? 1 : 0.8)
+                .responsivePadding(edge: .horizontal, fraction: isIpad ? 60 : 30)
+                .responsivePadding(edge: .bottom, fraction: isIpad ? 30 : 10)
+                .scaleEffect(isAnimating ? 1 : 0.9)
                 .opacity(isAnimating ? 1 : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.5), value: isAnimating)
+                
+                .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.6), value: isAnimating)
             }
-            .responsivePadding(edge: .horizontal, fraction: 30)
         }
         .hideNavigationBar()
         .onAppear {
             isAnimating = true
+            heartRotation = 360
+            
+            // Still trigger review prompt as context implies "Thanks for Rating"
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 AppReviewManager.submitReview()
             }

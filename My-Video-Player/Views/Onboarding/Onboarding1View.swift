@@ -37,23 +37,13 @@ struct Onboarding1View: View {
                 HStack {
                     Spacer()
                     HStack(spacing: isIpad ? 6 : 4) {
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(width: isIpad ? 48 : 32, height: isIpad ? 10 : 7)
-                            .background(Color.premiumAccent)
-                            .cornerRadius(24)
-                        
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(width: isIpad ? 10 : 7, height: isIpad ? 10 : 7)
-                            .background(Color.white.opacity(0.50))
-                            .cornerRadius(24)
-                        
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(width: isIpad ? 10 : 7, height: isIpad ? 10 : 7)
-                            .background(Color.white.opacity(0.50))
-                            .cornerRadius(24)
+                        ForEach(0..<5) { index in
+                            Rectangle()
+                                .foregroundColor(.clear)
+                                .frame(width: index == 0 ? (isIpad ? 48 : 32) : (isIpad ? 10 : 7), height: isIpad ? 10 : 7)
+                                .background(index == 0 ? Color.premiumAccent : Color.white.opacity(0.30))
+                                .cornerRadius(24)
+                        }
                     }
                     .responsivePadding(edge: .top, fraction: isIpad ? 50 : 30)
                     .responsivePadding(edge: .trailing, fraction: isIpad ? 50 : 30)
@@ -63,32 +53,15 @@ struct Onboarding1View: View {
                 
                 // MARK: - Image Cards Section
                 ZStack {
-                   
-                    // Right Top Card
-                    OnboardingImageCard(
-                        imageName: "Image_2_right_top_onb_1",
-                        width: isIpad ? 121 : 171,
-                        height: isIpad ? 139 : 189,
-                        playButtonSize: isIpad ? 21.34 : 31.34
-                    )
-                    .rotationEffect(.degrees(12))
-                    .scaleEffect(isAnimating ? 1 : 0.6)
-                    .offset(
-                        x: isAnimating ? (isIpad ? 130 : 85) : (isIpad ? 150 : 150),
-                        y: isAnimating ? (isIpad ? -80 : 10) : (isIpad ? -130 : -130)
-                    )
-                    .opacity(isAnimating ? 1 : 0)
-                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
-                    
-                    
+                 
                     // Left Top Card
                     OnboardingImageCard(
                         imageName: "Image_1_left_top_onb_1",
-                        width: isIpad ? 131 : 171,
-                        height: isIpad ? 163 : 213,
+                        width: isIpad ? 121 : 185,
+                        height: isIpad ? 201 : 241,
                         playButtonSize: isIpad ? 25 : 35
                     )
-                    .rotationEffect(.degrees(-8))
+                    .rotationEffect(.degrees(-4))
                     .scaleEffect(isAnimating ? 1 : 0.6)
                     .offset(
                         x: isAnimating ? (isIpad ? -130 : -80) : (isIpad ? -150 : -150),
@@ -98,6 +71,24 @@ struct Onboarding1View: View {
                     .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: isAnimating)
                     
                     
+                     // Right Top Card
+                     OnboardingImageCard(
+                         imageName: "Image_2_right_top_onb_1",
+                         width: isIpad ? 124 : 184,
+                         height: isIpad ? 164 : 214,
+                         playButtonSize: isIpad ? 21.34 : 31.34
+                     )
+                     .rotationEffect(.degrees(4))
+                     .scaleEffect(isAnimating ? 1 : 0.6)
+                     .offset(
+                         x: isAnimating ? (isIpad ? 130 : 65) : (isIpad ? 150 : 150),
+                         y: isAnimating ? (isIpad ? -80 : 10) : (isIpad ? -130 : -130)
+                     )
+                     .opacity(isAnimating ? 1 : 0)
+                     .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.2), value: isAnimating)
+                     
+                     
+                    
                     // Bottom Center Card
                     OnboardingImageCard(
                         imageName: "Image_3_bottom_center_onb_1",
@@ -106,7 +97,7 @@ struct Onboarding1View: View {
                         playButtonSize: isIpad ? 30 : 40
                     )
                     .scaleEffect(isAnimating ? 1 : 0.7)
-                    .offset(x: isIpad ? 0 : -15, y: isAnimating ? (isIpad ? 140 : 100) : (isIpad ? 300 : 130))
+                    .offset(x: isIpad ? 0 : -15, y: isAnimating ? (isIpad ? 140 : 145) : (isIpad ? 300 : 130))
                     .opacity(isAnimating ? 1 : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.6).delay(0.3), value: isAnimating)
                 }
@@ -116,7 +107,7 @@ struct Onboarding1View: View {
                 
                 // MARK: - Text Content
                 VStack(alignment: .leading, spacing: isIpad ? 18 : 12) {
-                    Text("Play Any Video\nEffortlessly")
+                    Text("All-in-1\nVideo Player")
                         .appFont(.figtreeBold, size: isIpad ? 40 : 40)
                         .foregroundColor(.white)
                         .fixedSize(horizontal: false, vertical: true)

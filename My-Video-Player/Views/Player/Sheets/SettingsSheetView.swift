@@ -37,6 +37,7 @@ struct SettingsSheetView: View {
                 portraitBody
             }
         }
+        .padding(.vertical, isIpad ? 20 : 0)
         .background(Color.homeSheetBackground.ignoresSafeArea())
         .overlay(
             Group {

@@ -86,16 +86,13 @@ struct SearchView: View {
                     navigationManager.pop()
                 }
             }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.premiumCircleBackground)
-                        .frame(width: AppDesign.Icons.circleButtonSize, height: AppDesign.Icons.circleButtonSize)
-                    
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: isIpad ? 22 : 16, weight: .bold))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: "chevron.left")
+                    .font(.system(size: isIpad ? 20 : 18, weight: .bold))
+                    .frame(width: 30, height: 30)
             }
+            .glassButtonStyle()
+            .buttonBorderShape(.circle)
+            .adaptiveButtonSizing()
             
             Text("Search in \(contextTitle.isEmpty ? viewModel.lastActiveDataTab.rawValue : contextTitle)")
                 .font(.system(size: isIpad ? 24 : 18, weight: .bold))

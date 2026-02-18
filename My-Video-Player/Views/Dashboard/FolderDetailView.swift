@@ -85,6 +85,14 @@ struct FolderDetailView: View {
                     if isLoading {
                         ProgressView()
                             .padding(.top, 100)
+                    } else if displayVideos.isEmpty && folder.subfolders.isEmpty {
+                        VStack(spacing: 0) {
+                            Spacer()
+                            emptyStateView
+                                .responsivePadding(edge: .top, fraction: 40)
+                            Spacer()
+                            Spacer()
+                        }
                     } else if isGridView {
                         gridView
                     } else {
@@ -823,6 +831,37 @@ struct FolderDetailView: View {
         }))
         
         return items
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: 24) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.05))
+                    .frame(width: 100, height: 100)
+                
+                Image(systemName: "video.slash")
+                    .font(.system(size: 40))
+                    .foregroundColor(.white.opacity(0.2))
+            }
+            
+            VStack(spacing: 12) {
+                Text("No Videos Found")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Text(folder.url == nil ? 
+                     "This album doesn't have any videos yet." : 
+                     "This folder is empty. Import some videos\nto see them here.")
+                .font(.system(size: 14))
+                .foregroundColor(.white.opacity(0.5))
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+            }
+            .padding(.horizontal, 40)
+            
+           
+        }
     }
 
     
