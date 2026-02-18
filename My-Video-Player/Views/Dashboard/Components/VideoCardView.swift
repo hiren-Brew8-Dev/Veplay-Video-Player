@@ -115,10 +115,16 @@ struct VideoCardView: View {
                                 .cornerRadius(8)
                         }
                         
-                        Text("\(formatDate(video.importDate))")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.white.opacity(0.8))
-                            .lineLimit(1)
+                        HStack(spacing: 4) {
+                            Text(formatDate(video.importDate))
+                            if video.asset == nil {
+                                Text("•")
+                                Text(formatBytes(video.fileSizeBytes))
+                            }
+                        }
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                        .lineLimit(1)
                     }
                 }
                 .padding(16)

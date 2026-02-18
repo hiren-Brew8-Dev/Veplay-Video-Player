@@ -73,6 +73,10 @@ struct VideoRowView: View {
                 
                 HStack(spacing: 4) {
                     Text(formattedDate(video.importDate))
+                    if video.asset == nil { // Only show file size for imported/local videos
+                        Text("•")
+                        Text(formatBytes(video.fileSizeBytes))
+                    }
                 }
                 .font(.system(size: isIpad ? 16 : 12))
                 .foregroundColor(.homeTextSecondary)
