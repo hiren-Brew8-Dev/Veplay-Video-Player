@@ -233,10 +233,16 @@ struct PaywallView: View {
                     // Status text
                     VStack(spacing: 4) {
                         Text(currentBottomLineDescription)
-                            .appFont(.figtreeMedium, size: 14)
+                            .appFont(.figtreeBold, size: 14)
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                             .responsivePadding(edge: .top, fraction: 25)
+                        
+                        Text(currentBottomPricingDescription)
+                            .appFont(.figtreeMedium, size: 11)
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                           
                     }
                     .opacity(isAnimating ? 1 : 0)
                     .animation(.easeIn(duration: 0.3).delay(0.45), value: isAnimating)
@@ -267,7 +273,7 @@ struct PaywallView: View {
                         
                     }
                     .responsivePadding(edge: .horizontal, fraction: 20)
-                    .responsivePadding(edge: .top, fraction: 30)
+                    .responsivePadding(edge: .top, fraction: 20)
                     .disabled(isProccesing)
                     .scaleEffect(isAnimating ? 1 : 0.95)
                     .opacity(isAnimating ? 1 : 0)
@@ -333,6 +339,25 @@ struct PaywallView: View {
         .onAppear {
             checkPaywallXTypes()
             isAnimating = true
+            
+            // Force Portrait on iPhone
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                AppDelegate.orientationLock = .portrait
+                if #available(iOS 16.0, *) {
+                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                        windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
+                    }
+                } else {
+                    UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+                    UIViewController.attemptRotationToDeviceOrientation()
+                }
+            }
+        }
+        .onDisappear {
+            // Reset to allow all orientations when leaving
+            if UIDevice.current.userInterfaceIdiom == .phone {
+                AppDelegate.orientationLock = .all
+            }
         }
     }
     
@@ -351,6 +376,27 @@ struct PaywallView: View {
             price = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.yearly" }?.displayPrice ?? ""
         case 2:
             description = remoteConfigManager.lifetime_plan_bottom_line_description
+            price = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.lifetime" }?.displayPrice ?? ""
+        default:
+            return ""
+        }
+        
+        return description.replacingOccurrences(of: "[Pricing]", with: price)
+    }
+    
+    private var currentBottomPricingDescription: String {
+        let description: String
+        let price: String
+        
+        switch remoteConfigManager.currentSelectedPaywallPlan {
+        case 0:
+            description = "Auto-renews @ just [Pricing]/week"
+            price = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.weekly" }?.displayPrice ?? ""
+        case 1:
+            description = "Auto-renews @ just [Pricing]/year"
+            price = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.yearly" }?.displayPrice ?? ""
+        case 2:
+            description = "Pay once, Forever yours"
             price = subscriptionStore.subscriptions.first { $0.id == "com.video.player.veeplay.app.lifetime" }?.displayPrice ?? ""
         default:
             return ""

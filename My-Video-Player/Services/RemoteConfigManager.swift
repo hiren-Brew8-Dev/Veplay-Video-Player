@@ -52,9 +52,9 @@ class RemoteConfigManager: ObservableObject {
             "weekly_plan_description": "Free for \n3 days" as NSObject,
             "yearly_plan_description": "Design All Year" as NSObject,
             "lifetime_plan_description": "Limited\nTime offer" as NSObject,
-            "week_plan_bottom_line_description": "🔥 No Payment Now! Auto-renew @ just [Pricing]/week" as NSObject,
-            "year_plan_bottom_line_description": "Auto-renews @ just [Pricing]/year" as NSObject,
-            "lifetime_plan_bottom_line_description": "Pay once, Forever yours" as NSObject,
+            "week_plan_bottom_line_description": "--" as NSObject,
+            "year_plan_bottom_line_description": "--" as NSObject,
+            "lifetime_plan_bottom_line_description": "--" as NSObject,
             
             "paywall_plan_title_opacity": 60.0 as NSObject,
             "paywall_freeTrial_plan" : 0 as NSObject

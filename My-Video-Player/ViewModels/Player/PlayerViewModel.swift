@@ -2433,12 +2433,39 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
     }
     
     
+    @MainActor
+    func triggerPaywall() {
+        // Enforce portrait before showing paywall on iPhone
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            if windowScene?.interfaceOrientation.isLandscape == true {
+                // Lock and Rotate
+                AppDelegate.orientationLock = .portrait
+                if #available(iOS 16.0, *) {
+                    windowScene?.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait))
+                } else {
+                    UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+                    UIViewController.attemptRotationToDeviceOrientation()
+                }
+                
+                // Delay showing paywall slightly to allow rotation animation
+                Task {
+                    try? await Task.sleep(nanoseconds: 400_000_000) // 0.4s
+                    self.showPaywall = true
+                }
+                return
+            }
+        }
+        
+        self.showPaywall = true
+    }
+
     // MARK: - Sleep Timer
     
     @MainActor
     func startSleepTimer(minutes: Int) {
         if !Global.shared.getIsUserPro() {
-            self.showPaywall = true
+            triggerPaywall()
             return
         }
         let duration = TimeInterval(minutes * 60)
@@ -2476,7 +2503,7 @@ extension PlayerViewModel: VLCMediaPlayerDelegate, VLCMediaDelegate {
     @MainActor
     func setSleepTimerEndOfTrack() {
         if !Global.shared.getIsUserPro() {
-            self.showPaywall = true
+            triggerPaywall()
             return
         }
         cancelSleepTimer()
