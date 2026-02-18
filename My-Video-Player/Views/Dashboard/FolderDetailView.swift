@@ -54,10 +54,13 @@ struct FolderDetailView: View {
     }
     
     private var displayVideos: [VideoItem] {
-        let videos = (folder.videos.isEmpty && !asyncVideos.isEmpty) ? asyncVideos : folder.videos
+        let baseVideos = (folder.videos.isEmpty && !asyncVideos.isEmpty) ? asyncVideos : folder.videos
         
-        // Final sanity check: filter out any videos that might have been deleted globally
-        return videos.filter { v in
+        // 1. Resolve live metadata (titles, etc) from master list
+        let liveVideos = baseVideos.map { liveVideo($0) }
+        
+        // 2. Final sanity check: filter out any videos that might have been deleted globally
+        let filtered = liveVideos.filter { v in
             if v.asset != nil {
                 return viewModel.allGalleryVideos.contains(where: { $0.id == v.id })
             } else {
@@ -65,22 +68,9 @@ struct FolderDetailView: View {
                        viewModel.allVideosAcrossFolders.contains(where: { $0.id == v.id })
             }
         }
-    }
-    
-    var sortedVideos: [VideoItem] {
-        let sorted = displayVideos.sorted {
-            switch sortOption {
-            case .recents, .dateDesc: return $0.importDate > $1.importDate
-            case .dateAsc: return $0.importDate < $1.importDate
-            case .nameAsc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
-            case .nameDesc: return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedDescending
-            case .sizeDesc: return $0.fileSizeBytes > $1.fileSizeBytes
-            case .sizeAsc: return $0.fileSizeBytes < $1.fileSizeBytes
-            case .durationDesc: return $0.duration > $1.duration
-            case .durationAsc: return $0.duration < $1.duration
-            }
-        }
-        return sorted
+        
+        // 3. Apply sorting
+        return viewModel.sortVideos(filtered, by: sortOption)
     }
     
     var body: some View {
@@ -535,8 +525,8 @@ struct FolderDetailView: View {
                     } else {
                         // FOLDER MODE: Flat List (User Preference)
                         Section {
-                            ForEach(sortedVideos, id: \.id) { video in
-                                gridVideoItem(liveVideo(video), isLandscape: isLandscape, width: currentWidth)
+                            ForEach(displayVideos, id: \.id) { video in
+                                gridVideoItem(video, isLandscape: isLandscape, width: currentWidth)
                             }
                         }
                     }
@@ -597,8 +587,8 @@ struct FolderDetailView: View {
                 } else {
                     // Video list - ALL in ONE section card
                     Section {
-                        ForEach(sortedVideos, id: \.id) { video in
-                            videoRow(liveVideo(video))
+                        ForEach(displayVideos, id: \.id) { video in
+                            videoRow(video)
                                 .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                                 .padding(.bottom, 12)
                         }
@@ -755,7 +745,7 @@ struct FolderDetailView: View {
         } else {
             // Setup playlist context: All videos in this folder/album
             HapticsManager.shared.generate(.medium)
-            viewModel.currentPlaylist = sortedVideos
+            viewModel.currentPlaylist = displayVideos
             viewModel.playingVideo = video
         }
     }

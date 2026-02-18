@@ -525,7 +525,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             .store(in: &cancellables)
     }
     
-    private func sortVideos(_ items: [VideoItem], by option: SortOption) -> [VideoItem] {
+    func sortVideos(_ items: [VideoItem], by option: SortOption) -> [VideoItem] {
         return items.sorted {
             switch option {
             case .recents, .dateDesc: return $0.importDate > $1.importDate
