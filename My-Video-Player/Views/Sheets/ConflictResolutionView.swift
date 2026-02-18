@@ -119,16 +119,19 @@ struct ConflictResolutionView: View {
                         .cornerRadius(12)
                 }
                 
-                Button(action: {
-                    viewModel.resolveConflict(action: .replace, applyToAll: applyToAll)
-                }) {
-                    Text("Replace")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(12)
+                // Hide Replace option for Gallery operations (destructive)
+                if conflict.destinationAlbum == nil {
+                    Button(action: {
+                        viewModel.resolveConflict(action: .replace, applyToAll: applyToAll)
+                    }) {
+                        Text("Replace")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(12)
+                    }
                 }
                 
                 Button(action: {

@@ -285,6 +285,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     @Published var pendingImportNames: [String] = []
     @Published var processedImportNames: [String] = []
     @Published var isImportMoveOperation: Bool = false
+    private var tempExistingAlbumTitles: Set<String> = []
 
     
     var sortedFolders: [Folder] {
@@ -959,6 +960,10 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             if let album = album {
                 existingTitles = await getExistingVideoTitlesInAlbum(album)
             }
+            let allTitles = Set(existingTitles.keys)
+            await MainActor.run {
+                self.tempExistingAlbumTitles = allTitles
+            }
             
             for video in videosToPaste {
                 let filename = video.fullNameWithExtension
@@ -1034,18 +1039,47 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         case .skip:
             break
         case .replace:
+            // "Replace" is hidden in UI for Gallery operations, but keep logic safe just in case
             processedPasteItems.append(video)
             processedPasteNames.append(originalName)
-            // Replace in Photos means delete old and add new.
             if let asset = current.destinationAsset {
                 PHPhotoLibrary.shared().performChanges {
                     PHAssetChangeRequest.deleteAssets([asset] as NSArray)
                 }
             }
         case .keepBoth:
+            // 1. Same Asset ID Check (Gallery -> Gallery)
+            if let destAsset = current.destinationAsset, let sourceAsset = video.asset, destAsset.localIdentifier == sourceAsset.localIdentifier {
+                // If it's the exact same asset, just skip adding it again to avoid issues
+                break
+            }
+            
+            // 2. Different Asset (Import -> Gallery OR Different Asset Same Name)
+            // Generate unique name for the new file import to avoid collision
+            let fileManager = FileManager.default
+            let baseName = (originalName as NSString).deletingPathExtension
+            let ext = (originalName as NSString).pathExtension
+            var counter = 1
+            var uniqueName = originalName
+            
+            // Check against existing names (destination asset local ID isn't a filename check, but we assume conflict means name match)
+            // We use a simple counter strategy just to be safe if we are importing a file
+            if video.asset == nil {
+                // Only rename for local file imports
+                // Check against processed names AND existing album content
+                while processedPasteNames.contains(uniqueName) || tempExistingAlbumTitles.contains(uniqueName) {
+                    uniqueName = "\(baseName) (\(counter)).\(ext)"
+                    counter += 1
+                }
+                
+                while processedPasteNames.contains(uniqueName) || tempExistingAlbumTitles.contains(uniqueName) {
+                    uniqueName = "\(baseName) (\(counter)).\(ext)"
+                    counter += 1
+                }
+            }
+            
             processedPasteItems.append(video)
-            // Keep both in photos just means add it anyway (Photos handles duplicates)
-            processedPasteNames.append(originalName) 
+            processedPasteNames.append(uniqueName)
         }
         
         pendingPasteItems.remove(at: index)
@@ -1113,28 +1147,92 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 }
             }
             
-            // 2. Local Videos (Import)
+                // 2. Local Videos (Import)
             if !localVideos.isEmpty {
                 var urls: [URL] = []
+                var tempFilePaths: [URL] = []
+                
                 for video in localVideos {
-                    if let url = await getURLAsync(for: video) {
-                        urls.append(url)
+                    // Check if we have a rename request in processedPasteNames
+                    guard let index = processedPasteItems.firstIndex(where: { $0.id == video.id }) else { continue }
+                    
+                    if let originalURL = await getURLAsync(for: video) {
+                        let targetName = processedPasteNames[index]
+                        if targetName != video.fullNameWithExtension {
+                            // Rename Required! Re-export to new container to ensure unique hash
+                            // iOS Photos aggressively deduplicates based on content hash.
+                            // AVAssetExportSession with passthrough creates a new container structure.
+                            let tempDir = FileManager.default.temporaryDirectory
+                            let newURL = tempDir.appendingPathComponent(targetName)
+                            
+                            let asset = AVAsset(url: originalURL)
+                            if let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetPassthrough) {
+                                exportSession.outputURL = newURL
+                                
+                                let ext = (targetName as NSString).pathExtension.lowercased()
+                                if ext == "mov" {
+                                    exportSession.outputFileType = .mov
+                                } else if ext == "m4v" {
+                                    exportSession.outputFileType = .m4v
+                                } else {
+                                    exportSession.outputFileType = .mp4
+                                }
+                                
+                                await exportSession.export()
+                                
+                                if exportSession.status == .completed {
+                                    urls.append(newURL)
+                                    tempFilePaths.append(newURL)
+                                } else {
+                                    print("⚠️ Export failed: \(String(describing: exportSession.error))")
+                                    // Fallback to copy + null byte hack if export fails
+                                    try? FileManager.default.copyItem(at: originalURL, to: newURL)
+                                    do {
+                                        let handle = try FileHandle(forWritingTo: newURL)
+                                        defer {
+                                            if #available(iOS 13.0, *) { try? handle.close() }
+                                            else { handle.closeFile() }
+                                        }
+                                        if #available(iOS 13.4, *) {
+                                            try handle.seekToEnd(); try handle.write(contentsOf: Data([0]))
+                                        } else {
+                                            handle.seekToEndOfFile(); handle.write(Data([0]))
+                                        }
+                                    } catch { print("⚠️ Hash mod failed: \(error)") }
+                                    urls.append(newURL)
+                                    tempFilePaths.append(newURL)
+                                }
+                            } else {
+                                // Fallback if session creation fails
+                                try? FileManager.default.copyItem(at: originalURL, to: newURL)
+                                urls.append(newURL)
+                                tempFilePaths.append(newURL)
+                            }
+                        } else {
+                            urls.append(originalURL)
+                        }
                     }
                 }
                 
-                do {
-                    try await PHPhotoLibrary.shared().performChanges {
-                        let requests = urls.map { PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: $0) }
-                        if let album = album {
-                            let placeholders = requests.compactMap({ $0?.placeholderForCreatedAsset })
-                            if !placeholders.isEmpty {
-                                let albumRequest = PHAssetCollectionChangeRequest(for: album)
-                                albumRequest?.addAssets(placeholders as NSArray)
+                if !urls.isEmpty {
+                    do {
+                        try await PHPhotoLibrary.shared().performChanges {
+                            let requests = urls.map { PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: $0) }
+                            if let album = album {
+                                let placeholders = requests.compactMap({ $0?.placeholderForCreatedAsset })
+                                if !placeholders.isEmpty {
+                                    let albumRequest = PHAssetCollectionChangeRequest(for: album)
+                                    albumRequest?.addAssets(placeholders as NSArray)
+                                }
                             }
                         }
+                        // Cleanup temp files
+                        for url in tempFilePaths {
+                            try? FileManager.default.removeItem(at: url)
+                        }
+                    } catch {
+                         print("❌ Gallery Import error: \(error)")
                     }
-                } catch {
-                     print("❌ Gallery Import error: \(error)")
                 }
             }
             
