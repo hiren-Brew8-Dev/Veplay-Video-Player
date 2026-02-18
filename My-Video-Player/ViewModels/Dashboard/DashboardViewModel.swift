@@ -263,6 +263,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     enum OperationType {
         case paste
         case fileImport
+        case galleryPaste
     }
 
     // Paste State
@@ -272,6 +273,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     @Published var pendingPasteNames: [String] = []
     @Published var processedPasteNames: [String] = []
     @Published var isPasteMoveOperation: Bool = false
+    @Published var pendingGalleryAlbum: PHAssetCollection? = nil
     
     // Generic Import State
     @Published var pendingImportDestination: URL? = nil
@@ -1339,7 +1341,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             var counter = 1
             var uniqueName = originalName
             
-            while fileManager.fileExists(atPath: current.destinationURL.deletingLastPathComponent().appendingPathComponent(uniqueName).path) ||
+            while (current.destinationURL != nil && fileManager.fileExists(atPath: current.destinationURL!.deletingLastPathComponent().appendingPathComponent(uniqueName).path)) ||
                     processedPasteNames.contains(uniqueName) { // Also check against names we just decided to add
                 uniqueName = "\(baseName) (\(counter)).\(ext)"
                 counter += 1
@@ -1365,7 +1367,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             let remainingConflicts = conflictQueue.dropFirst()
             
             for conflict in remainingConflicts {
-                guard let pIndex = pendingPasteNames.firstIndex(of: conflict.destinationURL.lastPathComponent) else { continue }
+                guard let destURL = conflict.destinationURL else { continue }
+                guard let pIndex = pendingPasteNames.firstIndex(of: destURL.lastPathComponent) else { continue }
                 let pVideo = pendingPasteItems[pIndex]
                 let pName = pendingPasteNames[pIndex]
                 
@@ -1375,7 +1378,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 case .replace:
                     processedPasteItems.append(pVideo)
                     processedPasteNames.append(pName)
-                    try? FileManager.default.removeItem(at: conflict.destinationURL)
+                    if let destURL = conflict.destinationURL {
+                        try? FileManager.default.removeItem(at: destURL)
+                    }
                 case .keepBoth:
                     let fileManager = FileManager.default
                     let baseName = (pName as NSString).deletingPathExtension
@@ -1383,7 +1388,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                     var counter = 1
                     var uniqueName = pName
                     
-                    while fileManager.fileExists(atPath: conflict.destinationURL.deletingLastPathComponent().appendingPathComponent(uniqueName).path) ||
+                    while (conflict.destinationURL != nil && fileManager.fileExists(atPath: conflict.destinationURL!.deletingLastPathComponent().appendingPathComponent(uniqueName).path)) ||
                             processedPasteNames.contains(uniqueName) {
                         uniqueName = "\(baseName) (\(counter)).\(ext)"
                         counter += 1
