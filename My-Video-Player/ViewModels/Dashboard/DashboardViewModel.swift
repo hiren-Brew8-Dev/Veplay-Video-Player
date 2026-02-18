@@ -1478,7 +1478,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         if applyToAll {
             let remainingConflicts = conflictQueue.dropFirst()
             for conflict in remainingConflicts {
-                guard let pIndex = pendingImportNames.firstIndex(of: conflict.destinationURL.lastPathComponent) else { continue }
+                guard let destURL = conflict.destinationURL else { continue }
+                guard let pIndex = pendingImportNames.firstIndex(of: destURL.lastPathComponent) else { continue }
                 let pURL = pendingImportURLs[pIndex]
                 let pName = pendingImportNames[pIndex]
                 
@@ -1488,14 +1489,16 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 case .replace:
                     processedImportURLs.append(pURL)
                     processedImportNames.append(pName)
-                    try? FileManager.default.removeItem(at: conflict.destinationURL)
+                    if let destURL = conflict.destinationURL {
+                        try? FileManager.default.removeItem(at: destURL)
+                    }
                 case .keepBoth:
                     let fileManager = FileManager.default
                     let baseName = (pName as NSString).deletingPathExtension
                     let ext = (pName as NSString).pathExtension
                     var counter = 1
                     var uniqueName = pName
-                    while fileManager.fileExists(atPath: conflict.destinationURL.deletingLastPathComponent().appendingPathComponent(uniqueName).path) ||
+                    while (conflict.destinationURL != nil && fileManager.fileExists(atPath: conflict.destinationURL!.deletingLastPathComponent().appendingPathComponent(uniqueName).path)) ||
                             processedImportNames.contains(uniqueName) {
                         uniqueName = "\(baseName) (\(counter)).\(ext)"
                         counter += 1
