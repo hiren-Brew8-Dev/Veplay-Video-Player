@@ -264,117 +264,71 @@ struct FolderDetailView: View {
             
             // Sort Menu
             Menu {
+                let currentSort = (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw)
+                
                 // Date
-                Menu {
-                    Button {
-                        if folder.url == nil {
-                            viewModel.gallerySortOptionRaw = "Newest First"
-                        } else {
-                            viewModel.folderSortOptionRaw = "Newest First"
-                        }
-                    } label: {
-                        HStack {
-                            Text("Newest First")
-                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Newest First" { Image(systemName: "checkmark") }
-                        }
+                let isDateActive = ["Newest First", "Oldest First"].contains(currentSort)
+                if isDateActive {
+                    Section {
+                        dateSortButtons
+                    } header: {
+                        Label("Date", systemImage: "calendar")
                     }
-                    Button {
-                        if folder.url == nil {
-                            viewModel.gallerySortOptionRaw = "Oldest First"
-                        } else {
-                            viewModel.folderSortOptionRaw = "Oldest First"
-                        }
+                } else {
+                    Menu {
+                        dateSortButtons
                     } label: {
-                        HStack {
-                            Text("Oldest First")
-                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Oldest First" { Image(systemName: "checkmark") }
-                        }
+                        Label("Date", systemImage: "calendar")
                     }
-                } label: {
-                    Label("Date", systemImage: "calendar")
                 }
                 
                 // Name
-                Menu {
-                    Button {
-                        if folder.url == nil {
-                            viewModel.gallerySortOptionRaw = "Name (A-Z)"
-                        } else {
-                            viewModel.folderSortOptionRaw = "Name (A-Z)"
-                        }
-                    } label: {
-                        HStack {
-                            Text("A to Z")
-                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Name (A-Z)" { Image(systemName: "checkmark") }
-                        }
+                let isNameActive = ["Name (A-Z)", "Name (Z-A)"].contains(currentSort)
+                if isNameActive {
+                    Section {
+                        nameSortButtons
+                    } header: {
+                        Label("Name", systemImage: "textformat")
                     }
-                    Button {
-                        if folder.url == nil {
-                            viewModel.gallerySortOptionRaw = "Name (Z-A)"
-                        } else {
-                            viewModel.folderSortOptionRaw = "Name (Z-A)"
-                        }
+                } else {
+                    Menu {
+                        nameSortButtons
                     } label: {
-                        HStack {
-                            Text("Z to A")
-                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Name (Z-A)" { Image(systemName: "checkmark") }
-                        }
+                        Label("Name", systemImage: "textformat")
                     }
-                } label: {
-                    Label("Name", systemImage: "textformat")
                 }
                 
-                // Length (Duration)
-                Menu {
-                    Button {
-                        if folder.url == nil {
-                            viewModel.gallerySortOptionRaw = "Duration (Long to Short)"
-                        } else {
-                            viewModel.folderSortOptionRaw = "Duration (Long to Short)"
-                        }
-                    } label: {
-                        HStack {
-                            Text("Long to Short")
-                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Duration (Long to Short)" { Image(systemName: "checkmark") }
-                        }
+                // Length
+                let isLengthActive = ["Duration (Long to Short)", "Duration (Short to Long)"].contains(currentSort)
+                if isLengthActive {
+                    Section {
+                        lengthSortButtons
+                    } header: {
+                        Label("Length", systemImage: "clock")
                     }
-                    Button {
-                        if folder.url == nil {
-                            viewModel.gallerySortOptionRaw = "Duration (Short to Long)"
-                        } else {
-                            viewModel.folderSortOptionRaw = "Duration (Short to Long)"
-                        }
+                } else {
+                    Menu {
+                        lengthSortButtons
                     } label: {
-                        HStack {
-                            Text("Short to Long")
-                            if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Duration (Short to Long)" { Image(systemName: "checkmark") }
-                        }
+                        Label("Length", systemImage: "clock")
                     }
-                } label: {
-                    Label("Length", systemImage: "clock")
                 }
                 
                 // Size (Only if not album)
                 if folder.url != nil {
-                    Menu {
-                        Button {
-                            viewModel.folderSortOptionRaw = "Size (Large to Small)"
-                        } label: {
-                            HStack {
-                                Text("Large to Small")
-                                if viewModel.folderSortOptionRaw == "Size (Large to Small)" { Image(systemName: "checkmark") }
-                            }
+                    let isSizeActive = ["Size (Large to Small)", "Size (Small to Large)"].contains(currentSort)
+                    if isSizeActive {
+                        Section {
+                            sizeSortButtons
+                        } header: {
+                            Label("Size", systemImage: "sdcard")
                         }
-                        Button {
-                            viewModel.folderSortOptionRaw = "Size (Small to Large)"
+                    } else {
+                        Menu {
+                            sizeSortButtons
                         } label: {
-                            HStack {
-                                Text("Small to Large")
-                                if viewModel.folderSortOptionRaw == "Size (Small to Large)" { Image(systemName: "checkmark") }
-                            }
+                            Label("Size", systemImage: "sdcard")
                         }
-                    } label: {
-                        Label("Size", systemImage: "sdcard")
                     }
                 }
             } label: {
@@ -922,6 +876,139 @@ struct FolderDetailView: View {
             self.asyncVideos = videos
             self.isLoading = false
         }
+    }
+    @ViewBuilder
+    private var dateSortButtons: some View {
+        Button {
+            if folder.url == nil {
+                viewModel.gallerySortOptionRaw = "Newest First"
+            } else {
+                viewModel.folderSortOptionRaw = "Newest First"
+            }
+        } label: {
+            HStack {
+                Text("Newest First")
+                if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Newest First" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+        
+        Button {
+            if folder.url == nil {
+                viewModel.gallerySortOptionRaw = "Oldest First"
+            } else {
+                viewModel.folderSortOptionRaw = "Oldest First"
+            }
+        } label: {
+            HStack {
+                Text("Oldest First")
+                if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Oldest First" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+    }
+
+    @ViewBuilder
+    private var nameSortButtons: some View {
+        Button {
+            if folder.url == nil {
+                viewModel.gallerySortOptionRaw = "Name (A-Z)"
+            } else {
+                viewModel.folderSortOptionRaw = "Name (A-Z)"
+            }
+        } label: {
+            HStack {
+                Text("A to Z")
+                if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Name (A-Z)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+        
+        Button {
+            if folder.url == nil {
+                viewModel.gallerySortOptionRaw = "Name (Z-A)"
+            } else {
+                viewModel.folderSortOptionRaw = "Name (Z-A)"
+            }
+        } label: {
+            HStack {
+                Text("Z to A")
+                if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Name (Z-A)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+    }
+
+    @ViewBuilder
+    private var lengthSortButtons: some View {
+        Button {
+            if folder.url == nil {
+                viewModel.gallerySortOptionRaw = "Duration (Long to Short)"
+            } else {
+                viewModel.folderSortOptionRaw = "Duration (Long to Short)"
+            }
+        } label: {
+            HStack {
+                Text("Long to Short")
+                if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Duration (Long to Short)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+        
+        Button {
+            if folder.url == nil {
+                viewModel.gallerySortOptionRaw = "Duration (Short to Long)"
+            } else {
+                viewModel.folderSortOptionRaw = "Duration (Short to Long)"
+            }
+        } label: {
+            HStack {
+                Text("Short to Long")
+                if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Duration (Short to Long)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+    }
+
+    @ViewBuilder
+    private var sizeSortButtons: some View {
+        Button {
+            viewModel.folderSortOptionRaw = "Size (Large to Small)"
+        } label: {
+            HStack {
+                Text("Large to Small")
+                if viewModel.folderSortOptionRaw == "Size (Large to Small)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+        
+        Button {
+            viewModel.folderSortOptionRaw = "Size (Small to Large)"
+        } label: {
+            HStack {
+                Text("Small to Large")
+                if viewModel.folderSortOptionRaw == "Size (Small to Large)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+    }
+    @ViewBuilder
+    private var recentsSortButton: some View {
+        Button {
+            if folder.url == nil {
+                viewModel.gallerySortOptionRaw = "Recents"
+            } else {
+                viewModel.folderSortOptionRaw = "Recents"
+            }
+        } label: {
+            HStack {
+                Label("Recently Accessed", systemImage: "clock.arrow.circlepath")
+                if (folder.url == nil ? viewModel.gallerySortOptionRaw : viewModel.folderSortOptionRaw) == "Recents" {
+                    Image(systemName: "checkmark")
+                }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
     }
 }
 

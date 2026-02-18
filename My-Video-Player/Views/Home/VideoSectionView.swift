@@ -161,92 +161,71 @@ struct VideoSectionView: View {
             
             // Sort Menu
             Menu {
+                let currentSort = viewModel.videoSortOptionRaw
+               
+                
                 // Date
-                Menu {
-                    Button {
-                        viewModel.videoSortOptionRaw = "Newest First"
-                    } label: {
-                        HStack {
-                            Text("Newest First")
-                            if viewModel.videoSortOptionRaw == "Newest First" { Image(systemName: "checkmark") }
-                        }
+                let isDateActive = ["Newest First", "Oldest First"].contains(currentSort)
+                if isDateActive {
+                    Section {
+                        dateSortButtons
+                    } header: {
+                        Label("Date", systemImage: "calendar")
                     }
-                    Button {
-                        viewModel.videoSortOptionRaw = "Oldest First"
+                } else {
+                    Menu {
+                        dateSortButtons
                     } label: {
-                        HStack {
-                            Text("Oldest First")
-                            if viewModel.videoSortOptionRaw == "Oldest First" { Image(systemName: "checkmark") }
-                        }
+                        Label("Date", systemImage: "calendar")
                     }
-                } label: {
-                    Label("Date", systemImage: "calendar")
                 }
                 
                 // Name
-                Menu {
-                    Button {
-                        viewModel.videoSortOptionRaw = "Name (A-Z)"
-                    } label: {
-                        HStack {
-                            Text("A to Z")
-                            if viewModel.videoSortOptionRaw == "Name (A-Z)" { Image(systemName: "checkmark") }
-                        }
+                let isNameActive = ["Name (A-Z)", "Name (Z-A)"].contains(currentSort)
+                if isNameActive {
+                    Section {
+                        nameSortButtons
+                    } header: {
+                        Label("Name", systemImage: "textformat")
                     }
-                    Button {
-                        viewModel.videoSortOptionRaw = "Name (Z-A)"
+                } else {
+                    Menu {
+                        nameSortButtons
                     } label: {
-                        HStack {
-                            Text("Z to A")
-                            if viewModel.videoSortOptionRaw == "Name (Z-A)" { Image(systemName: "checkmark") }
-                        }
+                        Label("Name", systemImage: "textformat")
                     }
-                } label: {
-                    Label("Name", systemImage: "textformat")
                 }
                 
-                // Length (Duration)
-                Menu {
-                    Button {
-                        viewModel.videoSortOptionRaw = "Duration (Long to Short)"
-                    } label: {
-                        HStack {
-                            Text("Long to Short")
-                            if viewModel.videoSortOptionRaw == "Duration (Long to Short)" { Image(systemName: "checkmark") }
-                        }
+                // Length
+                let isLengthActive = ["Duration (Long to Short)", "Duration (Short to Long)"].contains(currentSort)
+                if isLengthActive {
+                    Section {
+                        lengthSortButtons
+                    } header: {
+                        Label("Length", systemImage: "clock")
                     }
-                    Button {
-                        viewModel.videoSortOptionRaw = "Duration (Short to Long)"
+                } else {
+                    Menu {
+                        lengthSortButtons
                     } label: {
-                        HStack {
-                            Text("Short to Long")
-                            if viewModel.videoSortOptionRaw == "Duration (Short to Long)" { Image(systemName: "checkmark") }
-                        }
+                        Label("Length", systemImage: "clock")
                     }
-                } label: {
-                    Label("Length", systemImage: "clock")
                 }
                 
                 // Size
-                Menu {
-                    Button {
-                        viewModel.videoSortOptionRaw = "Size (Large to Small)"
-                    } label: {
-                        HStack {
-                            Text("Large to Small")
-                            if viewModel.videoSortOptionRaw == "Size (Large to Small)" { Image(systemName: "checkmark") }
-                        }
+                let isSizeActive = ["Size (Large to Small)", "Size (Small to Large)"].contains(currentSort)
+                if isSizeActive {
+                    Section {
+                        sizeSortButtons
+                    } header: {
+                        Label("Size", systemImage: "sdcard")
                     }
-                    Button {
-                        viewModel.videoSortOptionRaw = "Size (Small to Large)"
+                } else {
+                    Menu {
+                        sizeSortButtons
                     } label: {
-                        HStack {
-                            Text("Small to Large")
-                            if viewModel.videoSortOptionRaw == "Size (Small to Large)" { Image(systemName: "checkmark") }
-                        }
+                        Label("Size", systemImage: "sdcard")
                     }
-                } label: {
-                    Label("Size", systemImage: "sdcard")
                 }
             } label: {
                 HStack(spacing: 8) {
@@ -782,5 +761,111 @@ struct VideoSectionView: View {
     
     private func deleteSelected() {
         showDeleteSelectedAlert = true
+    }
+
+    @ViewBuilder
+    private var dateSortButtons: some View {
+        Button {
+            viewModel.videoSortOptionRaw = "Newest First"
+        } label: {
+            HStack {
+                Text("Newest First")
+                if viewModel.videoSortOptionRaw == "Newest First" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+        
+        Button {
+            viewModel.videoSortOptionRaw = "Oldest First"
+        } label: {
+            HStack {
+                Text("Oldest First")
+                if viewModel.videoSortOptionRaw == "Oldest First" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+    }
+
+    @ViewBuilder
+    private var nameSortButtons: some View {
+        Button {
+            viewModel.videoSortOptionRaw = "Name (A-Z)"
+        } label: {
+            HStack {
+                Text("A to Z")
+                if viewModel.videoSortOptionRaw == "Name (A-Z)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+        
+        Button {
+            viewModel.videoSortOptionRaw = "Name (Z-A)"
+        } label: {
+            HStack {
+                Text("Z to A")
+                if viewModel.videoSortOptionRaw == "Name (Z-A)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+    }
+
+    @ViewBuilder
+    private var lengthSortButtons: some View {
+        Button {
+            viewModel.videoSortOptionRaw = "Duration (Long to Short)"
+        } label: {
+            HStack {
+                Text("Long to Short")
+                if viewModel.videoSortOptionRaw == "Duration (Long to Short)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+        
+        Button {
+            viewModel.videoSortOptionRaw = "Duration (Short to Long)"
+        } label: {
+            HStack {
+                Text("Short to Long")
+                if viewModel.videoSortOptionRaw == "Duration (Short to Long)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+    }
+
+    @ViewBuilder
+    private var sizeSortButtons: some View {
+        Button {
+            viewModel.videoSortOptionRaw = "Size (Large to Small)"
+        } label: {
+            HStack {
+                Text("Large to Small")
+                if viewModel.videoSortOptionRaw == "Size (Large to Small)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+        
+        Button {
+            viewModel.videoSortOptionRaw = "Size (Small to Large)"
+        } label: {
+            HStack {
+                Text("Small to Large")
+                if viewModel.videoSortOptionRaw == "Size (Small to Large)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+    }
+    @ViewBuilder
+    private var recentsSortButton: some View {
+        Button {
+            viewModel.videoSortOptionRaw = "Recents"
+        } label: {
+            HStack {
+                Label("Recently Accessed", systemImage: "clock.arrow.circlepath")
+                if viewModel.videoSortOptionRaw == "Recents" {
+                    Image(systemName: "checkmark")
+                }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
     }
 }

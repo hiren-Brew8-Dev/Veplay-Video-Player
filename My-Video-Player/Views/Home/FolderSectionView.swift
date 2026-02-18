@@ -242,58 +242,49 @@ struct FolderSectionView: View {
             
             // Sort Menu
             Menu {
+                let currentSort = viewModel.folderSortOptionRaw
+                
                 // Recents
-                Button {
-                    viewModel.folderSortOptionRaw = "Recents"
-                } label: {
-                    HStack {
-                        Label("Recently Accessed", systemImage: "clock.arrow.circlepath")
-                        if viewModel.folderSortOptionRaw == "Recents" { Image(systemName: "checkmark") }
+                if currentSort == "Recents" {
+                    Section {
+                        recentsSortButton
+                    } header: {
+                        Label("Recents", systemImage: "clock.arrow.circlepath")
                     }
+                } else {
+                    recentsSortButton
                 }
                 
                 // Name
-                Menu {
-                    Button {
-                        viewModel.folderSortOptionRaw = "Name (A-Z)"
-                    } label: {
-                        HStack {
-                            Text("A to Z")
-                            if viewModel.folderSortOptionRaw == "Name (A-Z)" { Image(systemName: "checkmark") }
-                        }
+                let isNameActive = ["Name (A-Z)", "Name (Z-A)"].contains(currentSort)
+                if isNameActive {
+                    Section {
+                        nameSortButtons
+                    } header: {
+                        Label("Name", systemImage: "textformat")
                     }
-                    Button {
-                        viewModel.folderSortOptionRaw = "Name (Z-A)"
+                } else {
+                    Menu {
+                        nameSortButtons
                     } label: {
-                        HStack {
-                            Text("Z to A")
-                            if viewModel.folderSortOptionRaw == "Name (Z-A)" { Image(systemName: "checkmark") }
-                        }
+                        Label("Name", systemImage: "textformat")
                     }
-                } label: {
-                    Label("Name", systemImage: "textformat")
                 }
                 
                 // Date
-                Menu {
-                    Button {
-                        viewModel.folderSortOptionRaw = "Newest First"
-                    } label: {
-                        HStack {
-                            Text("Newest First")
-                            if viewModel.folderSortOptionRaw == "Newest First" { Image(systemName: "checkmark") }
-                        }
+                let isDateActive = ["Newest First", "Oldest First"].contains(currentSort)
+                if isDateActive {
+                    Section {
+                        dateSortButtons
+                    } header: {
+                        Label("Date", systemImage: "calendar")
                     }
-                    Button {
-                        viewModel.folderSortOptionRaw = "Oldest First"
+                } else {
+                    Menu {
+                        dateSortButtons
                     } label: {
-                        HStack {
-                            Text("Oldest First")
-                            if viewModel.folderSortOptionRaw == "Oldest First" { Image(systemName: "checkmark") }
-                        }
+                        Label("Date", systemImage: "calendar")
                     }
-                } label: {
-                    Label("Date", systemImage: "calendar")
                 }
             } label: {
                 HStack(spacing: 8) {
@@ -581,5 +572,65 @@ struct FolderSectionView: View {
                 viewModel.showDeleteFolderAlert = true
             })
         ]
+    }
+    @ViewBuilder
+    private var recentsSortButton: some View {
+        Button {
+            viewModel.folderSortOptionRaw = "Recents"
+        } label: {
+            HStack {
+                Label("Recently Accessed", systemImage: "clock.arrow.circlepath")
+                if viewModel.folderSortOptionRaw == "Recents" {
+                    Image(systemName: "checkmark")
+                }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+    }
+
+    @ViewBuilder
+    private var nameSortButtons: some View {
+        Button {
+            viewModel.folderSortOptionRaw = "Name (A-Z)"
+        } label: {
+            HStack {
+                Text("A to Z")
+                if viewModel.folderSortOptionRaw == "Name (A-Z)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+        
+        Button {
+            viewModel.folderSortOptionRaw = "Name (Z-A)"
+        } label: {
+            HStack {
+                Text("Z to A")
+                if viewModel.folderSortOptionRaw == "Name (Z-A)" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+    }
+
+    @ViewBuilder
+    private var dateSortButtons: some View {
+        Button {
+            viewModel.folderSortOptionRaw = "Newest First"
+        } label: {
+            HStack {
+                Text("Newest First")
+                if viewModel.folderSortOptionRaw == "Newest First" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
+        
+        Button {
+            viewModel.folderSortOptionRaw = "Oldest First"
+        } label: {
+            HStack {
+                Text("Oldest First")
+                if viewModel.folderSortOptionRaw == "Oldest First" { Image(systemName: "checkmark") }
+            }
+        }
+        .menuActionDismissBehavior(.disabled)
     }
 }
