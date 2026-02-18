@@ -31,7 +31,13 @@ struct MoveDestinationPickerView: View {
                     VStack(spacing: 24) {
                         
                         // Locations Card
-                        if let sourceURL = viewModel.sourceURL, (sourceURL.path as NSString).standardizingPath != (viewModel.importedVideosDirectory.path as NSString).standardizingPath {
+                        let isAlreadyInImported = if let sourceURL = viewModel.sourceURL {
+                            (sourceURL.path as NSString).standardizingPath == (viewModel.importedVideosDirectory.path as NSString).standardizingPath
+                        } else {
+                            false // If it's nil, it's likely from Gallery or another non-file source
+                        }
+                        
+                        if isGallerySource || !isAlreadyInImported {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("LOCATIONS")
                                     .font(.system(size: 11, weight: .bold))
