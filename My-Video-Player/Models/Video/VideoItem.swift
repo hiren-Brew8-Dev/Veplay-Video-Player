@@ -79,6 +79,19 @@ struct VideoItem: Identifiable, Hashable {
         
         return "\(baseName).\(ext)"
     }
+
+    static func == (lhs: VideoItem, rhs: VideoItem) -> Bool {
+        // Optimized comparison for performance
+        return lhs.id == rhs.id &&
+               lhs.title == rhs.title &&
+               lhs.duration == rhs.duration &&
+               lhs.thumbnailPath == rhs.thumbnailPath &&
+               lhs.fileSizeBytes == rhs.fileSizeBytes
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 }
 
 extension String {

@@ -490,8 +490,12 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     
     // PHPhotoLibraryChangeObserver implementation
     func photoLibraryDidChange(_ changeInstance: PHChange) {
-        // If the library changes (e.g. assets deleted via system popup), 
-        // we refresh the gallery assets to ensure UI is in sync.
+        // Debounce photo library changes to avoid rapid re-fetches
+        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(debouncedFetch), object: nil)
+        self.perform(#selector(debouncedFetch), with: nil, afterDelay: 1.0)
+    }
+    
+    @objc private func debouncedFetch() {
         DispatchQueue.main.async { [weak self] in
             self?.fetchAssets()
             self?.fetchAlbums()
@@ -501,7 +505,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     private func setupGroupedVideosObserver() {
         // Observer for imported videos tab (uses videoSortOptionRaw)
         Publishers.CombineLatest($importedVideos, $videoSortOptionRaw)
-            .receive(on: RunLoop.main)
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main) // Prevent rapid fire during pre-fetching
             .sink { [weak self] _, _ in
                 self?.updateGroupedVideos()
             }
@@ -509,11 +513,14 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         
         // Master list observer for combined videos (Search/etc) - uses DEFAULT (videoSortOptionRaw)
         Publishers.CombineLatest3($importedVideos, $allGalleryVideos, $videoSortOptionRaw)
-            .receive(on: RunLoop.main)
+            .debounce(for: .milliseconds(400), scheduler: DispatchQueue.global(qos: .userInitiated))
             .sink { [weak self] imported, gallery, _ in
                 guard let self = self else { return }
                 let all = (imported + gallery)
-                self.videos = self.sortVideos(all, by: self.videoSortOption)
+                let sortedAll = self.sortVideos(all, by: self.videoSortOption)
+                DispatchQueue.main.async {
+                    self.videos = sortedAll
+                }
             }
             .store(in: &cancellables)
     }
@@ -536,31 +543,39 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     private func updateGroupedVideos() {
         let calendar = Calendar.current
         let currentSort = videoSortOption
-        let sorted = sortVideos(importedVideos, by: currentSort)
+        let itemsToGroup = importedVideos
         
-        switch currentSort {
-        case .recents, .dateDesc, .dateAsc:
-            let grouped = Dictionary(grouping: sorted) { video -> Date in
-                calendar.startOfDay(for: video.importDate)
+        // Perform heavy sorting/grouping on background
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            let sorted = self.sortVideos(itemsToGroup, by: currentSort)
+            
+            var newSections: [VideoSection] = []
+            
+            switch currentSort {
+            case .recents, .dateDesc, .dateAsc:
+                let grouped = Dictionary(grouping: sorted) { video -> Date in
+                    calendar.startOfDay(for: video.importDate)
+                }
+                
+                let sortedDates = grouped.keys.sorted(by: { 
+                    currentSort == .dateAsc ? $0 < $1 : $0 > $1 
+                })
+                
+                newSections = sortedDates.map { date in
+                    let videosInDate = grouped[date] ?? []
+                    return VideoSection(date: date, videos: videosInDate)
+                }
+                
+            default:
+                // Non-date sorting: provide a single section with a sentinel date for a flat list
+                newSections = [VideoSection(date: .distantPast, videos: sorted)]
             }
             
-            let sortedDates = grouped.keys.sorted(by: { 
-                currentSort == .dateAsc ? $0 < $1 : $0 > $1 
-            })
-            
-            let newSections = sortedDates.map { date in
-                let videosInDate = grouped[date] ?? []
-                return VideoSection(date: date, videos: videosInDate)
-            }
-            
-            if self.groupedImportedVideos != newSections {
-                self.groupedImportedVideos = newSections
-            }
-        default:
-            // Non-date sorting: provide a single section with a sentinel date for a flat list
-            let newSections = [VideoSection(date: .distantPast, videos: sorted)]
-            if self.groupedImportedVideos != newSections {
-                self.groupedImportedVideos = newSections
+            DispatchQueue.main.async {
+                if self.groupedImportedVideos != newSections {
+                    self.groupedImportedVideos = newSections
+                }
             }
         }
     }
