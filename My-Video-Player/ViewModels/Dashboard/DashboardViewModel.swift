@@ -2499,7 +2499,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         let processCollections = { (fetchResult: PHFetchResult<PHAssetCollection>, isUserAlbum: Bool) in
             fetchResult.enumerateObjects { collection, _, _ in
                 let title = collection.localizedTitle ?? ""
-                if title.lowercased() == "recents" || title.lowercased() == "recent" {
+                let lowerTitle = title.lowercased()
+                if lowerTitle == "recents" || lowerTitle == "recent" || lowerTitle == "recently saved" {
                     return
                 }
                 
