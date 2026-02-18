@@ -179,7 +179,6 @@ struct FolderDetailView: View {
             Button("Delete", role: .destructive) {
                 if let video = videoToDelete {
                     viewModel.deleteVideo(video)
-                    asyncVideos.removeAll { $0.id == video.id }
                 }
                 videoToDelete = nil
             }
@@ -191,8 +190,6 @@ struct FolderDetailView: View {
             Button("Delete", role: .destructive) {
                 let currentSelectedIds = selectedVideoIds
                 viewModel.deleteVideos(ids: currentSelectedIds)
-                // Also update local asyncVideos for immediate UI refresh in album mode
-                asyncVideos.removeAll { currentSelectedIds.contains($0.id) }
                 
                 viewModel.isSelectionMode = false
                 selectedVideoIds.removeAll()

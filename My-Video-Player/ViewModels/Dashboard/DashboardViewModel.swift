@@ -1673,42 +1673,43 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         
         guard !videosToDelete.isEmpty else { return }
         
-        // 1. Immediate UI update for smooth animation (Optimistic Delete)
-        DispatchQueue.main.async {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                self.importedVideos.removeAll { ids.contains($0.id) }
-                self.allGalleryVideos.removeAll { ids.contains($0.id) }
-                
-                // Update master lists silently
-                self.videos.removeAll { ids.contains($0.id) }
-                
-                // Update folders recursively without full reload
-                func removeFromFolderRecursively(_ folder: inout Folder) {
-                    folder.videos.removeAll { ids.contains($0.id) }
-                    for j in 0..<folder.subfolders.count {
-                        removeFromFolderRecursively(&folder.subfolders[j])
+        let localVideos = videosToDelete.filter { $0.asset == nil }
+        let galleryVideos = videosToDelete.filter { $0.asset != nil }
+        let localIds = Set(localVideos.map { $0.id })
+        
+        // 1. Immediate UI update for smooth animation ONLY for local videos
+        if !localIds.isEmpty {
+            DispatchQueue.main.async {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    self.importedVideos.removeAll { localIds.contains($0.id) }
+                    
+                    // Update master lists silently
+                    self.videos.removeAll { localIds.contains($0.id) }
+                    
+                    // Update folders recursively without full reload
+                    func removeFromFolderRecursively(_ folder: inout Folder) {
+                        folder.videos.removeAll { localIds.contains($0.id) }
+                        for j in 0..<folder.subfolders.count {
+                            removeFromFolderRecursively(&folder.subfolders[j])
+                        }
                     }
+                    
+                    for i in 0..<self.folders.count {
+                        removeFromFolderRecursively(&self.folders[i])
+                    }
+                    
+                    // If it was the playing video, stop it
+                    if let playing = self.playingVideo, localIds.contains(playing.id) {
+                        self.playingVideo = nil
+                    }
+                    
+                    // Update grouping for Imported section manually for smoothness
+                    self.updateGroupedVideos()
                 }
-                
-                for i in 0..<self.folders.count {
-                    removeFromFolderRecursively(&self.folders[i])
-                }
-                
-                // If it was the playing video, stop it
-                if let playing = self.playingVideo, ids.contains(playing.id) {
-                    self.playingVideo = nil
-                }
-                
-                // Update grouping for Imported section manually for smoothness
-                self.updateGroupedVideos()
             }
         }
         
-        // 2. Separate by source: Local Files vs Gallery Assets
-        let localVideos = videosToDelete.filter { $0.asset == nil }
-        let galleryVideos = videosToDelete.filter { $0.asset != nil }
-        
-        // 3. Physical Deletion - Local Files
+        // 2. Physical Deletion - Local Files
         if !localVideos.isEmpty {
             DispatchQueue.global(qos: .userInitiated).async {
                 for video in localVideos {
@@ -1720,20 +1721,41 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             }
         }
         
-        // 4. Physical Deletion - Gallery Assets (Batch)
+        // 3. Physical Deletion - Gallery Assets (Batch)
         let assetsToDelete = galleryVideos.compactMap { $0.asset }
+        let galleryIds = Set(galleryVideos.map { $0.id })
+        
         if !assetsToDelete.isEmpty {
             PHPhotoLibrary.shared().performChanges({
                 PHAssetChangeRequest.deleteAssets(assetsToDelete as NSArray)
             }) { success, error in
                 if success {
                     print("✅ Successfully deleted \(assetsToDelete.count) assets from Gallery")
-                } else {
-                    print("❌ Failed to delete assets: \(error?.localizedDescription ?? "user canceled")")
-                    // If user canceled or it failed, we restore them in UI
+                    // ONLY remove from UI if the system deletion actually succeeded
                     DispatchQueue.main.async {
-                        self.loadData() 
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            self.allGalleryVideos.removeAll { galleryIds.contains($0.id) }
+                            self.videos.removeAll { galleryIds.contains($0.id) }
+                            
+                            func removeFromFolderRecursively(_ folder: inout Folder) {
+                                folder.videos.removeAll { galleryIds.contains($0.id) }
+                                for j in 0..<folder.subfolders.count {
+                                    removeFromFolderRecursively(&folder.subfolders[j])
+                                }
+                            }
+                            
+                            for i in 0..<self.folders.count {
+                                removeFromFolderRecursively(&self.folders[i])
+                            }
+                            
+                            if let playing = self.playingVideo, galleryIds.contains(playing.id) {
+                                self.playingVideo = nil
+                            }
+                        }
                     }
+                } else {
+                    print("❌ Failed to delete assets or user canceled: \(error?.localizedDescription ?? "user canceled")")
+                    // No UI removal - the items stay in place since deletion was rejected or failed
                 }
             }
         }
