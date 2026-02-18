@@ -232,8 +232,14 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         let sourceSize: Int64
         let sourceURL: URL? // Used for direct file imports
         let sourceVideo: VideoItem? // Used for paste operations
-        let destinationURL: URL
+        let destinationURL: URL? // Optional for local folder operations
+        let destinationAlbum: PHAssetCollection? // For gallery operations
+        let destinationAsset: PHAsset? // The specific asset that conflicts
         let message: String
+        
+        var destinationTitle: String {
+            destinationURL?.lastPathComponent ?? destinationAsset?.localIdentifier ?? "Existing Asset"
+        }
         
         var formattedSize: String {
             let bcf = ByteCountFormatter()
@@ -926,84 +932,183 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         
         guard !videosToPaste.isEmpty else { return }
         
-        isImporting = true
-        let wasCutMode = isCutMode
-        let sourceId = sourceAlbumIdentifier
-        let sourceURL = sourceURL
+        // Initialize State for Conflict Checking
+        self.pendingGalleryAlbum = album
+        self.isPasteMoveOperation = isCutMode
+        self.conflictOperation = .galleryPaste
+        self.pendingPasteItems = []
+        self.processedPasteItems = []
+        self.pendingPasteNames = []
+        self.processedPasteNames = []
+        self.conflictQueue = []
         
-        // --- ALBUM COMPATIBILITY CHECK ---
-        if let album = album {
-            if let incompatibleVideo = validateVideosForAlbum(videosToPaste) {
-                isImporting = false
-                self.unsupportedVideoForAlbum = incompatibleVideo
-                self.showUnsupportedFormatAlert = true
-                return
+        isImporting = true
+
+        Task {
+            var conflicts: [ConflictItem] = []
+            var safeItems: [VideoItem] = []
+            var safeNames: [String] = []
+            
+            // If target is an album, check for name conflicts
+            var existingTitles: [String: PHAsset] = [:]
+            if let album = album {
+                existingTitles = await getExistingVideoTitlesInAlbum(album)
+            }
+            
+            for video in videosToPaste {
+                let filename = video.fullNameWithExtension
+                
+                if let conflictAsset = existingTitles[filename] {
+                    // Conflict found in Gallery Album!
+                    let conflict = ConflictItem(
+                        sourceTitle: video.title,
+                        sourceDuration: video.formattedDuration,
+                        sourceSize: video.fileSizeBytes,
+                        sourceURL: await getURLAsync(for: video),
+                        sourceVideo: video,
+                        destinationURL: nil,
+                        destinationAlbum: album,
+                        destinationAsset: conflictAsset,
+                        message: "A video named \"\(filename)\" already exists in this album."
+                    )
+                    conflicts.append(conflict)
+                    
+                    self.pendingPasteItems.append(video)
+                    self.pendingPasteNames.append(filename)
+                } else {
+                    // No conflict (at least by name)
+                    safeItems.append(video)
+                    safeNames.append(filename)
+                }
+            }
+            
+            await MainActor.run {
+                self.processedPasteItems.append(contentsOf: safeItems)
+                self.processedPasteNames.append(contentsOf: safeNames)
+                
+                if !conflicts.isEmpty {
+                    self.conflictQueue = conflicts
+                    self.currentConflict = conflicts.first
+                    self.showConflictResolution = true
+                    self.isImporting = false // Stop progress if we need user input
+                } else {
+                    self.finalizeGalleryPasteOperation()
+                }
             }
         }
-        // ---------------------------------
+    }
+    
+    private func getExistingVideoTitlesInAlbum(_ album: PHAssetCollection) async -> [String: PHAsset] {
+        return await Task.detached {
+            let fetchOptions = PHFetchOptions()
+            fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
+            let assets = PHAsset.fetchAssets(in: album, options: fetchOptions)
+            
+            var titlesMap: [String: PHAsset] = [:]
+            assets.enumerateObjects { asset, _, _ in
+                let resources = PHAssetResource.assetResources(for: asset)
+                if let filename = resources.first?.originalFilename {
+                    titlesMap[filename] = asset
+                }
+            }
+            return titlesMap
+        }.value
+    }
+
+    private func handleGalleryPasteConflict(current: ConflictItem, action: ConflictAction, applyToAll: Bool) {
+        let identifier = current.destinationAsset?.localIdentifier ?? current.sourceTitle
+        guard let index = pendingPasteNames.firstIndex(of: identifier) else {
+            processNextConflict()
+            return
+        }
         
-        // Split into Gallery vs Local items
-        let galleryVideos = videosToPaste.filter { $0.asset != nil }
-        let localVideos = videosToPaste.filter { $0.asset == nil }
+        let video = pendingPasteItems[index]
+        let originalName = pendingPasteNames[index]
+        
+        switch action {
+        case .skip:
+            break
+        case .replace:
+            processedPasteItems.append(video)
+            processedPasteNames.append(originalName)
+            // Replace in Photos means delete old and add new.
+            if let asset = current.destinationAsset {
+                PHPhotoLibrary.shared().performChanges {
+                    PHAssetChangeRequest.deleteAssets([asset] as NSArray)
+                }
+            }
+        case .keepBoth:
+            processedPasteItems.append(video)
+            // Keep both in photos just means add it anyway (Photos handles duplicates)
+            processedPasteNames.append(originalName) 
+        }
+        
+        pendingPasteItems.remove(at: index)
+        pendingPasteNames.remove(at: index)
+        
+        if applyToAll {
+            let remaining = conflictQueue.dropFirst()
+            for conflict in remaining {
+                let pId = conflict.destinationAsset?.localIdentifier ?? conflict.sourceTitle
+                guard let pIndex = pendingPasteNames.firstIndex(of: pId) else { continue }
+                let pVideo = pendingPasteItems[pIndex]
+                
+                switch action {
+                case .skip: break
+                case .replace:
+                    processedPasteItems.append(pVideo)
+                    processedPasteNames.append(conflict.sourceTitle)
+                    if let asset = conflict.destinationAsset {
+                        PHPhotoLibrary.shared().performChanges {
+                            PHAssetChangeRequest.deleteAssets([asset] as NSArray)
+                        }
+                    }
+                case .keepBoth:
+                    processedPasteItems.append(pVideo)
+                    processedPasteNames.append(conflict.sourceTitle)
+                }
+            }
+            conflictQueue.removeAll()
+            currentConflict = nil
+            showConflictResolution = false
+            finalizeGalleryPasteOperation()
+            return
+        }
+        
+        processNextConflict()
+    }
+
+    private func finalizeGalleryPasteOperation() {
+        guard !processedPasteItems.isEmpty else {
+            cleanupPasteState()
+            isImporting = false
+            return
+        }
+        
+        let album = pendingGalleryAlbum
+        let wasCutMode = isPasteMoveOperation
+        let sourceId = sourceAlbumIdentifier
+        
+        isImporting = true
         
         Task {
-            // 1. Handle Gallery Items (Add to Album, No Deletion)
+            let galleryVideos = processedPasteItems.filter { $0.asset != nil }
+            let localVideos = processedPasteItems.filter { $0.asset == nil }
+            
+            // 1. Existing Gallery Assets
             if !galleryVideos.isEmpty, let album = album {
-                // Check for duplicates first
-                let fetchOptions = PHFetchOptions()
-                fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
-                let existingAssets = PHAsset.fetchAssets(in: album, options: fetchOptions)
-                
-                var assetsToAdd: [PHAsset] = []
-                var firstDuplicate: VideoItem? = nil
-                
-                for video in galleryVideos {
-                    if let asset = video.asset {
-                        var alreadyExists = false
-                        existingAssets.enumerateObjects { existingAsset, _, stop in
-                            if existingAsset.localIdentifier == asset.localIdentifier {
-                                alreadyExists = true
-                                if firstDuplicate == nil { firstDuplicate = video }
-                                stop.pointee = true
-                            }
-                        }
-                        
-                        if !alreadyExists {
-                            assetsToAdd.append(asset)
-                        }
-                    }
-                }
-                
-                if assetsToAdd.isEmpty && !galleryVideos.isEmpty {
-                    // All were duplicates
-                    await MainActor.run {
-                        self.isImporting = false
-                        self.alertMessage = "These videos are already in this album."
-                        self.showAlert = true
-                    }
-                    return
-                }
-                
-                if !assetsToAdd.isEmpty && assetsToAdd.count < galleryVideos.count {
-                    // Partial duplicates
-                    await MainActor.run {
-                        self.alertMessage = "Some videos were already in this album and were skipped."
-                        self.showAlert = true
-                    }
-                }
-                
+                let assetsToAdd = galleryVideos.compactMap { $0.asset }
                 do {
                     try await PHPhotoLibrary.shared().performChanges {
                         let request = PHAssetCollectionChangeRequest(for: album)
                         request?.addAssets(assetsToAdd as NSArray)
                     }
-                    print("✅ Successfully added \(assetsToAdd.count) existing assets to album")
                 } catch {
-                    print("❌ Failed to add existing assets to album: \(error)")
+                    print("❌ Gallery Paste error: \(error)")
                 }
             }
             
-            // 2. Handle Local Items (Import to Library/Album, Delete if Move)
+            // 2. Local Videos (Import)
             if !localVideos.isEmpty {
                 var urls: [URL] = []
                 for video in localVideos {
@@ -1014,9 +1119,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 
                 do {
                     try await PHPhotoLibrary.shared().performChanges {
-                        let libraryRequest = PHPhotoLibrary.shared()
                         let requests = urls.map { PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: $0) }
-                        
                         if let album = album {
                             let placeholders = requests.compactMap({ $0?.placeholderForCreatedAsset })
                             if !placeholders.isEmpty {
@@ -1025,67 +1128,40 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                             }
                         }
                     }
-                    print("✅ Successfully imported \(urls.count) local videos to Photo Library")
                 } catch {
-                    print("❌ Failed to import local videos to Photo Library: \(error)")
+                     print("❌ Gallery Import error: \(error)")
                 }
             }
             
-            // 3. Handle Removal if Move (Album to Album)
+            // 3. Move Cleanup (Remove from Source Album)
             if wasCutMode, let sourceId = sourceId {
                 let sourceCollections = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [sourceId], options: nil)
                 if let sourceAlbum = sourceCollections.firstObject {
-                    do {
-                        try await PHPhotoLibrary.shared().performChanges {
-                            let assetsToRemove = galleryVideos.compactMap { $0.asset } as NSArray
-                            let request = PHAssetCollectionChangeRequest(for: sourceAlbum)
-                            request?.removeAssets(assetsToRemove)
+                    let assetsToRemove = galleryVideos.compactMap { $0.asset } as NSArray
+                    if assetsToRemove.count > 0 {
+                        try? await PHPhotoLibrary.shared().performChanges {
+                            PHAssetCollectionChangeRequest(for: sourceAlbum)?.removeAssets(assetsToRemove)
                         }
-                        print("✅ Successfully removed \(galleryVideos.count) assets from source album")
-                    } catch {
-                        print("❌ Failed to remove assets from source album: \(error)")
                     }
                 }
             }
             
-            // 4. Only delete LOCAL files if Move
+            // 4. Move Cleanup (Delete local files if were moved)
             if wasCutMode && !localVideos.isEmpty {
-                await MainActor.run {
-                    for video in localVideos {
-                        self.deleteVideo(video)
-                    }
-                }
-                // Refresh local storage views
-                self.loadImportedVideos()
-                self.loadUserFolders()
+                 await MainActor.run {
+                     for video in localVideos {
+                         self.deleteVideo(video)
+                     }
+                 }
             }
-        } // This closes the Task block.
-        
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s delay for indexing
-        
-        await MainActor.run {
-            self.isImporting = false
-            print("✅ Copied/Moved to Gallery Complete")
             
-            // Always clear clipboard
-            self.copiedVideoIds.removeAll()
-            self.isCutMode = false
-            self.sourceAlbumIdentifier = nil
-            self.sourceURL = nil
-            self.videosToMove = []
-            
-            // Refresh everything
-            self.fetchAssets()
-            self.fetchAlbums()
-            self.loadImportedVideos()
-            self.loadUserFolders()
-            
-            // Clear selection mode now that operation is complete
-            self.isSelectionMode = false
-            self.selectedVideoIds.removeAll()
+            await MainActor.run {
+                self.isImporting = false
+                self.cleanupPasteState()
+                self.loadData()
+            }
         }
     }
-    
     
     func renameVideo(_ video: VideoItem, to newName: String) {
         // Only rename local imported videos
@@ -1177,6 +1253,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                             sourceURL: url,
                             sourceVideo: video,
                             destinationURL: destinationURL,
+                            destinationAlbum: nil,
+                            destinationAsset: nil,
                             message: "A file named \"\(filename)\" already exists in this folder."
                         )
                         conflicts.append(conflict)
@@ -1218,13 +1296,16 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         
         if conflictOperation == .paste {
             handlePasteConflict(current: current, action: action, applyToAll: applyToAll)
-        } else {
+        } else if conflictOperation == .fileImport {
             handleImportConflict(current: current, action: action, applyToAll: applyToAll)
+        } else {
+            handleGalleryPasteConflict(current: current, action: action, applyToAll: applyToAll)
         }
     }
     
     private func handlePasteConflict(current: ConflictItem, action: ConflictAction, applyToAll: Bool) {
-        guard let index = pendingPasteNames.firstIndex(of: current.destinationURL.lastPathComponent) else {
+        let identifier = current.destinationURL?.lastPathComponent ?? current.sourceTitle
+        guard let index = pendingPasteNames.firstIndex(of: identifier) else {
             processNextConflict()
             return
         }
@@ -1246,7 +1327,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             // Actually importVideos handles overwrite if we implement it, 
             // OR we can delete it right here.
             // Let's delete strictly here to be safe and ensure the "Replace" logic holds.
-            try? FileManager.default.removeItem(at: current.destinationURL)
+            if let destURL = current.destinationURL {
+                try? FileManager.default.removeItem(at: destURL)
+            }
             
         case .keepBoth:
             // Generate new name: "Video (1).mp4"
@@ -1340,8 +1423,10 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             currentConflict = nil
             if conflictOperation == .paste {
                 finalizePasteOperation()
-            } else {
+            } else if conflictOperation == .fileImport {
                 finalizeImportOperation()
+            } else {
+                finalizeGalleryPasteOperation()
             }
         }
     }
@@ -1349,7 +1434,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     // MARK: - New Import Flow with Conflicts
     
     private func handleImportConflict(current: ConflictItem, action: ConflictAction, applyToAll: Bool) {
-        guard let index = pendingImportNames.firstIndex(of: current.destinationURL.lastPathComponent) else {
+        let identifier = current.destinationURL?.lastPathComponent ?? current.sourceTitle
+        guard let index = pendingImportNames.firstIndex(of: identifier) else {
             processNextConflict()
             return
         }
@@ -1363,14 +1449,16 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         case .replace:
             processedImportURLs.append(url)
             processedImportNames.append(originalName)
-            try? FileManager.default.removeItem(at: current.destinationURL)
+            if let destURL = current.destinationURL {
+                try? FileManager.default.removeItem(at: destURL)
+            }
         case .keepBoth:
             let fileManager = FileManager.default
             let baseName = (originalName as NSString).deletingPathExtension
             let ext = (originalName as NSString).pathExtension
             var counter = 1
             var uniqueName = originalName
-            while fileManager.fileExists(atPath: current.destinationURL.deletingLastPathComponent().appendingPathComponent(uniqueName).path) ||
+            while (current.destinationURL != nil && fileManager.fileExists(atPath: current.destinationURL!.deletingLastPathComponent().appendingPathComponent(uniqueName).path)) ||
                     processedImportNames.contains(uniqueName) {
                 uniqueName = "\(baseName) (\(counter)).\(ext)"
                 counter += 1
@@ -1409,6 +1497,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                     }
                     processedImportURLs.append(pURL)
                     processedImportNames.append(uniqueName)
+                    if let destURL = conflict.destinationURL {
+                        try? FileManager.default.removeItem(at: destURL)
+                    }
                 }
             }
             
@@ -1467,6 +1558,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                         sourceURL: url,
                         sourceVideo: nil,
                         destinationURL: destinationURL,
+                        destinationAlbum: nil,
+                        destinationAsset: nil,
                         message: "A file named \"\(filename)\" already exists in this folder."
                     )
                     conflicts.append(conflict)
