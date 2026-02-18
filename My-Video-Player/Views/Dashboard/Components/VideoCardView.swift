@@ -115,7 +115,7 @@ struct VideoCardView: View {
                                 .cornerRadius(8)
                         }
                         
-                        Text(formatDate(video.importDate))
+                        Text("\(formatDate(video.importDate))")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.white.opacity(0.8))
                             .lineLimit(1)
@@ -160,6 +160,21 @@ struct VideoCardView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "d MMM" 
         return formatter.string(from: date)
+    }
+    
+    private func formatBytes(_ bytes: Int64) -> String {
+        let doubleBytes = Double(bytes)
+        let kb = doubleBytes / 1024.0
+        let mb = kb / 1024.0
+        let gb = mb / 1024.0
+        
+        if gb >= 1.0 {
+            return String(format: "%.1f GB", gb)
+        } else if mb >= 1.0 {
+            return String(format: "%.1f MB", mb)
+        } else {
+             return String(format: "%.0f KB", kb)
+        }
     }
     
     private func loadThumbnail() {

@@ -121,6 +121,16 @@ struct VideoRowView: View {
         }
     }
     
+    private func formatBytes(_ bytes: Int64) -> String {
+        let doubleBytes = Double(bytes)
+        let kb = doubleBytes / 1024.0
+        let mb = kb / 1024.0
+        let gb = mb / 1024.0
+        if gb >= 1.0 { return String(format: "%.1f GB", gb) }
+        else if mb >= 1.0 { return String(format: "%.1f MB", mb) }
+        else { return String(format: "%.0f KB", kb) }
+    }
+    
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "d MMM"
