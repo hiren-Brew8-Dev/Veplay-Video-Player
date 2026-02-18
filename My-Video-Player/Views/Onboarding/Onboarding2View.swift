@@ -20,13 +20,13 @@ struct Onboarding2View: View {
             // MARK: - Decorative Background Accents
             Group {
                 Circle()
-                    .foregroundColor(.bgBlurOrange1.opacity(0.08))
+                    .foregroundColor(.bgBlurOrange1.opacity(0.2))
                     .frame(width: isIpad ? 400 : 256, height: isIpad ? 400 : 256)
                     .blur(radius: isIpad ? 120 : 80)
                     .offset(x: isIpad ? -250 : -164.50, y: isIpad ? 600 : 410)
                 
                 Circle()
-                    .foregroundColor(.bgBlurOrange2.opacity(0.08))
+                    .foregroundColor(.bgBlurOrange2.opacity(0.2))
                     .frame(width: isIpad ? 400 : 256, height: isIpad ? 400 : 256)
                     .blur(radius: isIpad ? 120 : 80)
                     .offset(x: isIpad ? 250 : 161.50, y: isIpad ? -600 : -410)

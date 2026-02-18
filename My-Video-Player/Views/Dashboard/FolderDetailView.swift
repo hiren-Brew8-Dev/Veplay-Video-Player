@@ -54,7 +54,17 @@ struct FolderDetailView: View {
     }
     
     private var displayVideos: [VideoItem] {
-        return (folder.videos.isEmpty && !asyncVideos.isEmpty) ? asyncVideos : folder.videos
+        let videos = (folder.videos.isEmpty && !asyncVideos.isEmpty) ? asyncVideos : folder.videos
+        
+        // Final sanity check: filter out any videos that might have been deleted globally
+        return videos.filter { v in
+            if v.asset != nil {
+                return viewModel.allGalleryVideos.contains(where: { $0.id == v.id })
+            } else {
+                return viewModel.videos.contains(where: { $0.id == v.id }) || 
+                       viewModel.allVideosAcrossFolders.contains(where: { $0.id == v.id })
+            }
+        }
     }
     
     var sortedVideos: [VideoItem] {
@@ -169,6 +179,7 @@ struct FolderDetailView: View {
             Button("Delete", role: .destructive) {
                 if let video = videoToDelete {
                     viewModel.deleteVideo(video)
+                    asyncVideos.removeAll { $0.id == video.id }
                 }
                 videoToDelete = nil
             }
@@ -178,10 +189,11 @@ struct FolderDetailView: View {
         .alert("Delete Selected Videos", isPresented: $showDeleteSelectedAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
-                let selectedVideos = folder.videos.filter { selectedVideoIds.contains($0.id) }
-                for video in selectedVideos {
-                    viewModel.deleteVideo(video)
-                }
+                let currentSelectedIds = selectedVideoIds
+                viewModel.deleteVideos(ids: currentSelectedIds)
+                // Also update local asyncVideos for immediate UI refresh in album mode
+                asyncVideos.removeAll { currentSelectedIds.contains($0.id) }
+                
                 viewModel.isSelectionMode = false
                 selectedVideoIds.removeAll()
             }

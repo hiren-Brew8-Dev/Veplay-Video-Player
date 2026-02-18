@@ -21,14 +21,14 @@ struct ThanksForDownloadingView: View {
             // Decorative Blurred Circles
             Group {
                 Circle()
-                    .foregroundColor(.bgBlurOrange1.opacity(0.08))
+                    .foregroundColor(.bgBlurOrange1.opacity(0.2))
                     .responsiveWidth(iphoneWidth: 256)
                     .responsiveHeight(iphoneHeight: 256)
                     .blur(radius: 80)
                     .offset(x: -164.50, y: 410)
                 
                 Circle()
-                    .foregroundColor(.bgBlurOrange2.opacity(0.08))
+                    .foregroundColor(.bgBlurOrange2.opacity(0.2))
                     .responsiveWidth(iphoneWidth: 256)
                     .responsiveHeight(iphoneHeight: 256)
                     .blur(radius: 80)
@@ -118,6 +118,7 @@ struct ThanksForDownloadingView: View {
                 Button(action: {
                     HapticsManager.shared.generate(.medium)
                     isOnboardingCompleted = true
+                   
                     if !Global.shared.getIsUserPro() {
                         navManager.push(.paywall(isFromOnboarding: true))
                     } else {
@@ -142,6 +143,9 @@ struct ThanksForDownloadingView: View {
         .hideNavigationBar()
         .onAppear {
             isAnimating = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                AppReviewManager.submitReview()
+            }
         }
     }
 }

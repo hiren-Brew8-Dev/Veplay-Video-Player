@@ -120,11 +120,7 @@ struct VideoSectionView: View {
         .alert("Delete Selected Videos", isPresented: $showDeleteSelectedAlert) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
-                let allVideos = viewModel.importedVideos + viewModel.allGalleryVideos
-                let selectedVideos = allVideos.filter { viewModel.selectedVideoIds.contains($0.id) }
-                for video in selectedVideos {
-                    viewModel.deleteVideo(video)
-                }
+                viewModel.deleteVideos(ids: viewModel.selectedVideoIds)
                 viewModel.isSelectionMode = false
                 viewModel.selectedVideoIds.removeAll()
             }

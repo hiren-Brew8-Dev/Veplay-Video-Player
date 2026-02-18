@@ -7,6 +7,7 @@ struct SettingsView: View {
     @EnvironmentObject var viewModel: DashboardViewModel
     @EnvironmentObject var navigationManager: NavigationManager
     @State private var webViewData: WebViewData? = nil
+    @State private var showPaywall = false
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -150,6 +151,16 @@ struct SettingsView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+        .sheet(isPresented: $viewModel.showShareSheetGlobal) {
+            if !viewModel.activityItems.isEmpty {
+                ShareSheet(activityItems: viewModel.activityItems)
+            } else if let url = viewModel.shareURL {
+                ShareSheet(activityItems: [url])
+            }
+        }
+        .fullScreenCover(isPresented: $showPaywall) {
+            PaywallView(isFromOnboarding: false)
+        }
         .onAppear {
             if !Global.shared.getIsUserPro() {
                 isBackgroundPlayEnabled = false
@@ -172,7 +183,7 @@ struct SettingsView: View {
             } else {
                 // Not a pro user - show paywall and reset toggle
                 isBackgroundPlayEnabled = false
-                navigationManager.push(.paywall(isFromOnboarding: false))
+                showPaywall = true
             }
         } else {
             isBackgroundPlayEnabled = false

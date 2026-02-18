@@ -209,7 +209,16 @@ struct SearchView: View {
     private func videoResultsSection(isLandscape: Bool, currentWidth: CGFloat) -> some View {
         let baseVideos: [VideoItem] = {
             if let initialVideos = initialVideos {
-                return initialVideos
+                // Filter to ensure we don't show videos that were deleted while in search view
+                return initialVideos.filter { iv in
+                    if iv.asset != nil {
+                        return viewModel.allGalleryVideos.contains(where: { $0.id == iv.id })
+                    } else {
+                        // Check imported videos and all folder videos
+                        return viewModel.importedVideos.contains(where: { $0.id == iv.id }) || 
+                               viewModel.allVideosAcrossFolders.contains(where: { $0.id == iv.id })
+                    }
+                }
             }
             
             // STRICT Context Filtering

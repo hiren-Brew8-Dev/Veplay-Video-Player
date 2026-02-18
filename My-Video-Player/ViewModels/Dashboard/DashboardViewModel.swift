@@ -23,7 +23,7 @@ struct FolderSection: Identifiable {
     var id: Date { date }
 }
 
-class DashboardViewModel: ObservableObject {
+class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
     static let supportedVideoExtensions = [
         "mp4", "mov", "m4v", "avi", "mkv", "3gp", "wmv", "flv", "webm", "ts", "mpg", "mpeg", "vob", "ogv", "divx", "asf", "m2ts", "rmvb", "rm", "mts", "swf", "dv", "m2t", "m2p", "m4p", "m4b", "flc", "f4v", "ogg", "obb", "vro", "dat",
         "rrc", "gifv", "mng", "qt", "yuv", "amv", "mpe", "mpv", "svi", "3g2", "mxf", "roq", "nsv", "f4p", "f4a", "f4b", "mod"
@@ -473,11 +473,29 @@ class DashboardViewModel: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     
-    init() {
+    override init() {
+        super.init()
         loadData()
         setupHistoryObserver()
         setupSearchHistoryObserver()
         setupGroupedVideosObserver()
+        
+        // Register for Photos library changes to handle system-level deletions
+        PHPhotoLibrary.shared().register(self)
+    }
+    
+    deinit {
+        PHPhotoLibrary.shared().unregisterChangeObserver(self)
+    }
+    
+    // PHPhotoLibraryChangeObserver implementation
+    func photoLibraryDidChange(_ changeInstance: PHChange) {
+        // If the library changes (e.g. assets deleted via system popup), 
+        // we refresh the gallery assets to ensure UI is in sync.
+        DispatchQueue.main.async { [weak self] in
+            self?.fetchAssets()
+            self?.fetchAlbums()
+        }
     }
     
     private func setupGroupedVideosObserver() {
@@ -1630,22 +1648,39 @@ class DashboardViewModel: ObservableObject {
     }
     
     func deleteVideo(_ video: VideoItem) {
-        // 1. Immediate UI update for smooth animation
+        deleteVideos(ids: Set([video.id]))
+    }
+    
+    func deleteVideos(ids: Set<UUID>) {
+        // Collect videos to delete
+        let allVideos = importedVideos + allGalleryVideos + allVideosAcrossFolders
+        let videosToDelete = allVideos.filter { ids.contains($0.id) }
+        
+        guard !videosToDelete.isEmpty else { return }
+        
+        // 1. Immediate UI update for smooth animation (Optimistic Delete)
         DispatchQueue.main.async {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                self.importedVideos.removeAll { $0.id == video.id }
-                self.allGalleryVideos.removeAll { $0.id == video.id }
+                self.importedVideos.removeAll { ids.contains($0.id) }
+                self.allGalleryVideos.removeAll { ids.contains($0.id) }
                 
                 // Update master lists silently
-                self.videos.removeAll { $0.id == video.id }
+                self.videos.removeAll { ids.contains($0.id) }
                 
-                // Update folders without full reload
+                // Update folders recursively without full reload
+                func removeFromFolderRecursively(_ folder: inout Folder) {
+                    folder.videos.removeAll { ids.contains($0.id) }
+                    for j in 0..<folder.subfolders.count {
+                        removeFromFolderRecursively(&folder.subfolders[j])
+                    }
+                }
+                
                 for i in 0..<self.folders.count {
-                    self.folders[i].videos.removeAll { $0.id == video.id }
+                    removeFromFolderRecursively(&self.folders[i])
                 }
                 
                 // If it was the playing video, stop it
-                if self.playingVideo?.id == video.id {
+                if let playing = self.playingVideo, ids.contains(playing.id) {
                     self.playingVideo = nil
                 }
                 
@@ -1654,33 +1689,35 @@ class DashboardViewModel: ObservableObject {
             }
         }
         
-        // 2. Delete from file system if it's an imported video
-        if let url = video.url {
+        // 2. Separate by source: Local Files vs Gallery Assets
+        let localVideos = videosToDelete.filter { $0.asset == nil }
+        let galleryVideos = videosToDelete.filter { $0.asset != nil }
+        
+        // 3. Physical Deletion - Local Files
+        if !localVideos.isEmpty {
             DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    try FileManager.default.removeItem(at: url)
-                    print("✅ Deleted video file: \(url.lastPathComponent)")
-                    // Removed full reload calls here to prevent flicker
-                } catch {
-                    print("❌ Failed to delete file: \(error.localizedDescription)")
-                    // Only reload if something went wrong to restore state
-                    DispatchQueue.main.async {
-                        self.loadImportedVideos()
+                for video in localVideos {
+                    if let url = video.url {
+                        try? FileManager.default.removeItem(at: url)
+                        print("✅ Deleted video file: \(url.lastPathComponent)")
                     }
                 }
             }
         }
         
-        // 3. Remove from albums/folders if it's a Photo Library video
-        if let asset = video.asset {
+        // 4. Physical Deletion - Gallery Assets (Batch)
+        let assetsToDelete = galleryVideos.compactMap { $0.asset }
+        if !assetsToDelete.isEmpty {
             PHPhotoLibrary.shared().performChanges({
-                PHAssetChangeRequest.deleteAssets([asset] as NSArray)
+                PHAssetChangeRequest.deleteAssets(assetsToDelete as NSArray)
             }) { success, error in
-                if !success {
-                    print("❌ Failed to delete asset: \(error?.localizedDescription ?? "unknown")")
-                    // Rollback UI only on failure
+                if success {
+                    print("✅ Successfully deleted \(assetsToDelete.count) assets from Gallery")
+                } else {
+                    print("❌ Failed to delete assets: \(error?.localizedDescription ?? "user canceled")")
+                    // If user canceled or it failed, we restore them in UI
                     DispatchQueue.main.async {
-                        self.fetchAssets()
+                        self.loadData() 
                     }
                 }
             }
@@ -2312,6 +2349,11 @@ class DashboardViewModel: ObservableObject {
         // Update in importedVideos
         if let index = self.importedVideos.firstIndex(where: { $0.id == id }) {
             updateItem(&self.importedVideos[index])
+        }
+        
+        // Update in allGalleryVideos
+        if let index = self.allGalleryVideos.firstIndex(where: { $0.id == id }) {
+            updateItem(&self.allGalleryVideos[index])
         }
         
         // Update in master videos list

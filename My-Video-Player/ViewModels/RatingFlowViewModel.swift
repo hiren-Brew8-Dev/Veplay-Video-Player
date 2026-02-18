@@ -14,13 +14,13 @@ final class RatingFlowViewModel: ObservableObject {
     // MARK: - Singleton
     static let shared = RatingFlowViewModel()
     private init() {
-        
+        resetValue()
         loadValue()
         observeICloudChanges()
     }
 
     // MARK: - Keys
-    private let ratingKey = "is_already_show_rating_popup"
+    private let ratingKey = "is_already_show_rating_popup_video_player"
 
     // MARK: - Storage
     private let userDefaults = UserDefaults.standard

@@ -57,7 +57,7 @@ struct VideoRowView: View {
                 Text(video.formattedDuration)
                     .font(isIpad ? .caption : .caption2)
                     .foregroundColor(.homeTextPrimary)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 7)
                     .padding(.vertical, 3)
                     .background(Color.homeBackground.opacity(0.7))
                     .clipShape(.capsule)
