@@ -32,7 +32,8 @@ struct AlbumSectionView: View {
                                     HapticsManager.shared.generate(.light)
                                     navigationManager.push(.folderDetail(folder))
                                 }) {
-                                    AlbumCardView(album: album, isLandscape: isLandscape, availableWidth: currentWidth)
+                                    let count = viewModel.albumAssetCounts[album.localIdentifier] ?? 0
+                                    AlbumCardView(album: album, isLandscape: isLandscape, availableWidth: currentWidth, videoCountPreload: count, refreshTrigger: viewModel.lastGalleryUpdate)
                                 }
                                 .buttonStyle(.scalable)
                             }
@@ -42,6 +43,9 @@ struct AlbumSectionView: View {
                         .padding(.bottom, 100)
                     }
                     .scrollBounceBehavior(.basedOnSize)
+                    .onAppear {
+                        viewModel.fetchAlbums()
+                    }
                     .safeAreaInset(edge: .top) {
                         mainHeader
                             .padding(.top, safeAreaTop)
@@ -85,7 +89,7 @@ struct AlbumSectionView: View {
                             .frame(width: 30, height: 30)
                     }
                 }
-                .buttonStyle(.glass)
+                .glassButtonStyle()
                 .buttonBorderShape(.circle)
                 
                 if !Global.shared.getIsUserPro() {
@@ -100,8 +104,8 @@ struct AlbumSectionView: View {
                                 .frame(width: 30, height: 30)
                         }
                     }
-                    .buttonSizing(.automatic)
-                    .buttonStyle(.glassProminent)
+                    .adaptiveButtonSizing()
+                    .glassProminentButtonStyle()
                     .buttonBorderShape(.circle)
                     .tint(.premiumIconBackground)
                 }
@@ -180,6 +184,8 @@ struct AlbumCardView: View {
 
     @State private var thumbnail: UIImage?
     @State private var videoCount: Int = 0
+    let videoCountPreload: Int
+    let refreshTrigger: Date
 
     var body: some View {
         let size = GridLayout.itemSize(for: availableWidth, isLandscape: isLandscape)
@@ -239,6 +245,9 @@ struct AlbumCardView: View {
         .onAppear {
             fetchAlbumInfo()
         }
+        .onChange(of: refreshTrigger) { _, _ in
+            fetchAlbumInfo()
+        }
     }
 
     private var albumTitle: String {
@@ -247,14 +256,21 @@ struct AlbumCardView: View {
     }
 
     private func fetchAlbumInfo() {
+        // Use preloaded count if available
+        if self.videoCount != videoCountPreload {
+            self.videoCount = videoCountPreload
+        }
+        
+        // Fetch first asset for thumbnail only
         let options = PHFetchOptions()
         options.predicate = NSPredicate(
             format: "mediaType = %d",
             PHAssetMediaType.video.rawValue
         )
+        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        options.fetchLimit = 1
 
         let assets = PHAsset.fetchAssets(in: album, options: options)
-        videoCount = assets.count
 
         if let firstAsset = assets.firstObject {
             let manager = PHImageManager.default()

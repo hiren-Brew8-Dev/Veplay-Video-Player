@@ -190,7 +190,7 @@ struct FolderSectionView: View {
                             .frame(width: 30, height: 30)
                     }
                 }
-                .buttonStyle(.glass)
+                .glassButtonStyle()
                 .buttonBorderShape(.circle)
                 
                 if !Global.shared.getIsUserPro() {
@@ -205,8 +205,8 @@ struct FolderSectionView: View {
                                 .frame(width: 30, height: 30)
                         }
                     }
-                    .buttonSizing(.automatic)
-                    .buttonStyle(.glassProminent)
+                    .adaptiveButtonSizing()
+                    .glassProminentButtonStyle()
                     .buttonBorderShape(.circle)
                     .tint(.premiumIconBackground)
                 }
@@ -232,7 +232,7 @@ struct FolderSectionView: View {
                     .frame(width: 20, height: 20)
                     .frame(width: 30, height: 30)
             }
-            .buttonStyle(.glass)
+            .glassButtonStyle()
             .buttonBorderShape(.circle)
             
             Rectangle()
@@ -305,7 +305,7 @@ struct FolderSectionView: View {
                 .padding(.horizontal, 10)
                 .frame(height: 30)
             }
-            .buttonStyle(.glass)
+            .glassButtonStyle()
             .buttonBorderShape(.capsule)
             .padding(.leading, 4)
             Spacer()
@@ -321,7 +321,7 @@ struct FolderSectionView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .frame(width: 30, height: 30)
             }
-            .buttonStyle(.glass)
+            .glassButtonStyle()
             .buttonBorderShape(.circle)
         }
     }

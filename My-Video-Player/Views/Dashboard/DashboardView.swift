@@ -5,10 +5,9 @@ import UniformTypeIdentifiers
 
 struct DashboardView: View {
     @EnvironmentObject var viewModel: DashboardViewModel
+    @Environment(\.scenePhase) var scenePhase
     @AppStorage("isDarkMode") private var isDarkMode = true
     @EnvironmentObject var navigationManager: NavigationManager
-    
-
     
     init() {
         // Configure system tab bar appearance
@@ -32,123 +31,37 @@ struct DashboardView: View {
         viewModel.playingVideo == nil
     }
     
-
     var body: some View {
         ZStack {
             TabView(selection: $viewModel.selectedTab) {
-                // MARK: Home (Videos)
-                Tab("Videos", systemImage: "play.circle", value: .home) {
-                    NavigationStack(path: $navigationManager.homePath) {
-                        VStack(spacing: 0) {
-                            // Header is now handled inside VideoSectionView for custom translucent effect
-//                            if !viewModel.isSelectionMode {
-//                                headerView(title: "Videos")
-//                            }
-                            VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
-                                .ignoresSafeArea(edges: .top)
-                                .background {
-                                    AppGlobalBackground()
-                                        .allowsHitTesting(false)
-                                }
-                        }
-                        .navigationDestination(for: NavigationDestination.self) { destination in
-                            destinationView(for: destination)
-                        }
-                    }
-                    .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+                Tab("Videos", systemImage: "play.circle", value: DashboardViewModel.MainTabs.home) {
+                    homeTabContent
                 }
                 
-                // MARK: Gallery
-                Tab("Gallery", systemImage: "photo.on.rectangle", value: .gallery) {
-                    NavigationStack(path: $navigationManager.galleryPath) {
-                        VStack(spacing: 0) {
-                            // Header is handled inside AlbumSectionView
-//                            if !viewModel.isSelectionMode {
-//                                headerView(title: "Gallery")
-//                            }
-                            AlbumSectionView(viewModel: viewModel)
-                                .ignoresSafeArea(edges: .top)
-                                .background {
-                                    AppGlobalBackground()
-                                        .allowsHitTesting(false)
-                                }
-                        }
-                        .navigationDestination(for: NavigationDestination.self) { destination in
-                            destinationView(for: destination)
-                        }
-                    }
-                    .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
-                }
-
-                // MARK: Folders
-                Tab("Folders", systemImage: "folder", value: .folders) {
-                    NavigationStack(path: $navigationManager.foldersPath) {
-                        VStack(spacing: 0) {
-                            // Header is handled inside FolderSectionView
-//                            if !viewModel.isSelectionMode {
-//                                 headerView(title: "Folders")
-//                             }
-                            FolderSectionView(viewModel: viewModel)
-                                .ignoresSafeArea(edges: .top)
-                                .background {
-                                    AppGlobalBackground()
-                                        .allowsHitTesting(false)
-                                }
-                        }
-                        .navigationDestination(for: NavigationDestination.self) { destination in
-                            destinationView(for: destination)
-                        }
-                    }
-                    .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+                Tab("Gallery", systemImage: "photo.on.rectangle", value: DashboardViewModel.MainTabs.gallery) {
+                    galleryTabContent
                 }
                 
-                // MARK: Search
-                Tab(value: .search, role: .search) {
-                    NavigationStack(path: $navigationManager.searchPath) {
-                        SearchView(viewModel: viewModel)
-                            .navigationDestination(for: NavigationDestination.self) { destination in
-                                destinationView(for: destination)
-                            }
-                    }
-                    .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+                Tab("Folders", systemImage: "folder", value: DashboardViewModel.MainTabs.folders) {
+                    foldersTabContent
+                }
+                
+                Tab(value: DashboardViewModel.MainTabs.search, role: .search) {
+                    searchTabContent
                 }
             }
             .accentColor(.homeAccent)
             .background(Color.clear)
-            .onChange(of: viewModel.selectedTab) { oldTab, newTab in
-                HapticsManager.shared.selectionVibrate()
-                navigationManager.currentTab = newTab
+            .onChange(of: viewModel.selectedTab) { _, newTab in
+                handleTabChange(to: newTab)
             }
             
-            
-            
-            if showTabBar && (viewModel.selectedTab == .home || viewModel.selectedTab == .folders) {
-                PlusButtonOverlay(viewModel: viewModel)
-            }
-            
-
-            
-            if viewModel.showUnsupportedFormatAlert {
-                UnsupportedFormatAlert(video: viewModel.unsupportedVideoForAlbum, isPresented: $viewModel.showUnsupportedFormatAlert)
-            }
-            
-            if viewModel.showConflictResolution {
-                ConflictResolutionOverlay(viewModel: viewModel)
-                    .zIndex(1000)
-            }
+            tabOverlays
         }
         .ignoresSafeArea(edges: .bottom)
         .fullScreenCover(item: $viewModel.playingVideo) { video in
-            PlayerView(
-                video: video,
-                playlist: viewModel.currentPlaylist,
-                onPlaybackEnded: {
-                    viewModel.playingVideo = nil
-                }
-            )
-            .environmentObject(viewModel)
+            playerView(for: video)
         }
-        
         .fullScreenCover(item: $navigationManager.fullScreenDestination) { destination in
             fullScreenView(for: destination)
         }
@@ -171,7 +84,6 @@ struct DashboardView: View {
         .sheet(isPresented: $viewModel.showMovePicker) {
             MoveDestinationPickerView(viewModel: viewModel, videosToMove: viewModel.videosToMove, isCutOperation: viewModel.isCutMode)
         }
-
         .sheet(isPresented: $viewModel.showShareSheetGlobal) {
             shareSheetContent
         }
@@ -189,7 +101,122 @@ struct DashboardView: View {
         .onAppear {
             viewModel.loadData()
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                viewModel.fetchAlbums()
+                viewModel.fetchAssets()
+            }
+        }
+    }
+
+    // MARK: - Subviews & Helpers
+
+    private func handleTabChange(to newTab: DashboardViewModel.MainTabs) {
+        HapticsManager.shared.selectionVibrate()
+        navigationManager.currentTab = newTab
         
+        // Proactive refresh when entering specific tabs
+        // Now safe due to signature guard in ViewModel
+        if newTab == .gallery {
+            viewModel.fetchAlbums()
+        } else if newTab == .home {
+            viewModel.fetchAssets()
+        }
+    }
+
+    @ViewBuilder
+    private var tabOverlays: some View {
+        if showTabBar && (viewModel.selectedTab == .home || viewModel.selectedTab == .folders) {
+            PlusButtonOverlay(viewModel: viewModel)
+        }
+        
+        if viewModel.showUnsupportedFormatAlert {
+            UnsupportedFormatAlert(video: viewModel.unsupportedVideoForAlbum, isPresented: $viewModel.showUnsupportedFormatAlert)
+        }
+        
+        if viewModel.showConflictResolution {
+            ConflictResolutionOverlay(viewModel: viewModel)
+                .zIndex(1000)
+        }
+    }
+
+    @ViewBuilder
+    private func playerView(for video: VideoItem) -> some View {
+        PlayerView(
+            video: video,
+            playlist: viewModel.currentPlaylist,
+            onPlaybackEnded: {
+                viewModel.playingVideo = nil
+            }
+        )
+        .environmentObject(viewModel)
+    }
+
+    // MARK: - Tab Contents
+    
+    @ViewBuilder
+    private var homeTabContent: some View {
+        NavigationStack(path: $navigationManager.homePath) {
+            VStack(spacing: 0) {
+                VideoSectionView(viewModel: viewModel, paddingBottom: .constant(0))
+                    .ignoresSafeArea(edges: .top)
+                    .background {
+                        AppGlobalBackground()
+                            .allowsHitTesting(false)
+                    }
+            }
+            .navigationDestination(for: NavigationDestination.self) { destination in
+                destinationView(for: destination)
+            }
+        }
+        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+    }
+    
+    @ViewBuilder
+    private var galleryTabContent: some View {
+        NavigationStack(path: $navigationManager.galleryPath) {
+            VStack(spacing: 0) {
+                AlbumSectionView(viewModel: viewModel)
+                    .ignoresSafeArea(edges: .top)
+                    .background {
+                        AppGlobalBackground()
+                            .allowsHitTesting(false)
+                    }
+            }
+            .navigationDestination(for: NavigationDestination.self) { destination in
+                destinationView(for: destination)
+            }
+        }
+        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+    }
+    
+    @ViewBuilder
+    private var foldersTabContent: some View {
+        NavigationStack(path: $navigationManager.foldersPath) {
+            VStack(spacing: 0) {
+                FolderSectionView(viewModel: viewModel)
+                    .ignoresSafeArea(edges: .top)
+                    .background {
+                        AppGlobalBackground()
+                            .allowsHitTesting(false)
+                    }
+            }
+            .navigationDestination(for: NavigationDestination.self) { destination in
+                destinationView(for: destination)
+            }
+        }
+        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
+    }
+    
+    @ViewBuilder
+    private var searchTabContent: some View {
+        NavigationStack(path: $navigationManager.searchPath) {
+            SearchView(viewModel: viewModel)
+                .navigationDestination(for: NavigationDestination.self) { destination in
+                    destinationView(for: destination)
+                }
+        }
+        .toolbar(showTabBar ? .visible : .hidden, for: .tabBar)
     }
 
     @ViewBuilder
@@ -227,10 +254,9 @@ struct DashboardView: View {
 
     private func headerView(title: String) -> some View {
         HStack(spacing: 0) {
-            // Title Only (No Icon)
             HStack(spacing: 0) {
                 Text(title)
-                    .font(.system(size: AppDesign.Icons.headerSize + 4, weight: .bold)) // Slightly larger text
+                    .font(.system(size: AppDesign.Icons.headerSize + 4, weight: .bold))
                     .foregroundColor(.homeTextPrimary)
             }
             .padding(.leading, AppDesign.Icons.horizontalPadding)
@@ -238,7 +264,6 @@ struct DashboardView: View {
             Spacer()
             
             HStack(spacing: isIpad ? 20 : 5) {
-                // Settings Button (Trailing, before 3-dots)
                 Button(action: {
                     HapticsManager.shared.generate(.medium)
                     navigationManager.push(.settings)
@@ -249,29 +274,25 @@ struct DashboardView: View {
                             .frame(width: 30, height: 30)
                     }
                 }
-                .buttonStyle(.glass)
+                .glassButtonStyle()
                 .buttonBorderShape(.circle)
                
-                
                 if !Global.shared.getIsUserPro() {
                     Button {
                         HapticsManager.shared.generate(.medium)
                         navigationManager.push(.paywall(isFromOnboarding: false))
                     } label: {
                         ZStack {
-                            
                             Image(systemName: "crown.fill")
                                 .font(.system(size: isIpad ? 20 : 18, weight: .medium))
                                 .foregroundColor(.black)
                                 .frame(width: 30, height: 30)
                         }
                     }
-                    
-                    .buttonSizing(.automatic)
-                    .buttonStyle(.glassProminent)
+                    .adaptiveButtonSizing()
+                    .glassProminentButtonStyle()
                     .buttonBorderShape(.circle)
                     .tint(.premiumIconBackground)
-                    
                 }
             }
             .padding(.trailing, AppDesign.Icons.horizontalPadding)
@@ -280,8 +301,6 @@ struct DashboardView: View {
         .padding(.vertical, 8)
         .background(Color.clear)
     }
-
-
 
     @ViewBuilder
     private var folderAlertContent: some View {
@@ -299,8 +318,6 @@ struct DashboardView: View {
         }
     }
 
-
-
     @ViewBuilder
     private var shareSheetContent: some View {
         if !viewModel.activityItems.isEmpty {
@@ -308,7 +325,6 @@ struct DashboardView: View {
         } else if let url = viewModel.shareURL {
             ShareSheet(activityItems: [url])
         }
-    
     }
     
     private var sharingOverlay: some View {
@@ -317,7 +333,6 @@ struct DashboardView: View {
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 24) {
-                // Animated Loader (Custom)
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(1.5)
@@ -359,21 +374,18 @@ private struct PlusButtonOverlay: View {
                 Spacer()
                 
                 ZStack {
-                    // Interactive Menu or Direct Button
                     if viewModel.selectedTab == .folders && navigationManager.foldersPath.isEmpty {
-                        // Direct Button for Folders (Root only)
                         Button(action: { 
                             HapticsManager.shared.generate(.medium)
                             viewModel.showCreateFolderAlert = true 
                         }) {
                             plusButtonLabel
                         }
-                        .buttonStyle(.glassProminent)
+                        .glassProminentButtonStyle()
                         .buttonBorderShape(.circle)
-                        .buttonSizing(.fitted)
+                        .adaptiveButtonSizing(isFitted: true)
                         .tint(Color.homeAccent)
                     } else {
-                        // Menu for Videos (Home tab OR Subfolders)
                         Menu {
                             Button(action: {
                                 HapticsManager.shared.generate(.selection)
@@ -390,14 +402,14 @@ private struct PlusButtonOverlay: View {
                         } label: {
                             plusButtonLabel
                         }
-                        .buttonStyle(.glassProminent)
+                        .glassProminentButtonStyle()
                         .buttonBorderShape(.circle)
-                        .buttonSizing(.fitted)
+                        .adaptiveButtonSizing(isFitted: true)
                         .tint(Color.homeAccent)
                     }
                 }
             }
-            .padding(.trailing, 22 + (isIpad ? 16 : 0)) // Increased from 16 to 22 for visual center over Search icon
+            .padding(.trailing, 22 + (isIpad ? 16 : 0))
             .padding(.bottom, (UIApplication.shared.windows.first?.safeAreaInsets.bottom ?? 0) + (isIpad ? 80 : 60))
             .ignoresSafeArea(.keyboard)
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -406,18 +418,11 @@ private struct PlusButtonOverlay: View {
     
     private var plusButtonLabel: some View {
         ZStack {
-            
             Image(systemName: "plus")
                 .font(.system(size: isIpad ? 28 : 24, weight: .bold))
                 .foregroundColor(.black)
         }
         .frame(width: isIpad ? 65 : 45, height: isIpad ? 65 : 45)
-    }
-}
-
-extension View {
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape(RoundedCorner(radius: radius, corners: corners))
     }
 }
 
@@ -436,4 +441,3 @@ struct RoundedCorner: Shape {
         .environmentObject(DashboardViewModel())
         .environmentObject(NavigationManager())
 }
-

@@ -247,7 +247,7 @@ struct FolderDetailView: View {
                     .frame(width: 20, height: 20)
                     .frame(width: 30, height: 30)
             }
-            .buttonStyle(.glass)
+            .glassButtonStyle()
             .buttonBorderShape(.circle)
             
             Rectangle()
@@ -379,7 +379,7 @@ struct FolderDetailView: View {
                 .padding(.horizontal, 10)
                 .frame(height: 30)
             }
-            .buttonStyle(.glass)
+            .glassButtonStyle()
             .buttonBorderShape(.capsule)
             .padding(.leading, 4)
             Spacer()
@@ -395,7 +395,7 @@ struct FolderDetailView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .frame(width: 30, height: 30)
             }
-            .buttonStyle(.glass)
+            .glassButtonStyle()
             .buttonBorderShape(.circle)
         }
     }
@@ -410,7 +410,7 @@ struct FolderDetailView: View {
                     .font(.system(size: isIpad ? 20 : 18, weight: .bold))
                     .frame(width: 30, height: 30)
             }
-            .buttonStyle(.glass)
+            .glassButtonStyle()
             .buttonBorderShape(.circle)
             .padding(.leading, AppDesign.Icons.horizontalPadding)
             
@@ -432,7 +432,7 @@ struct FolderDetailView: View {
                         .font(.system(size: isIpad ? 20 : 18, weight: .bold))
                         .frame(width: 30, height: 30)
                 }
-                .buttonStyle(.glass)
+                .glassButtonStyle()
                 .buttonBorderShape(.circle)
                 .padding(.trailing, AppDesign.Icons.horizontalPadding)
             }

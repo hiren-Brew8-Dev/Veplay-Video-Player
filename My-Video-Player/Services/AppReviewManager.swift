@@ -59,7 +59,7 @@ enum AppReviewManager {
             .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
         else { return }
 
-        SKStoreReviewController.requestReview(in: scene)
+        AppStore.requestReview(in: scene)
     }
 
     private static func openAppStoreReview() {

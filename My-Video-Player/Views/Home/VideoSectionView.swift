@@ -151,7 +151,7 @@ struct VideoSectionView: View {
                     .frame(width: 20, height: 20)
                     .frame(width: 30, height: 30)
             }
-            .buttonStyle(.glass)
+            .glassButtonStyle()
             .buttonBorderShape(.circle)
             
             Rectangle()
@@ -258,7 +258,7 @@ struct VideoSectionView: View {
                 .padding(.horizontal, 10)
                 .frame(height: 30)
             }
-            .buttonStyle(.glass)
+            .glassButtonStyle()
             .buttonBorderShape(.capsule)
             .padding(.leading, 4)
             Spacer()
@@ -274,7 +274,7 @@ struct VideoSectionView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .frame(width: 30, height: 30)
             }
-            .buttonStyle(.glass)
+            .glassButtonStyle()
             .buttonBorderShape(.circle)
         }
     }
@@ -308,7 +308,7 @@ struct VideoSectionView: View {
                             .frame(width: 30, height: 30)
                     }
                 }
-                .buttonStyle(.glass)
+                .glassButtonStyle()
                 .buttonBorderShape(.circle)
                 
                 // Crown
@@ -324,8 +324,8 @@ struct VideoSectionView: View {
                                 .frame(width: 30, height: 30)
                         }
                     }
-                    .buttonSizing(.automatic)
-                    .buttonStyle(.glassProminent)
+                    .adaptiveButtonSizing()
+                    .glassProminentButtonStyle()
                     .buttonBorderShape(.circle)
                     .tint(.premiumIconBackground)
                 }

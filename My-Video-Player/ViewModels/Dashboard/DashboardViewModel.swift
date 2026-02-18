@@ -105,6 +105,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     @Published var galleryAlbums: [PHAssetCollection] = []
     @Published var allGalleryAlbums: [PHAssetCollection] = []
     @Published var allGalleryVideos: [VideoItem] = []
+    @Published var lastGalleryUpdate = Date()
+    @Published var albumAssetCounts: [String: Int] = [:]
+    private var galleryStateSignature: String = ""
     @Published var searchHistoryKeywords: [String] = []
     
     @Published var searchText: String = ""
@@ -498,9 +501,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     
     // PHPhotoLibraryChangeObserver implementation
     func photoLibraryDidChange(_ changeInstance: PHChange) {
-        // Debounce photo library changes to avoid rapid re-fetches
+        // Debounce photo library changes
         NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(debouncedFetch), object: nil)
-        self.perform(#selector(debouncedFetch), with: nil, afterDelay: 1.0)
+        self.perform(#selector(debouncedFetch), with: nil, afterDelay: 0.5)
     }
     
     @objc private func debouncedFetch() {
@@ -1852,6 +1855,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                             if let playing = self.playingVideo, galleryIds.contains(playing.id) {
                                 self.playingVideo = nil
                             }
+                            
+                            // Update Gallery counts immediately
+                            self.performAlbumFetch()
                         }
                     }
                 } else {
@@ -2220,7 +2226,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         }
     }
     
-    private func fetchAssets() {
+    func fetchAssets() {
         let fetchOptions = PHFetchOptions()
         fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
@@ -2587,48 +2593,69 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     }
     
     private func performAlbumFetch() {
-        let fetchOptions = PHFetchOptions()
-        // Sort user albums by title
-        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "localizedTitle", ascending: true)]
-        
-        let smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .any, options: nil)
-        let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
-        
-        var videoAlbums: [PHAssetCollection] = []
-        var userDestinations: [PHAssetCollection] = [] // Writable targets
-        
-        let processCollections = { (fetchResult: PHFetchResult<PHAssetCollection>, isUserAlbum: Bool) in
-            fetchResult.enumerateObjects { collection, _, _ in
-                let title = collection.localizedTitle ?? ""
-                let lowerTitle = title.lowercased()
-                if lowerTitle == "recents" || lowerTitle == "recent" || lowerTitle == "recently saved" {
-                    return
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            
+            let fetchOptions = PHFetchOptions()
+            fetchOptions.sortDescriptors = [NSSortDescriptor(key: "localizedTitle", ascending: true)]
+            
+            let smartAlbums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .any, options: nil)
+            let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+            
+            var videoAlbums: [PHAssetCollection] = []
+            var userDestinations: [PHAssetCollection] = []
+            var albumCounts: [String: Int] = [:]
+            var firstAssetIDs: [String: String] = [:]
+            
+            let processCollections = { (fetchResult: PHFetchResult<PHAssetCollection>, isUserAlbum: Bool) in
+                fetchResult.enumerateObjects { collection, _, _ in
+                    let title = collection.localizedTitle ?? ""
+                    let lowerTitle = title.lowercased()
+                    if lowerTitle == "recents" || lowerTitle == "recent" || lowerTitle == "recently saved" || lowerTitle == "favorites" || collection.assetCollectionSubtype == .smartAlbumFavorites {
+                        return
+                    }
+                    
+                    if isUserAlbum {
+                        userDestinations.append(collection)
+                    }
+                    
+                    let options = PHFetchOptions()
+                    options.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
+                    // Get first asset for thumb verification
+                    options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+                    
+                    let assets = PHAsset.fetchAssets(in: collection, options: options)
+                    
+                    if assets.count > 0 {
+                        videoAlbums.append(collection)
+                        albumCounts[collection.localIdentifier] = assets.count
+                        firstAssetIDs[collection.localIdentifier] = assets.firstObject?.localIdentifier ?? ""
+                    }
                 }
+            }
+            
+            processCollections(smartAlbums, false)
+            processCollections(userAlbums, true)
+            
+            // Calculate state signature - include count and first asset ID
+            let newSignature = videoAlbums.map { 
+                "\($0.localIdentifier)_\(albumCounts[$0.localIdentifier] ?? 0)_\(firstAssetIDs[$0.localIdentifier] ?? "")" 
+            }.joined(separator: "|")
+            
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
                 
-                // User albums are always destination candidates
-                if isUserAlbum {
-                    userDestinations.append(collection)
-                }
-                
-                let options = PHFetchOptions()
-                options.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
-                let assets = PHAsset.fetchAssets(in: collection, options: options)
-                
-                if assets.count > 0 {
-                    videoAlbums.append(collection)
+                // Only update and trigger UI refresh if data actually changed
+                if self.galleryStateSignature != newSignature {
+                    self.galleryStateSignature = newSignature
+                    self.galleryAlbums = videoAlbums
+                    self.allGalleryAlbums = userDestinations
+                    self.albumAssetCounts = albumCounts
+                    self.lastGalleryUpdate = Date()
+                    self.objectWillChange.send()
                 }
             }
         }
-        
-        processCollections(smartAlbums, false)
-        processCollections(userAlbums, true)
-        
-        DispatchQueue.main.async {
-            self.galleryAlbums = videoAlbums
-            self.allGalleryAlbums = userDestinations // Only user-created albums for pasting
-            self.objectWillChange.send()
-        }
-        
     }
 }
 
