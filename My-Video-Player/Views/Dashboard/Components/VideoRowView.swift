@@ -73,10 +73,6 @@ struct VideoRowView: View {
                 
                 HStack(spacing: 4) {
                     Text(formattedDate(video.importDate))
-                    if video.asset == nil { // Only show file size for imported/local videos
-                        Text("•")
-                        Text(formatBytes(video.fileSizeBytes))
-                    }
                 }
                 .font(.system(size: isIpad ? 16 : 12))
                 .foregroundColor(.homeTextSecondary)
@@ -123,16 +119,6 @@ struct VideoRowView: View {
                 self.resolvedTitle = title
             }
         }
-    }
-    
-    private func formatBytes(_ bytes: Int64) -> String {
-        let doubleBytes = Double(bytes)
-        let kb = doubleBytes / 1024.0
-        let mb = kb / 1024.0
-        let gb = mb / 1024.0
-        if gb >= 1.0 { return String(format: "%.1f GB", gb) }
-        else if mb >= 1.0 { return String(format: "%.1f MB", mb) }
-        else { return String(format: "%.0f KB", kb) }
     }
     
     private func formattedDate(_ date: Date) -> String {
