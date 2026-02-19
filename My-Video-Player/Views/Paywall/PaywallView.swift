@@ -231,15 +231,15 @@ struct PaywallView: View {
                     .responsivePadding(edge: .horizontal, fraction: 20)
                     
                     // Status text
-                    VStack(spacing: 4) {
+                    VStack(spacing: 6) {
                         Text(currentBottomLineDescription)
-                            .appFont(.figtreeBold, size: 14)
+                            .appFont(.figtreeBold, size: 16)
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                             .responsivePadding(edge: .top, fraction: 25)
                         
                         Text(currentBottomPricingDescription)
-                            .appFont(.figtreeMedium, size: 11)
+                            .appFont(.figtreeMedium, size: 12)
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                            

@@ -50,7 +50,7 @@ struct SplashView : View {
                 VStack {
                     Spacer()
                     VStack(spacing: 8) {
-                        Text("Veeplay")
+                        Text("Veplay")
                             .appFont(.figtreeBold, size: 28)
                             .foregroundColor(.white)
                         

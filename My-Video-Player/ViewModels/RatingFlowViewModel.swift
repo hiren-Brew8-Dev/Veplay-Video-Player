@@ -14,7 +14,7 @@ final class RatingFlowViewModel: ObservableObject {
     // MARK: - Singleton
     static let shared = RatingFlowViewModel()
     private init() {
-        resetValue()
+//        resetValue()
         loadValue()
         observeICloudChanges()
     }

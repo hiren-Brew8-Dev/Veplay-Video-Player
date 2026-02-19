@@ -111,9 +111,6 @@ struct VideoPlayerApp: App {
                     selectedPhotoItems.removeAll()
                 }
             }
-            .onAppear {
-                AppReviewManager.resetForTesting()
-            }
         }
     }
     

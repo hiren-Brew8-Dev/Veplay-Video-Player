@@ -46,7 +46,7 @@ class RemoteConfigManager: ObservableObject {
             "Current_Selected_Paywall_Plan": 0 as NSObject,
             "min_required_version": 1.0 as NSObject,
             "contine_Button_Text": "Continue" as NSObject,
-            
+
             "paywall_X_type": 0 as NSObject,
             "is_Trail_Price_Unable": false as NSObject,
             "weekly_plan_description": "Free for \n3 days" as NSObject,
