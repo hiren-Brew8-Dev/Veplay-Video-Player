@@ -19,13 +19,9 @@
 		6C57A43A2F3F6143002890A0 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 6C57A4392F3F6143002890A0 /* FirebaseRemoteConfig */; };
 		6C57A43C2F3F6143002890A0 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 6C57A43B2F3F6143002890A0 /* FirebaseStorage */; };
 		6CC3B5D42F35E5CF00EFA81E /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 6CC3B5D32F35E5CF00EFA81E /* Kingfisher */; };
-		AFACF78BEF8707680AD20E81 /* Pods_My_Video_Player.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B8DF893DECC4EC2F0C0875F /* Pods_My_Video_Player.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		38E69A91FB743753D98A1950 /* Pods-My-Video-Player.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-My-Video-Player.debug.xcconfig"; path = "Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player.debug.xcconfig"; sourceTree = "<group>"; };
-		4B8DF893DECC4EC2F0C0875F /* Pods_My_Video_Player.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_My_Video_Player.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		68315C7CF553845094620BB8 /* Pods-My-Video-Player.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-My-Video-Player.release.xcconfig"; path = "Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player.release.xcconfig"; sourceTree = "<group>"; };
 		6C51DFEE2F3453C500844EFE /* My-Video-Player.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "My-Video-Player.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -62,7 +58,6 @@
 				6CC3B5D42F35E5CF00EFA81E /* Kingfisher in Frameworks */,
 				6C57A4322F3F6143002890A0 /* FirebaseAnalyticsIdentitySupport in Frameworks */,
 				6C57A43C2F3F6143002890A0 /* FirebaseStorage in Frameworks */,
-				AFACF78BEF8707680AD20E81 /* Pods_My_Video_Player.framework in Frameworks */,
 				6C57A42E2F3F6143002890A0 /* FirebaseAnalytics in Frameworks */,
 				6C51E24D2F3457D100844EFE /* Alamofire in Frameworks */,
 				6C57A4382F3F6143002890A0 /* FirebaseCrashlytics in Frameworks */,
@@ -77,8 +72,6 @@
 		682C3E9173BE525512BA61E5 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				38E69A91FB743753D98A1950 /* Pods-My-Video-Player.debug.xcconfig */,
-				68315C7CF553845094620BB8 /* Pods-My-Video-Player.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -89,7 +82,6 @@
 				6C51DFF02F3453C500844EFE /* My-Video-Player */,
 				6C51DFEF2F3453C500844EFE /* Products */,
 				682C3E9173BE525512BA61E5 /* Pods */,
-				95E277A96EF846DC4B5D6F5E /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -101,14 +93,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		95E277A96EF846DC4B5D6F5E /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				4B8DF893DECC4EC2F0C0875F /* Pods_My_Video_Player.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -116,12 +100,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6C51DFFE2F3453C600844EFE /* Build configuration list for PBXNativeTarget "My-Video-Player" */;
 			buildPhases = (
-				36F9786A2177F9413D0E707E /* [CP] Check Pods Manifest.lock */,
 				6C51DFEA2F3453C500844EFE /* Sources */,
 				6C51DFEB2F3453C500844EFE /* Frameworks */,
 				6C51DFEC2F3453C500844EFE /* Resources */,
-				50B4DFBFF1B6055471527659 /* [CP] Embed Pods Frameworks */,
-				A7C13CD8FC4E629F6B772F3F /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -184,73 +165,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		36F9786A2177F9413D0E707E /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-My-Video-Player-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		50B4DFBFF1B6055471527659 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		A7C13CD8FC4E629F6B772F3F /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-My-Video-Player/Pods-My-Video-Player-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		6C51DFEA2F3453C500844EFE /* Sources */ = {
@@ -386,7 +300,6 @@
 		};
 		6C51DFFF2F3453C600844EFE /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 38E69A91FB743753D98A1950 /* Pods-My-Video-Player.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -436,7 +349,6 @@
 		};
 		6C51E0002F3453C600844EFE /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 68315C7CF553845094620BB8 /* Pods-My-Video-Player.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
