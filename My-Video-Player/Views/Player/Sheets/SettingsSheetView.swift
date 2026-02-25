@@ -317,6 +317,7 @@ struct SettingsListItem: View {
 struct AirPlayGridItem: View {
     @ObservedObject var viewModel: PlayerViewModel
     var onDismiss: () -> Void
+    @State private var showSimulatorAlert = false
     
     var body: some View {
         ZStack {
@@ -339,6 +340,13 @@ struct AirPlayGridItem: View {
             }
             .frame(maxWidth: .infinity)
             
+            #if targetEnvironment(simulator)
+            Button(action: {
+                showSimulatorAlert = true
+            }) {
+                Color.clear
+            }
+            #else
             SettingsAirPlayPicker()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .opacity(0.02)
@@ -349,6 +357,12 @@ struct AirPlayGridItem: View {
                         }
                     }
                 )
+            #endif
+        }
+        .alert("AirPlay Not Supported", isPresented: $showSimulatorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("AirPlay is not supported on the iOS Simulator.")
         }
     }
 }

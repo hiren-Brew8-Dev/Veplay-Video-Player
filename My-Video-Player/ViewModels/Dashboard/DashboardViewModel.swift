@@ -26,7 +26,7 @@ struct FolderSection: Identifiable {
 class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
     static let supportedVideoExtensions = [
         "mp4", "mov", "m4v", "avi", "mkv", "3gp", "wmv", "flv", "webm", "ts", "mpg", "mpeg", "vob", "ogv", "divx", "asf", "m2ts", "rmvb", "rm", "mts", "swf", "dv", "m2t", "m2p", "m4p", "m4b", "flc", "f4v", "ogg", "obb", "vro", "dat",
-        "rrc", "gifv", "mng", "qt", "yuv", "amv", "mpe", "mpv", "svi", "3g2", "mxf", "roq", "nsv", "f4p", "f4a", "f4b", "mod"
+        "rrc", "gifv", "mng", "qt", "yuv", "amv", "mpe", "mpv", "svi", "3g2", "mxf", "roq", "nsv", "f4p", "f4a", "f4b", "mod", "mov"
     ]
     
     // Access Tracking
@@ -491,11 +491,97 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         setupHistoryObserver()
         setupSearchHistoryObserver()
         setupGroupedVideosObserver()
+        setupDemoVideoObserver()
         
         // Register for Photos library changes only if authorized to avoid premature permission prompt
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         if status == .authorized || status == .limited {
             PHPhotoLibrary.shared().register(self)
+        }
+    }
+    
+    private func setupDemoVideoObserver() {
+        RemoteConfigManager.shared.$isDemoVideoEnabled
+            .receive(on: RunLoop.main)
+            .sink { [weak self] enabled in
+                if enabled {
+                    self?.setupDemoVideoIfEnabled()
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func setupDemoVideoIfEnabled() {
+        guard RemoteConfigManager.shared.isDemoVideoEnabled else { return }
+        
+        let versionKey = "isDemoVideoAdded_v3" // Use new key to ensure both video and srt are added
+        let isAdded = UserDefaults.standard.bool(forKey: versionKey)
+        guard !isAdded else { return }
+        
+        // Paths in bundle: "Sample/demo-video.MOV" and "Sample/demo-srt.srt"
+        guard let videoBundleURL = Bundle.main.url(forResource: "demo-video", withExtension: "MOV"),
+              let srtBundleURL = Bundle.main.url(forResource: "demo-srt", withExtension: "srt") else {
+            print("❌ Demo files not found in bundle at 'Sample/'")
+            return
+        }
+        
+        let fileManager = FileManager.default
+        
+        // 1. Copy to ImportedVideos
+        let importedDir = importedVideosDirectory
+        let destinationVideoURL = importedDir.appendingPathComponent("demo-video.MOV")
+        let destinationSrtURL = importedDir.appendingPathComponent("demo-video.srt") // Name it same as video for auto-pick
+        
+        // 2. Create Folders/demo and copy there
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let foldersDir = documentsURL.appendingPathComponent("Folders", isDirectory: true)
+        let demoFolderDir = foldersDir.appendingPathComponent("demo", isDirectory: true)
+        let demoFolderVideoURL = demoFolderDir.appendingPathComponent("demo-video.MOV")
+        let demoFolderSrtURL = demoFolderDir.appendingPathComponent("demo-video.srt") // Name it same as video
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            do {
+                // Ensure directories exist
+                if !fileManager.fileExists(atPath: importedDir.path) {
+                    try fileManager.createDirectory(at: importedDir, withIntermediateDirectories: true)
+                }
+                if !fileManager.fileExists(atPath: demoFolderDir.path) {
+                    try fileManager.createDirectory(at: demoFolderDir, withIntermediateDirectories: true)
+                }
+                
+                // Copy Video to ImportedVideos
+                if !fileManager.fileExists(atPath: destinationVideoURL.path) {
+                    try fileManager.copyItem(at: videoBundleURL, to: destinationVideoURL)
+                    print("✅ Copied demo video to ImportedVideos")
+                }
+                
+                // Copy SRT to ImportedVideos
+                if !fileManager.fileExists(atPath: destinationSrtURL.path) {
+                    try fileManager.copyItem(at: srtBundleURL, to: destinationSrtURL)
+                    print("✅ Copied demo srt to ImportedVideos")
+                }
+                
+                // Copy Video to Folders/demo
+                if !fileManager.fileExists(atPath: demoFolderVideoURL.path) {
+                    try fileManager.copyItem(at: videoBundleURL, to: demoFolderVideoURL)
+                    print("✅ Copied demo video to Folders/demo")
+                }
+                
+                // Copy SRT to Folders/demo
+                if !fileManager.fileExists(atPath: demoFolderSrtURL.path) {
+                    try fileManager.copyItem(at: srtBundleURL, to: demoFolderSrtURL)
+                    print("✅ Copied demo srt to Folders/demo")
+                }
+                
+                UserDefaults.standard.set(true, forKey: versionKey)
+                
+                DispatchQueue.main.async {
+                    self.loadData()
+                }
+            } catch {
+                print("❌ Failed to setup demo video/srt: \(error.localizedDescription)")
+            }
         }
     }
     

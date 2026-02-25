@@ -161,9 +161,9 @@ struct PlayerView: View {
     
     private func overlayLayer(geo: GeometryProxy) -> some View {
         ZStack {
-            SubtitleOverlay(text: viewModel.subtitleManager.currentSubtitle)
-                .allowsHitTesting(false)
-            
+//            SubtitleOverlay(text: viewModel.subtitleManager.currentSubtitle)
+//                .allowsHitTesting(false)
+//            
             dismissGuideLayer(geo: geo)
             
             if viewModel.isSeekUIActive || viewModel.isLongPress2xActive {

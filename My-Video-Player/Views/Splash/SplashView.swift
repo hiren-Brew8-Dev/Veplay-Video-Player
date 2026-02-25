@@ -12,6 +12,8 @@ struct SplashView : View {
     @EnvironmentObject var navigationManager: NavigationManager
     @AppStorage("isOnboardingCompleted") private var isOnboardingCompleted = false
     
+    @State private var hasNavigated = false
+    @State private var timerScheduled = false
     @State private var logoScale: CGFloat = 0.8
     @State private var logoOpacity: Double = 0.0
     @State private var textOffset: CGFloat = 20
@@ -67,17 +69,23 @@ struct SplashView : View {
         }
         .hideNavigationBar()
         .onAppear {
-            animateIn()
-            
-            // Route to next screen after animation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                routeNext()
+            if !timerScheduled {
+                timerScheduled = true
+                animateIn()
+                
+                // Route to next screen after animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    routeNext()
+                }
             }
         }
     }
     
     
     private func routeNext() {
+        guard !hasNavigated && !navigationManager.isDashboardRoot else { return }
+        hasNavigated = true
+        
         if !isOnboardingCompleted {
             navigationManager.push(.onboarding1)
         } else {

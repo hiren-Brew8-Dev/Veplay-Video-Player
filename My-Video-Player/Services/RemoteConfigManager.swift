@@ -32,6 +32,7 @@ class RemoteConfigManager: ObservableObject {
     
     @Published var paywallPlanTitleOpacity: Double = 60.0
     @Published var paywallFreeTrialPlan: Int = 0
+    @Published var isDemoVideoEnabled: Bool = false
 
     private let remoteConfig = RemoteConfig.remoteConfig()
 
@@ -57,7 +58,8 @@ class RemoteConfigManager: ObservableObject {
             "lifetime_plan_bottom_line_description": "--" as NSObject,
             
             "paywall_plan_title_opacity": 60.0 as NSObject,
-            "paywall_freeTrial_plan" : 0 as NSObject
+            "paywall_freeTrial_plan" : 0 as NSObject,
+            "is_demo_video_enabled": false as NSObject
         ])
 
         fetchRemoteConfig()
@@ -94,6 +96,7 @@ class RemoteConfigManager: ObservableObject {
                     
                     self.paywallPlanTitleOpacity = self.remoteConfig["paywall_plan_title_opacity"].numberValue.doubleValue
                     self.paywallFreeTrialPlan = self.remoteConfig["paywall_freeTrial_plan"].numberValue.intValue
+                    self.isDemoVideoEnabled = self.remoteConfig["is_demo_video_enabled"].boolValue
                     
                     self.checkForceUpdate()
                 }

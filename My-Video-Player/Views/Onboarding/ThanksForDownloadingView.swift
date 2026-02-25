@@ -62,7 +62,7 @@ struct ThanksForDownloadingView: View {
                         Image("heart_tfr")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .responsiveWidth(iphoneWidth: 130, ipadWidth: 120)
+                            .responsiveWidth(iphoneWidth: 130, ipadWidth: 70)
                             .responsivePadding(edge: .leading, fraction: -10)
                             .offset(y: isIpad ? -80 : -60)
                             .rotation3DEffect(

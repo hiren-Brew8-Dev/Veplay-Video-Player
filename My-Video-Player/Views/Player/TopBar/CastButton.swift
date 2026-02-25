@@ -5,21 +5,35 @@ import AVKit
 struct CastButton: View {
     @ObservedObject var viewModel: PlayerViewModel
     var action: () -> Void
+    @State private var showSimulatorAlert = false
     
     var body: some View {
         ZStack {
             // Visual button
-            Button(action: {}) { // Empty action, the picker handles it
+            Button(action: {
+                #if targetEnvironment(simulator)
+                showSimulatorAlert = true
+                #endif
+            }) { // Empty action normally, the picker handles it
                 Image(systemName: "airplayaudio")
                     .font(.system(size: 20))
                     .foregroundColor(viewModel.isExternalPlaybackActive ? .blue : .white)
             }
             .frame(width: 40, height: 44)
+            #if !targetEnvironment(simulator)
             .allowsHitTesting(false) // Let taps pass through to the picker
+            #endif
             
+            #if !targetEnvironment(simulator)
             // Invisible native AirPlay picker overlay
             NativeAirPlayPicker()
                 .frame(width: 40, height: 44)
+            #endif
+        }
+        .alert("AirPlay Not Supported", isPresented: $showSimulatorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("AirPlay is not supported on the iOS Simulator.")
         }
     }
 }
