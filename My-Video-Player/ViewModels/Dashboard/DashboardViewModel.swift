@@ -928,7 +928,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                     self.folders = newFolders
                     self.isInitialLoading = false // Folders ready
                     
-                    // Fetch durations for all videos in folders in background
+                    // Flatten all folder videos for metadata + thumbnail generation
                     let allFolderVideos = newFolders.flatMap { folder -> [VideoItem] in
                         func getVideos(from f: Folder) -> [VideoItem] {
                             return f.videos + f.subfolders.flatMap { getVideos(from: $0) }
@@ -936,6 +936,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                         return getVideos(from: folder)
                     }
                     self.backgroundFetchMetadata(for: allFolderVideos)
+                    // Generate missing thumbnail JPEGs for folder videos (.background priority)
+                    ThumbnailCacheManager.shared.prewarmCache(for: allFolderVideos)
                 }
             } catch {
                 print("Error loading folders: \(error)")
@@ -2700,10 +2702,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                     self.backgroundFetchTitles(for: loadedVideos)
                     self.backgroundFetchMetadata(for: loadedVideos)
                     
-                    // Pre-warm thumbnail cache in background
-                    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
-                        ThumbnailCacheManager.shared.prewarmCache(for: loadedVideos)
-                    }
+                    // Generate missing thumbnail JPEGs in background (.background priority — never
+                    // contends with UI). On subsequent launches all JPEGs exist → instant sync load.
+                    ThumbnailCacheManager.shared.prewarmCache(for: loadedVideos)
                 }
             } catch {
                 print("Error loading imported videos: \(error)")

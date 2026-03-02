@@ -208,11 +208,22 @@ struct VideoCardView: View {
         }
     }
     
+    /// loadThumbnail
+    /// - Description: Two-stage instant loading:
+    ///   1. getThumbnailSync — NSCache (µs) or disk JPEG (0.3ms). Sets @State in the
+    ///      same render frame — zero placeholder flash for any previously seen video.
+    ///   2. getThumbnail async — only fires if no JPEG exists yet. Generates, writes JPEG,
+    ///      next scroll it will be instant forever.
+    /// - How to use: Called from .onAppear guarded by thumbnail == nil.
     private func loadThumbnail() {
+        // Sync path — instant, same render frame, no state-change flash
+        if let instant = ThumbnailCacheManager.shared.getThumbnailSync(for: video) {
+            thumbnail = instant
+            return
+        }
+        // Async fallback — first-ever generation only
         ThumbnailCacheManager.shared.getThumbnail(for: video, requestId: video.id) { image in
-            DispatchQueue.main.async {
-                self.thumbnail = image
-            }
+            DispatchQueue.main.async { self.thumbnail = image }
         }
     }
     
