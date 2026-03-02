@@ -150,6 +150,7 @@ struct VideoCardView: View {
             // Skip if already loaded — cells can reappear after light scroll without needing reload
             if thumbnail == nil { loadThumbnail() }
             if resolvedTitle == nil { loadTitle() }
+            if video.duration <= 0 { viewModel?.resolveDurationIfNeeded(for: video) }
         }
         .onDisappear {
             // Cancel any in-flight thumbnail request — prevents stale completions from

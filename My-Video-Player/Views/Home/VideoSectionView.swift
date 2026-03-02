@@ -693,7 +693,7 @@ struct VideoSectionView: View {
                 }
             )
         }
-        .buttonStyle(.scalable)
+        .buttonStyle(.plain)
     }
     
     private func videoItemView(for video: VideoItem, isLandscape: Bool, width: CGFloat) -> some View {
@@ -759,7 +759,9 @@ struct VideoSectionView: View {
         } else {
             // Setup playlist context: All imported videos (sorted)
             HapticsManager.shared.generate(.medium)
-            viewModel.currentPlaylist = viewModel.sortedImportedVideos
+            viewModel.currentPlaylist = viewModel.cachedSortedImportedVideos.isEmpty
+                ? viewModel.sortedImportedVideos
+                : viewModel.cachedSortedImportedVideos
             viewModel.playingVideo = video
         }
     }

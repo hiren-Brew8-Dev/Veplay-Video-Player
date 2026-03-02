@@ -109,10 +109,16 @@ struct VideoRowView: View {
         // Animate ONLY on this video's highlight state — not on every row whenever any video is highlighted.
         .animation(.spring(), value: viewModel?.highlightVideoId == video.id)
         .onAppear {
-            loadThumbnail()
-            loadTitle()
+            if thumbnail == nil { loadThumbnail() }
+            if resolvedTitle == nil { loadTitle() }
+            if video.duration <= 0 { viewModel?.resolveDurationIfNeeded(for: video) }
+        }
+        .onDisappear {
+            ThumbnailCacheManager.shared.cancelRequest(for: video.id)
         }
         .onChange(of: video.id) { _, _ in
+            thumbnail = nil
+            resolvedTitle = nil
             loadThumbnail()
             loadTitle()
         }
@@ -147,8 +153,11 @@ struct VideoRowView: View {
         return Self.rowDateFormatter.string(from: date)
     }
     private func loadThumbnail() {
-        // Use the persistent cache manager for instant loading
-        ThumbnailCacheManager.shared.getThumbnail(for: video) { [self] image in
+        if let instant = ThumbnailCacheManager.shared.getThumbnailSync(for: video) {
+            self.thumbnail = instant
+            return
+        }
+        ThumbnailCacheManager.shared.getThumbnail(for: video, requestId: video.id) { [self] image in
             DispatchQueue.main.async {
                 self.thumbnail = image
             }

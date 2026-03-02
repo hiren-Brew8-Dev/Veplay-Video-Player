@@ -464,13 +464,8 @@ struct FolderSectionView: View {
                                 isSelected: viewModel.selectedFolderIds.contains(folder.id)
                             )
                         }
-                        .buttonStyle(.scalable)
+                        .buttonStyle(.plain)
                         .id(folder.id)
-                        .simultaneousGesture(TapGesture().onEnded {
-                            if !viewModel.isSelectionMode {
-                                viewModel.markFolderAsAccessed(folder)
-                            }
-                        })
                     }
                 }
             }
@@ -500,13 +495,8 @@ struct FolderSectionView: View {
                                 isSelected: viewModel.selectedFolderIds.contains(folder.id)
                             )
                         }
-                        .buttonStyle(.scalable)
+                        .buttonStyle(.plain)
                         .id(folder.id)
-                        .simultaneousGesture(TapGesture().onEnded {
-                            if !viewModel.isSelectionMode {
-                                viewModel.markFolderAsAccessed(folder)
-                            }
-                        })
                         .padding(.horizontal, GridLayout.horizontalPadding)
                     }
                 }
@@ -565,6 +555,10 @@ struct FolderSectionView: View {
             }
         } else {
             HapticsManager.shared.generate(.light)
+            // Defer folder-access mutation to avoid AttributeGraph cycle warnings during tap transaction.
+            DispatchQueue.main.async {
+                viewModel.markFolderAsAccessed(folder)
+            }
             navigationManager.push(.folderDetail(folder))
         }
     }

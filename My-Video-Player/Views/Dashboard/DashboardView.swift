@@ -112,10 +112,6 @@ struct DashboardView: View {
                     lastAlbumFetchDate = now
                     viewModel.fetchAlbums()
                 }
-                // fetchAssets is heavy (full PHAsset enumeration) — only needed on first launch
-                if viewModel.allGalleryVideos.isEmpty {
-                    viewModel.fetchAssets()
-                }
             }
         }
     }
@@ -131,12 +127,13 @@ struct DashboardView: View {
         
         // Proactive refresh when entering specific tabs.
         // fetchAlbums() is lightweight (album list only) — safe to call on every gallery visit.
-        // fetchAssets() is heavy (PHAsset enumeration over entire library) — only call when not yet loaded
-        // to avoid freezing the UI on every tab-switch back to Videos.
+        // fetchAssets() is heavy (PHAsset enumeration over entire library), so avoid running it on Home tab.
+        // We load it lazily when user enters Gallery for smoother app startup.
         if newTab == .gallery {
             viewModel.fetchAlbums()
-        } else if newTab == .home && viewModel.allGalleryVideos.isEmpty {
-            viewModel.fetchAssets()
+            if viewModel.allGalleryVideos.isEmpty {
+                viewModel.fetchAssets()
+            }
         }
     }
 

@@ -108,6 +108,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     @Published var importedVideos: [VideoItem] = []
     @Published var isInitialLoading: Bool = true
     @Published var groupedImportedVideos: [VideoSection] = []
+    @Published var cachedSortedImportedVideos: [VideoItem] = []
     @Published var galleryAlbums: [PHAssetCollection] = []
     @Published var allGalleryAlbums: [PHAssetCollection] = []
     @Published var allGalleryVideos: [VideoItem] = []
@@ -119,6 +120,10 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     /// FolderDetailView reads this directly so it never sorts on the main thread.
     @Published var sortedAllGalleryVideos: [VideoItem] = []
     private var galleryStateSignature: String = ""
+    private var lastAlbumFetchTime: Date = .distantPast
+    private var isAlbumFetchInProgress: Bool = false
+    private let albumVideosCacheLock = DispatchQueue(label: "com.videoplayer.albumVideosCache", attributes: .concurrent)
+    private var _albumVideosCache: [String: [VideoItem]] = [:]
 
     // Stored fetch result — used by photoLibraryDidChange to compute ONLY the delta
     // (removed/inserted assets) instead of re-enumerating all 10,000+ videos.
@@ -163,6 +168,11 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
   
     // Performance
     let imageManager = PHCachingImageManager()
+    private let metadataBatchLimit = 350
+    private let thumbnailImmediatePrewarmLimit = 180
+    private let metadataDeferredBatchDelay: TimeInterval = 2.5
+    private let durationResolveLock = NSLock()
+    private var durationResolveInFlight: Set<UUID> = []
     
     // Global UI State
     @Published var showCreateFolderAlert = false {
@@ -690,7 +700,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 // No stored result yet, or change cannot be diffed — full refresh.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                     self?.fetchAssets()
-                    self?.fetchAlbums()
+                    self?.fetchAlbums(force: true)
                 }
                 return
             }
@@ -700,7 +710,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
 
             guard details.hasIncrementalChanges else {
                 // No video-level changes (e.g., album metadata only) — just refresh albums.
-                DispatchQueue.main.async { [weak self] in self?.fetchAlbums() }
+                DispatchQueue.main.async { [weak self] in self?.fetchAlbums(force: true) }
                 return
             }
 
@@ -710,6 +720,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
 
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
+                self.clearCachedAlbumVideos()
 
                 // 1. Remove deleted videos from gallery list and master search list.
                 if !removedIds.isEmpty {
@@ -724,7 +735,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 }
 
                 // 3. Refresh album cards (counts / cover images may have changed).
-                self.fetchAlbums()
+                self.fetchAlbums(force: true)
             }
         }
     }
@@ -813,6 +824,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             }
             
             DispatchQueue.main.async {
+                self.cachedSortedImportedVideos = sorted
                 if self.groupedImportedVideos != newSections {
                     self.groupedImportedVideos = newSections
                 }
@@ -829,6 +841,20 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         
         // Load User Folders
         loadUserFolders()
+    }
+
+    private func scheduleThumbnailPrewarm(for videos: [VideoItem]) {
+        guard !videos.isEmpty else { return }
+        let prioritized = Array(videos.prefix(thumbnailImmediatePrewarmLimit))
+        ThumbnailCacheManager.shared.prewarmCache(for: prioritized)
+
+        // Full-library prewarm is deferred to keep UI smooth right after launch/copy.
+        if videos.count > thumbnailImmediatePrewarmLimit {
+            let snapshot = videos
+            DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 25) {
+                ThumbnailCacheManager.shared.prewarmCache(for: snapshot)
+            }
+        }
     }
     
     func setupHistoryObserver() {
@@ -935,9 +961,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                         }
                         return getVideos(from: folder)
                     }
-                    self.backgroundFetchMetadata(for: allFolderVideos)
-                    // Generate missing thumbnail JPEGs for folder videos (.background priority)
-                    ThumbnailCacheManager.shared.prewarmCache(for: allFolderVideos)
+                    // Keep immediate work small; defer full prewarm to avoid post-copy UI lag spikes.
+                    self.scheduleThumbnailPrewarm(for: allFolderVideos)
                 }
             } catch {
                 print("Error loading folders: \(error)")
@@ -2531,8 +2556,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         switch status {
         case .authorized, .limited:
             self.showPermissionDenied = false
-            fetchAssets()
-            fetchAlbums()
+            fetchAlbums(force: true)
             completion(true)
         case .notDetermined:
             PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] newStatus in
@@ -2541,8 +2565,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                     if newStatus == .authorized || newStatus == .limited {
                         PHPhotoLibrary.shared().register(self)
                         self.showPermissionDenied = false
-                        self.fetchAssets()
-                        self.fetchAlbums()
+                        self.fetchAlbums(force: true)
                         completion(true)
                     } else {
                         self.showPermissionDenied = true
@@ -2564,8 +2587,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         case .authorized, .limited:
             PHPhotoLibrary.shared().register(self)
             self.showPermissionDenied = false
-            fetchAssets()
-            fetchAlbums()
+            fetchAlbums(force: true)
         case .denied, .restricted:
             DispatchQueue.main.async {
                 self.showPermissionDenied = true
@@ -2607,9 +2629,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 // Start pre-fetching titles in small batches to avoid overhead
                 self.preFetchTitles(for: newVideos)
 
-                // Pre-warm thumbnail cache for gallery videos
+                // Pre-warm thumbnails in throttled mode to avoid startup lag.
                 DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
-                    ThumbnailCacheManager.shared.prewarmCache(for: newVideos)
+                    self.scheduleThumbnailPrewarm(for: newVideos)
                 }
             }
         }
@@ -2700,11 +2722,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                     
                     // Start background metadata fetching (Titles, Durations, and Actual Creation Dates)
                     self.backgroundFetchTitles(for: loadedVideos)
-                    self.backgroundFetchMetadata(for: loadedVideos)
                     
-                    // Generate missing thumbnail JPEGs in background (.background priority — never
-                    // contends with UI). On subsequent launches all JPEGs exist → instant sync load.
-                    ThumbnailCacheManager.shared.prewarmCache(for: loadedVideos)
+                    // Throttled prewarm: tiny immediate window + deferred full run.
+                    self.scheduleThumbnailPrewarm(for: loadedVideos)
                 }
             } catch {
                 print("Error loading imported videos: \(error)")
@@ -2781,8 +2801,24 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     ///   main-thread call — preventing the N-renders-per-copy lag spike.
     /// - How to use: Called after loadImportedVideos() and loadUserFolders().
     private func backgroundFetchMetadata(for videos: [VideoItem]) {
-        let localVideos = videos.filter { $0.url != nil }
+        // Only process items that still need metadata. This keeps repeated refreshes cheap.
+        let localVideos = videos.filter { video in
+            guard video.url != nil else { return false }
+            return video.duration <= 0.0
+        }
         guard !localVideos.isEmpty else { return }
+        
+        // Process a fast first window now, then defer the remainder in background.
+        let sortedByPriority = localVideos.sorted { $0.importDate > $1.importDate }
+        let prioritizedLocalVideos = Array(sortedByPriority.prefix(metadataBatchLimit))
+        let deferredLocalVideos = Array(sortedByPriority.dropFirst(metadataBatchLimit))
+        
+        if !deferredLocalVideos.isEmpty {
+            let deferredSnapshot = deferredLocalVideos
+            DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + metadataDeferredBatchDelay) { [weak self] in
+                self?.backgroundFetchMetadata(for: deferredSnapshot)
+            }
+        }
         
         // Tuple type aligns with applyBatchedMetadata signature — no conversion needed
         typealias MetaUpdate = (id: UUID, duration: Double?, date: Date?)
@@ -2792,10 +2828,10 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             
             let lock = NSLock()
             var updates: [MetaUpdate] = []
-            updates.reserveCapacity(localVideos.count)
+            updates.reserveCapacity(prioritizedLocalVideos.count)
             let group = DispatchGroup()
             
-            for video in localVideos {
+            for video in prioritizedLocalVideos {
                 guard let url = video.url else { continue }
                 let ext = url.pathExtension.lowercased()
                 let nativeExtensions = ["mp4", "mov", "m4v"]
@@ -2988,6 +3024,49 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             self.objectWillChange.send()
         }
     }
+
+    func resolveDurationIfNeeded(for video: VideoItem) {
+        guard video.duration <= 0, let url = video.url else { return }
+
+        durationResolveLock.lock()
+        if durationResolveInFlight.contains(video.id) {
+            durationResolveLock.unlock()
+            return
+        }
+        durationResolveInFlight.insert(video.id)
+        durationResolveLock.unlock()
+
+        let videoId = video.id
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self = self else { return }
+
+            Task {
+                let ext = url.pathExtension.lowercased()
+                let nativeExtensions = ["mp4", "mov", "m4v"]
+                var resolvedDuration: Double = 0
+
+                if nativeExtensions.contains(ext) {
+                    let asset = AVURLAsset(url: url)
+                    if let d = try? await asset.load(.duration) {
+                        resolvedDuration = CMTimeGetSeconds(d)
+                    }
+                } else {
+                    let helper = VLCDurationHelper()
+                    resolvedDuration = await helper.fetchDuration(for: url)
+                }
+
+                await MainActor.run {
+                    self.durationResolveLock.lock()
+                    self.durationResolveInFlight.remove(videoId)
+                    self.durationResolveLock.unlock()
+
+                    if resolvedDuration > 0 {
+                        self.updateVideoMetadata(for: videoId, duration: resolvedDuration, creationDate: nil)
+                    }
+                }
+            }
+        }
+    }
     
     private func fetchAsset(for identifier: String?) -> PHAsset? {
         guard let identifier = identifier else { return nil }
@@ -3051,12 +3130,22 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         return folders.first(where: { $0.name == "Favorites" })?.videos.contains(where: { $0.id == video.id }) ?? false
     }
     
-    func fetchAlbums() {
+    func fetchAlbums(force: Bool = false) {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .authorized || status == .limited else {
             print("⚠️ Skipping fetchAlbums: Not authorized (\(status.rawValue))")
             return
         }
+
+        // Avoid repeated full album enumerations during rapid tab switches.
+        let now = Date()
+        if !force && now.timeIntervalSince(lastAlbumFetchTime) < 3 {
+            return
+        }
+        if isAlbumFetchInProgress {
+            return
+        }
+        isAlbumFetchInProgress = true
         
         // Use regular fetch (requestAuthorization is not needed if status is already OK)
         performAlbumFetch()
@@ -3120,6 +3209,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
 
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
+                self.isAlbumFetchInProgress = false
+                self.lastAlbumFetchTime = Date()
 
                 // Always update allVideosAlbumIdentifier so FolderDetailView can use the fast path
                 if self.allVideosAlbumIdentifier == nil, let id = allVideosId {
@@ -3136,6 +3227,22 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                     self.objectWillChange.send()
                 }
             }
+        }
+    }
+
+    func cachedAlbumVideos(for albumId: String) -> [VideoItem]? {
+        albumVideosCacheLock.sync { _albumVideosCache[albumId] }
+    }
+
+    func cacheAlbumVideos(_ videos: [VideoItem], for albumId: String) {
+        albumVideosCacheLock.async(flags: .barrier) {
+            self._albumVideosCache[albumId] = videos
+        }
+    }
+
+    private func clearCachedAlbumVideos() {
+        albumVideosCacheLock.async(flags: .barrier) {
+            self._albumVideosCache.removeAll()
         }
     }
 }

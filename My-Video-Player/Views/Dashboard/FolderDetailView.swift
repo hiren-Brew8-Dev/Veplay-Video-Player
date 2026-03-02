@@ -46,6 +46,7 @@ struct FolderDetailView: View {
     // Cached async sort — replaces the old computed var that sorted 1700+ items on the main thread
     // on every SwiftUI re-render. Now updated via background Task only when inputs change.
     @State private var sortedDisplayVideos: [VideoItem] = []
+    @State private var groupedDisplayVideos: [VideoSection] = []
     @State private var isSortingVideos: Bool = false
 
     // Derived
@@ -212,13 +213,6 @@ struct FolderDetailView: View {
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .tabBar)
-        .onAppear {
-            viewModel.markFolderAsAccessed(folder)
-            // Resolve titles for album videos if not already done
-            if folder.url == nil {
-                viewModel.preFetchTitles(for: folder.videos)
-            }
-        }
         .task {
             await fetchAlbumVideos()
             await resolveDisplayVideos()
@@ -484,7 +478,7 @@ struct FolderDetailView: View {
                     // Videos Section (Unified or Grouped)
                     if folder.url == nil && (sortOption == .dateAsc || sortOption == .dateDesc) {
                         // ALBUM MODE: Show Date Sections
-                        ForEach(groupedVideos, id: \.id) { section in
+                        ForEach(groupedDisplayVideos, id: \.id) { section in
                             Section(header: sectionHeader(for: section.date)) {
                                 ForEach(section.videos, id: \.id) { video in
                                     gridVideoItem(video, isLandscape: isLandscape, width: currentWidth)
@@ -542,7 +536,7 @@ struct FolderDetailView: View {
             Group {
                 if folder.url == nil && (sortOption == .dateAsc || sortOption == .dateDesc) {
                     // ALBUM MODE: Show Date Sections
-                    ForEach(groupedVideos, id: \.id) { section in
+                    ForEach(groupedDisplayVideos, id: \.id) { section in
                         Section {
                             ForEach(section.videos, id: \.id) { video in
                                 videoRow(video)
@@ -738,27 +732,6 @@ struct FolderDetailView: View {
         return !sortedDisplayVideos.isEmpty && selectedVideoIds.count == sortedDisplayVideos.count
     }
     
-    var groupedVideos: [VideoSection] {
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: sortedDisplayVideos) { video -> Date in
-            calendar.startOfDay(for: video.importDate)
-        }
-        let sortedDates = grouped.keys.sorted {
-            return (sortOption == .dateAsc) ? $0 < $1 : $0 > $1
-        }
-        return sortedDates.map { date in
-            let videosInDate = grouped[date] ?? []
-            let sortedInDate = videosInDate.sorted { v1, v2 in
-                if sortOption == .dateAsc {
-                    return v1.importDate < v2.importDate
-                } else {
-                    return v1.importDate > v2.importDate
-                }
-            }
-            return VideoSection(date: date, videos: sortedInDate)
-        }
-    }
-    
     private func videoActions(for video: VideoItem) -> [CustomActionItem] {
         var items: [CustomActionItem] = []
         
@@ -883,15 +856,34 @@ struct FolderDetailView: View {
         let vmVideos = viewModel.videos
         let vm = viewModel
         
-        let result: [VideoItem] = await Task.detached(priority: .userInitiated) {
+        let result: ([VideoItem], [VideoSection]) = await Task.detached(priority: .userInitiated) {
+            func makeDateSections(for videos: [VideoItem], sortOption: DashboardViewModel.SortOption) -> [VideoSection] {
+                let calendar = Calendar.current
+                let grouped = Dictionary(grouping: videos) { video in
+                    calendar.startOfDay(for: video.importDate)
+                }
+                let sortedDates = grouped.keys.sorted { sortOption == .dateAsc ? $0 < $1 : $0 > $1 }
+                return sortedDates.map { date in
+                    VideoSection(date: date, videos: grouped[date] ?? [])
+                }
+            }
+
             if let albumId = albumIdentifier {
                 // "All Videos" smart album — already pre-sorted by Combine, zero work needed
                 if let allVidsId = allVideosAlbumId, albumId == allVidsId {
-                    return sortedGallery.isEmpty ? allGallery : sortedGallery
+                    let videos = sortedGallery.isEmpty ? allGallery : sortedGallery
+                    let sections = (currentSortOption == .dateAsc || currentSortOption == .dateDesc)
+                        ? makeDateSections(for: videos, sortOption: currentSortOption)
+                        : []
+                    return (videos, sections)
                 }
                 // Other album: use asyncVideos from background GCD fetch
                 let baseVideos = currentAsyncVideos.isEmpty ? folderVideos : currentAsyncVideos
-                return vm.sortVideos(baseVideos, by: currentSortOption)
+                let videos = vm.sortVideos(baseVideos, by: currentSortOption)
+                let sections = (currentSortOption == .dateAsc || currentSortOption == .dateDesc)
+                    ? makeDateSections(for: videos, sortOption: currentSortOption)
+                    : []
+                return (videos, sections)
             }
             
             // File folder: O(1) Set lookup to filter against valid video IDs
@@ -899,10 +891,12 @@ struct FolderDetailView: View {
             var validIds = Set(vmVideos.map { $0.id })
             for v in allVideosAcrossFolders { validIds.insert(v.id) }
             let filtered = baseVideos.filter { validIds.contains($0.id) }
-            return vm.sortVideos(filtered, by: currentSortOption)
+            let videos = vm.sortVideos(filtered, by: currentSortOption)
+            return (videos, [])
         }.value
         
-        sortedDisplayVideos = result
+        sortedDisplayVideos = result.0
+        groupedDisplayVideos = result.1
     }
 
     private func fetchAlbumVideos() async {
@@ -910,7 +904,15 @@ struct FolderDetailView: View {
 
         // Fast path: "All Videos" is exactly viewModel.allGalleryVideos — already loaded, instant.
         if let allVidsId = viewModel.allVideosAlbumIdentifier, albumId == allVidsId {
-            asyncVideos = viewModel.allGalleryVideos
+            if !viewModel.allGalleryVideos.isEmpty {
+                asyncVideos = viewModel.allGalleryVideos
+                return
+            }
+        }
+
+        // Cached path: avoid re-enumerating 1000+ PHAssets every time album view re-opens.
+        if let cached = viewModel.cachedAlbumVideos(for: albumId), !cached.isEmpty {
+            asyncVideos = cached
             return
         }
 
@@ -949,6 +951,7 @@ struct FolderDetailView: View {
 
             DispatchQueue.main.async {
                 self.asyncVideos = result
+                vm.cacheAlbumVideos(result, for: albumId)
                 self.isLoading = false
                 
                 // Pre-warm thumbnail cache for album videos — same pattern as loadImportedVideos().
@@ -1093,6 +1096,3 @@ struct FolderDetailView: View {
         .menuActionDismissBehavior(.disabled)
     }
 }
-
-
-

@@ -189,6 +189,7 @@ struct AlbumCardView: View {
 
     @State private var thumbnail: UIImage?
     @State private var videoCount: Int = 0
+    @State private var activeRequestId: PHImageRequestID = PHInvalidImageRequestID
     let videoCountPreload: Int
     let refreshTrigger: Date
 
@@ -250,6 +251,12 @@ struct AlbumCardView: View {
         .onAppear {
             fetchAlbumInfo()
         }
+        .onDisappear {
+            if activeRequestId != PHInvalidImageRequestID {
+                PHImageManager.default().cancelImageRequest(activeRequestId)
+                activeRequestId = PHInvalidImageRequestID
+            }
+        }
         .onChange(of: refreshTrigger) { _, _ in
             fetchAlbumInfo()
         }
@@ -281,7 +288,8 @@ struct AlbumCardView: View {
             let manager = PHImageManager.default()
             let requestOptions = PHImageRequestOptions()
             requestOptions.deliveryMode = .opportunistic
-            requestOptions.isNetworkAccessAllowed = true
+            requestOptions.resizeMode = .fast
+            requestOptions.isNetworkAccessAllowed = false
             requestOptions.version = .current
 
             // Calculate exact size based on display size and screen scale
@@ -289,17 +297,48 @@ struct AlbumCardView: View {
             let padding: CGFloat = 8
             let thumbnailSize = size - (padding * 2)
             let pixelSize = thumbnailSize * UIScreen.main.scale
+            let cacheKey = "\(album.localIdentifier)_\(Int(pixelSize))" as NSString
+
+            if let cached = AlbumThumbnailCache.shared.image(for: cacheKey) {
+                if thumbnail == nil {
+                    thumbnail = cached
+                }
+                return
+            }
             
-            manager.requestImage(
+            if activeRequestId != PHInvalidImageRequestID {
+                manager.cancelImageRequest(activeRequestId)
+            }
+
+            activeRequestId = manager.requestImage(
                 for: firstAsset,
                 targetSize: CGSize(width: pixelSize, height: pixelSize),
                 contentMode: .aspectFill,
                 options: requestOptions
             ) { image, _ in
                 if let image = image {
+                    AlbumThumbnailCache.shared.store(image, for: cacheKey)
                     thumbnail = image
                 }
+                activeRequestId = PHInvalidImageRequestID
             }
         }
+    }
+}
+
+private final class AlbumThumbnailCache {
+    static let shared = AlbumThumbnailCache()
+    private let cache = NSCache<NSString, UIImage>()
+
+    private init() {
+        cache.countLimit = 300
+    }
+
+    func image(for key: NSString) -> UIImage? {
+        cache.object(forKey: key)
+    }
+
+    func store(_ image: UIImage, for key: NSString) {
+        cache.setObject(image, forKey: key)
     }
 }

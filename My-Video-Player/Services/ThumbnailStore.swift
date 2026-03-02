@@ -22,8 +22,12 @@ class ThumbnailStore {
     // VLC helper for non-native formats (mkv, avi, flv etc.)
     // Max 2 concurrent VLC generations — VLC is heavy, more causes memory pressure
     private let vlcSemaphore = DispatchSemaphore(value: 2)
-    // Max 6 concurrent AVFoundation/Photos generations (fast, CPU-bound)
-    private let avSemaphore = DispatchSemaphore(value: 6)
+    // Keep AV generation conservative to reduce UI contention on huge libraries/copy sessions.
+    private let avSemaphore = DispatchSemaphore(value: 2)
+    private let bulkStateQueue = DispatchQueue(label: "com.videoplayer.thumbnailstore.bulkstate")
+    private var bulkInFlightSignatures: Set<String> = []
+    private var bulkLastCompletedAt: [String: Date] = [:]
+    private let bulkCooldown: TimeInterval = 30
     
     private init() {
         let docs = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -128,21 +132,51 @@ class ThumbnailStore {
     /// - How to use: Call once after loadImportedVideos() and loadUserFolders() complete.
     func generateAllMissing(for videos: [VideoItem]) {
         guard !videos.isEmpty else { return }
+        let signature = bulkSignature(for: videos)
+        var shouldStart = false
+        bulkStateQueue.sync {
+            if bulkInFlightSignatures.contains(signature) { return }
+            if let lastRun = bulkLastCompletedAt[signature],
+               Date().timeIntervalSince(lastRun) < bulkCooldown {
+                return
+            }
+            bulkInFlightSignatures.insert(signature)
+            shouldStart = true
+        }
+        guard shouldStart else { return }
         
-        DispatchQueue.global(qos: .background).async { [weak self] in
-            guard let self = self else { return }
+        DispatchQueue.global(qos: .background).async {
+            let finish: () -> Void = {
+                self.bulkStateQueue.async {
+                    self.bulkInFlightSignatures.remove(signature)
+                    self.bulkLastCompletedAt[signature] = Date()
+                }
+            }
             
             let missing = videos.filter { !self.exists(for: $0) }
+            guard !missing.isEmpty else {
+                finish()
+                return
+            }
             print("🖼️ ThumbnailStore: generating \(missing.count)/\(videos.count) missing thumbnails")
             
             for video in missing {
                 // Check again inside loop (another generate() may have written it)
                 guard !self.exists(for: video) else { continue }
-                self.generate(for: video)
+                // Run one-at-a-time in bulk mode. This avoids spawning thousands of
+                // background jobs simultaneously after large copy/import operations.
+                let wait = DispatchSemaphore(value: 0)
+                autoreleasepool {
+                    self.generate(for: video) { _ in
+                        wait.signal()
+                    }
+                }
+                wait.wait()
                 // Small yield so background thread doesn't dominate CPU
-                Thread.sleep(forTimeInterval: 0.02)
+                Thread.sleep(forTimeInterval: 0.01)
             }
             print("🖼️ ThumbnailStore: bulk generation done")
+            finish()
         }
     }
     
@@ -193,5 +227,11 @@ class ThumbnailStore {
             }
         }
         return nil
+    }
+
+    private func bulkSignature(for videos: [VideoItem]) -> String {
+        let head = videos.prefix(8).map { thumbnailURL(for: $0).lastPathComponent }.joined(separator: ",")
+        let tail = videos.suffix(8).map { thumbnailURL(for: $0).lastPathComponent }.joined(separator: ",")
+        return "\(videos.count)|\(head)|\(tail)"
     }
 }
