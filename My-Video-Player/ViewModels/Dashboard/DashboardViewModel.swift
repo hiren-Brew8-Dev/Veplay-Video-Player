@@ -2748,26 +2748,46 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         }
     }
     
+    // Static formatters — DateFormatter and ISO8601DateFormatter are expensive to allocate.
+    // parseISO8601Date is called per video during background metadata fetch; creating 4+1
+    // new formatters per call results in thousands of allocs across a typical library.
+    private static let iso8601DateFormatter: ISO8601DateFormatter = ISO8601DateFormatter()
+    private static let iso8601DateFormatterWithMillis: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+    private static let iso8601DateFormatterBasic: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+    private static let iso8601DateFormatterNoT: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+    private static let iso8601DateFormatterDateOnly: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
+    /// parseISO8601Date
+    /// - Description: Parses common ISO-8601 date strings found in video file metadata.
+    /// - How to use: Called from backgroundFetchMetadata per video. Uses cached static formatters to avoid alloc churn.
     private func parseISO8601Date(_ dateString: String) -> Date? {
-        let formatters = [
-            "yyyy-MM-dd'T'HH:mm:ssZ",
-            "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
-            "yyyy-MM-dd HH:mm:ss",
-            "yyyy-MM-dd"
-        ]
-        
-        for format in formatters {
-            let formatter = DateFormatter()
-            formatter.dateFormat = format
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            if let date = formatter.date(from: dateString) {
-                return date
-            }
-        }
-        
-        // Try ISO8601DateFormatter
-        let isoFormatter = ISO8601DateFormatter()
-        return isoFormatter.date(from: dateString)
+        // Try static formatters in order of most-common first (avoids unnecessary work)
+        if let date = Self.iso8601DateFormatterBasic.date(from: dateString) { return date }
+        if let date = Self.iso8601DateFormatterWithMillis.date(from: dateString) { return date }
+        if let date = Self.iso8601DateFormatterNoT.date(from: dateString) { return date }
+        if let date = Self.iso8601DateFormatterDateOnly.date(from: dateString) { return date }
+        // Fallback: ISO8601DateFormatter handles edge cases
+        return Self.iso8601DateFormatter.date(from: dateString)
     }
 
     private func updateVideoMetadata(for id: UUID, duration: Double?, creationDate: Date?) {

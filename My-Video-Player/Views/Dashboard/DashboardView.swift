@@ -111,15 +111,20 @@ struct DashboardView: View {
 
     // MARK: - Subviews & Helpers
 
+    /// handleTabChange
+    /// - Description: Called when the user taps a tab. Triggers lightweight data refreshes only when needed.
+    /// - How to use: Bound to .onChange(of: viewModel.selectedTab).
     private func handleTabChange(to newTab: DashboardViewModel.MainTabs) {
         HapticsManager.shared.selectionVibrate()
         navigationManager.currentTab = newTab
         
-        // Proactive refresh when entering specific tabs
-        // Now safe due to signature guard in ViewModel
+        // Proactive refresh when entering specific tabs.
+        // fetchAlbums() is lightweight (album list only) — safe to call on every gallery visit.
+        // fetchAssets() is heavy (PHAsset enumeration over entire library) — only call when not yet loaded
+        // to avoid freezing the UI on every tab-switch back to Videos.
         if newTab == .gallery {
             viewModel.fetchAlbums()
-        } else if newTab == .home {
+        } else if newTab == .home && viewModel.allGalleryVideos.isEmpty {
             viewModel.fetchAssets()
         }
     }

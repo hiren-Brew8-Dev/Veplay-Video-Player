@@ -152,6 +152,14 @@ struct FolderDetailView: View {
             if folder.url == nil {
                 viewModel.preFetchTitles(for: folder.videos)
             }
+            
+            // Prewarm thumbnail cache for file-based folders whose videos are already populated.
+            // Album folders are handled after fetchAlbumVideos() completes (below).
+            if folder.url != nil && !folder.videos.isEmpty {
+                DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.3) {
+                    ThumbnailCacheManager.shared.prewarmCache(for: folder.videos)
+                }
+            }
         }
         .onDisappear {
             viewModel.activeImportFolderURL = nil // Reset target
@@ -901,6 +909,12 @@ struct FolderDetailView: View {
             DispatchQueue.main.async {
                 self.asyncVideos = result
                 self.isLoading = false
+                
+                // Pre-warm thumbnail cache for album videos — same pattern as loadImportedVideos().
+                // Deferred by 0.5s so the grid has time to lay out before decode work starts.
+                DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
+                    ThumbnailCacheManager.shared.prewarmCache(for: result)
+                }
             }
         }
     }

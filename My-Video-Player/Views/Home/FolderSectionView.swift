@@ -534,6 +534,17 @@ struct FolderSectionView: View {
         }
     }
     
+    // Static formatter — reuse instead of allocating a new DateFormatter on every section header render.
+    // Creating DateFormatter is expensive; doing it per-call inside a large folder grid causes noticeable lag.
+    private static let sectionDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM"
+        return f
+    }()
+
+    /// Returns the display title for a section header date.
+    /// - Description: Converts a Date to a user-facing string ("Today", "Yesterday", or "d MMM").
+    /// - How to use: Pass any Date; used inside sectionHeader(for:) for LazyVGrid section headers.
     func sectionHeaderTitle(for date: Date) -> String {
         let calendar = Calendar.current
         if calendar.isDateInToday(date) {
@@ -541,9 +552,7 @@ struct FolderSectionView: View {
         } else if calendar.isDateInYesterday(date) {
             return "Yesterday"
         } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "d MMM"
-            return formatter.string(from: date)
+            return Self.sectionDateFormatter.string(from: date)
         }
     }
 
