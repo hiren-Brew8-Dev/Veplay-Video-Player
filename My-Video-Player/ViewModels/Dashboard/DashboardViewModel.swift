@@ -1486,9 +1486,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     func pasteVideos(to destination: URL) {
         let allPossibleVideos = importedVideos + allGalleryVideos + allVideosAcrossFolders
         let videosToPaste = allPossibleVideos.filter { copiedVideoIds.contains($0.id) }
-        
+
         guard !videosToPaste.isEmpty else { return }
-        
+
         // Initialize State for Conflict Checking
         self.pendingPasteDestination = destination
         self.isPasteMoveOperation = isCutMode
@@ -1498,56 +1498,60 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         self.pendingPasteNames = []
         self.processedPasteNames = []
         self.conflictQueue = []
-        
+
         Task {
             var conflicts: [ConflictItem] = []
             var safeItems: [VideoItem] = []
             var safeNames: [String] = []
-            
+
             for video in videosToPaste {
-                if let url = await getURLAsync(for: video) {
-                    let filename = url.lastPathComponent
-                    let destinationURL = destination.appendingPathComponent(filename)
-                    
-                    // Check for conflict
-                    if FileManager.default.fileExists(atPath: destinationURL.path) {
-                        // Conflict found!
-                        let conflict = ConflictItem(
-                            sourceTitle: video.title,
-                            sourceDuration: video.formattedDuration,
-                            sourceSize: video.fileSizeBytes,
-                            sourceURL: url,
-                            sourceVideo: video,
-                            destinationURL: destinationURL,
-                            destinationAlbum: nil,
-                            destinationAsset: nil,
-                            message: "A file named \"\(filename)\" already exists in this folder."
-                        )
-                        conflicts.append(conflict)
-                        
-                        // Add to pending
-                        self.pendingPasteItems.append(video)
-                        self.pendingPasteNames.append(filename)
-                    } else {
-                        // No conflict, safe to proceed
-                        safeItems.append(video)
-                        safeNames.append(filename)
-                    }
+                // Resolve filename WITHOUT slow async URL resolution:
+                // • PHAsset: read original filename from PHAssetResource (synchronous, zero network calls)
+                // • Local file: use url.lastPathComponent directly
+                // The old approach called requestAVAsset per asset — for 1720 gallery videos that meant
+                // 30+ minutes of sequential async waiting before the operation could even start.
+                let filename: String
+                if let asset = video.asset {
+                    filename = PHAssetResource.assetResources(for: asset).first?.originalFilename ?? video.title
+                } else if let url = video.url {
+                    filename = url.lastPathComponent
+                } else {
+                    continue // orphan item with neither asset nor url
+                }
+
+                let destinationURL = destination.appendingPathComponent(filename)
+
+                if FileManager.default.fileExists(atPath: destinationURL.path) {
+                    // Conflict found — sourceURL only needed for local files (conflict UI preview)
+                    let conflict = ConflictItem(
+                        sourceTitle: video.title,
+                        sourceDuration: video.formattedDuration,
+                        sourceSize: video.fileSizeBytes,
+                        sourceURL: video.url, // nil for PHAssets — that's fine
+                        sourceVideo: video,
+                        destinationURL: destinationURL,
+                        destinationAlbum: nil,
+                        destinationAsset: nil,
+                        message: "A file named \"\(filename)\" already exists in this folder."
+                    )
+                    conflicts.append(conflict)
+                    self.pendingPasteItems.append(video)
+                    self.pendingPasteNames.append(filename)
+                } else {
+                    safeItems.append(video)
+                    safeNames.append(filename)
                 }
             }
-            
+
             await MainActor.run {
-                // 1. Queue valid non-conflicting items immediately
                 self.processedPasteItems.append(contentsOf: safeItems)
                 self.processedPasteNames.append(contentsOf: safeNames)
-                
-                // 2. Setup conflicts
+
                 if !conflicts.isEmpty {
                     self.conflictQueue = conflicts
                     self.currentConflict = conflicts.first
                     self.showConflictResolution = true
                 } else {
-                    // No conflicts at all? Finish immediately
                     self.finalizePasteOperation()
                 }
             }
@@ -1894,73 +1898,78 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     // The Final Step: Actually Run the Import
     private func finalizePasteOperation() {
         guard let destination = pendingPasteDestination, !processedPasteItems.isEmpty else {
-            // Cleanup if nothing to paste
             cleanupPasteState()
             return
         }
-        
+
         Task {
-            var urls: [URL] = []
-            
-            // Re-fetch URLs for processed items (safe redundant check)
-            for video in processedPasteItems {
-                 if let url = await getURLAsync(for: video) {
-                     urls.append(url)
-                 }
+            // Split into PHAsset-backed and local-file-backed videos while keeping
+            // index alignment: processedPasteItems[i] ↔ processedPasteNames[i].
+            var localURLs: [URL] = []
+            var localNames: [String] = []
+            var assetItems: [(video: VideoItem, name: String)] = []
+
+            for (video, name) in zip(processedPasteItems, processedPasteNames) {
+                if video.asset != nil {
+                    assetItems.append((video, name))
+                } else if let url = video.url {
+                    localURLs.append(url)
+                    localNames.append(name)
+                }
+                // Items with neither asset nor url are silently skipped (orphans)
             }
-            
-            // 1. Import/Move
-            // Note: We pass our calculated names.
-            let results = await self.importVideos(from: urls, names: processedPasteNames, to: destination, shouldMove: isPasteMoveOperation)
-            
-            // 2. Cleanup (Move Logic)
+
+            // 1. Export PHAsset videos directly to destination.
+            //    PHAssetResourceManager.writeData copies the original file bytes — no requestAVAsset,
+            //    no re-encoding, works for on-device AND iCloud assets.
+            let exportOptions = PHAssetResourceRequestOptions()
+            exportOptions.isNetworkAccessAllowed = true
+            for (video, name) in assetItems {
+                guard let asset = video.asset,
+                      let resource = PHAssetResource.assetResources(for: asset).first else { continue }
+                let destURL = destination.appendingPathComponent(name)
+                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                    PHAssetResourceManager.default().writeData(for: resource, toFile: destURL, options: exportOptions) { _ in
+                        continuation.resume()
+                    }
+                }
+            }
+
+            // 2. Copy/move local file videos using importVideos (handles progress, history, dedup).
+            if !localURLs.isEmpty {
+                await importVideos(from: localURLs, names: localNames, to: destination, shouldMove: isPasteMoveOperation)
+            }
+
+            // 3. Move cleanup.
             await MainActor.run {
-                if isPasteMoveOperation && !results.isEmpty {
-                    // Similar cleanup logic to before
-                    // We iterate through the ORIGINAL copied IDs to check what needs deletion
-                    // But strictly, we only delete what was successfully moved.
-                    
-                    // Actually, we should iterate over processedPasteItems because those are the ones we tried to move.
-                    for video in processedPasteItems {
-                        if let url = video.url {
-                            if !FileManager.default.fileExists(atPath: url.path) {
-                                withAnimation {
-                                    self.importedVideos.removeAll { $0.id == video.id }
-                                }
-                            } else {
-                                // If locally still exists, check if we should delete source
-                                // Only if result confirmed success
-                                if results.contains(where: { $0.url?.lastPathComponent == self.processedPasteNames[self.processedPasteItems.firstIndex(of: video)!] }) {
-                                     // Double check path diff
-                                    if !results.contains(where: { $0.url?.path == url.path }) {
-                                        self.deleteVideo(video)
+                if isPasteMoveOperation {
+                    // Remove successfully moved local-file videos from importedVideos list
+                    for video in processedPasteItems where video.asset == nil {
+                        if let url = video.url, !FileManager.default.fileExists(atPath: url.path) {
+                            withAnimation { self.importedVideos.removeAll { $0.id == video.id } }
+                        }
+                    }
+
+                    // Remove PHAsset videos from source album if they were cut from a specific album
+                    if let albumId = sourceAlbumIdentifier {
+                        let galleryVideos = processedPasteItems.filter { $0.asset != nil }
+                        if !galleryVideos.isEmpty {
+                            Task {
+                                let sourceCollections = PHAssetCollection.fetchAssetCollections(
+                                    withLocalIdentifiers: [albumId], options: nil)
+                                if let sourceAlbum = sourceCollections.firstObject {
+                                    try? await PHPhotoLibrary.shared().performChanges {
+                                        let assetsToRemove = galleryVideos.compactMap { $0.asset } as NSArray
+                                        PHAssetCollectionChangeRequest(for: sourceAlbum)?.removeAssets(assetsToRemove)
                                     }
+                                    await MainActor.run { self.loadData() }
                                 }
                             }
                         }
                     }
-                    
-                    // Gallery handling
-                     if let albumId = sourceAlbumIdentifier {
-                         let galleryVideos = processedPasteItems.filter { $0.asset != nil }
-                         if !galleryVideos.isEmpty {
-                             Task {
-                                 let sourceCollections = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumId], options: nil)
-                                 if let sourceAlbum = sourceCollections.firstObject {
-                                     try? await PHPhotoLibrary.shared().performChanges {
-                                         let assetsToRemove = galleryVideos.compactMap { $0.asset } as NSArray
-                                         let request = PHAssetCollectionChangeRequest(for: sourceAlbum)
-                                         request?.removeAssets(assetsToRemove)
-                                     }
-                                     await MainActor.run { self.loadData() }
-                                 }
-                             }
-                         }
-                     }
                 }
-                
+
                 cleanupPasteState()
-                
                 self.loadImportedVideos()
                 self.loadUserFolders()
             }
