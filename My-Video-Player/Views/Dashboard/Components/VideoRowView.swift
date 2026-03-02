@@ -106,7 +106,8 @@ struct VideoRowView: View {
         )
         .contentShape(Rectangle())
         .scaleEffect(viewModel?.highlightVideoId == video.id ? 1.02 : 1.0)
-        .animation(.spring(), value: viewModel?.highlightVideoId)
+        // Animate ONLY on this video's highlight state — not on every row whenever any video is highlighted.
+        .animation(.spring(), value: viewModel?.highlightVideoId == video.id)
         .onAppear {
             loadThumbnail()
             loadTitle()
@@ -125,6 +126,13 @@ struct VideoRowView: View {
         }
     }
     
+    // Static formatters — reuse instead of allocating on every render.
+    private static let rowDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM"
+        return f
+    }()
+
     private func formatBytes(_ bytes: Int64) -> String {
         let doubleBytes = Double(bytes)
         let kb = doubleBytes / 1024.0
@@ -134,11 +142,9 @@ struct VideoRowView: View {
         else if mb >= 1.0 { return String(format: "%.1f MB", mb) }
         else { return String(format: "%.0f KB", kb) }
     }
-    
+
     private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM"
-        return formatter.string(from: date)
+        return Self.rowDateFormatter.string(from: date)
     }
     private func loadThumbnail() {
         // Use the persistent cache manager for instant loading

@@ -153,19 +153,38 @@ struct VideoCardView: View {
     }
     
     // MARK: - Helpers
-    
+
+    // Static formatters — DateFormatter/DateComponentsFormatter are expensive to allocate.
+    // Creating them per-render with a large video grid is a major source of lag.
+    private static let shortDurationFormatter: DateComponentsFormatter = {
+        let f = DateComponentsFormatter()
+        f.allowedUnits = [.minute, .second]
+        f.unitsStyle = .positional
+        f.zeroFormattingBehavior = .pad
+        return f
+    }()
+
+    private static let longDurationFormatter: DateComponentsFormatter = {
+        let f = DateComponentsFormatter()
+        f.allowedUnits = [.hour, .minute, .second]
+        f.unitsStyle = .positional
+        f.zeroFormattingBehavior = .pad
+        return f
+    }()
+
+    private static let cardDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM"
+        return f
+    }()
+
     private func formatDuration(_ duration: TimeInterval) -> String {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = duration >= 3600 ? [.hour, .minute, .second] : [.minute, .second]
-        formatter.unitsStyle = .positional
-        formatter.zeroFormattingBehavior = .pad
+        let formatter = duration >= 3600 ? Self.longDurationFormatter : Self.shortDurationFormatter
         return formatter.string(from: duration) ?? "00:00"
     }
-    
+
     private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM" 
-        return formatter.string(from: date)
+        return Self.cardDateFormatter.string(from: date)
     }
     
     private func formatBytes(_ bytes: Int64) -> String {

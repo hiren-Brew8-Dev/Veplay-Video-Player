@@ -56,11 +56,25 @@ struct VideoItem: Identifiable, Hashable {
         self.url = url
     }
     
+    // Static formatters — allocating DateComponentsFormatter is expensive; reuse them.
+    private static let shortDurationFormatter: DateComponentsFormatter = {
+        let f = DateComponentsFormatter()
+        f.allowedUnits = [.minute, .second]
+        f.unitsStyle = .positional
+        f.zeroFormattingBehavior = .pad
+        return f
+    }()
+
+    private static let longDurationFormatter: DateComponentsFormatter = {
+        let f = DateComponentsFormatter()
+        f.allowedUnits = [.hour, .minute, .second]
+        f.unitsStyle = .positional
+        f.zeroFormattingBehavior = .pad
+        return f
+    }()
+
     var formattedDuration: String {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = duration >= 3600 ? [.hour, .minute, .second] : [.minute, .second]
-        formatter.unitsStyle = .positional
-        formatter.zeroFormattingBehavior = .pad
+        let formatter = duration >= 3600 ? Self.longDurationFormatter : Self.shortDurationFormatter
         return formatter.string(from: duration) ?? "00:00"
     }
     
@@ -115,16 +129,18 @@ class VLCThumbnailHelper: NSObject, VLCMediaThumbnailerDelegate {
     func generate(for url: URL, completion: @escaping (UIImage?) -> Void) {
         self.completion = completion
         let media = VLCMedia(url: url)
-        // Wait for media to be indexed to ensure we can get a thumbnail at a specific position
-        media.parse(options: .fetchLocal, timeout: 5000)
+        // Wait for media to be indexed to ensure we can get a thumbnail at a specific position.
+        // Reduced timeout from 5000ms to 3000ms and poll count from 15 to 8 (max 0.8s wait)
+        // to prevent long thread blocking.
+        media.parse(options: .fetchLocal, timeout: 3000)
         var pollCount = 0
-        while media.length.intValue <= 0 && pollCount < 15 {
+        while media.length.intValue <= 0 && pollCount < 8 {
             Thread.sleep(forTimeInterval: 0.1)
             pollCount += 1
         }
-        
+
         self.thumbnailer = VLCMediaThumbnailer(media: media, andDelegate: self)
-        self.thumbnailer?.snapshotPosition = 0.1 // Try 10% into the video instead of just the start
+        self.thumbnailer?.snapshotPosition = 0.1
         self.thumbnailer?.fetchThumbnail()
     }
     

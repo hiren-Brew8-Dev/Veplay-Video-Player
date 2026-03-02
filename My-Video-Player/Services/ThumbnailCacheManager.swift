@@ -172,19 +172,18 @@ class ThumbnailCacheManager {
         let options = PHImageRequestOptions()
         options.isSynchronous = true
         options.deliveryMode = .highQualityFormat
-        options.resizeMode = .exact // Better quality
+        options.resizeMode = .exact
         options.isNetworkAccessAllowed = true
-        
-        // Increase target size slightly for modern screens
+
         let targetDimension: CGFloat = 150 * UIScreen.main.scale
         let targetSize = CGSize(width: targetDimension * 1.6, height: targetDimension)
-        
+
         var resultImage: UIImage?
-        
+
         manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, _ in
             resultImage = image
         }
-        
+
         return resultImage
     }
     

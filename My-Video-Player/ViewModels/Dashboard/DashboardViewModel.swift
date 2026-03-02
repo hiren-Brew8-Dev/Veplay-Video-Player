@@ -92,7 +92,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     }
     
     var allGallerySearchableVideos: [VideoItem] {
-        return sortVideos(allGalleryVideos, by: gallerySortOption)
+        // Use pre-sorted array when available to avoid sorting on main thread
+        return sortedAllGalleryVideos.isEmpty ? sortVideos(allGalleryVideos, by: gallerySortOption) : sortedAllGalleryVideos
     }
     
     // Data Sources
@@ -107,7 +108,22 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     @Published var allGalleryVideos: [VideoItem] = []
     @Published var lastGalleryUpdate = Date()
     @Published var albumAssetCounts: [String: Int] = [:]
+    /// localIdentifier of the "All Videos" smart album — used by FolderDetailView to skip fetch
+    @Published var allVideosAlbumIdentifier: String?
+    /// allGalleryVideos pre-sorted by gallerySortOption on a background thread.
+    /// FolderDetailView reads this directly so it never sorts on the main thread.
+    @Published var sortedAllGalleryVideos: [VideoItem] = []
     private var galleryStateSignature: String = ""
+
+    // Stored fetch result — used by photoLibraryDidChange to compute ONLY the delta
+    // (removed/inserted assets) instead of re-enumerating all 10,000+ videos.
+    // Protected by a serial queue to prevent main-thread / Photos-callback races.
+    private let fetchResultLock = DispatchQueue(label: "com.videoplayer.fetchResultLock")
+    private var _currentAssetFetchResult: PHFetchResult<PHAsset>?
+    private var currentAssetFetchResult: PHFetchResult<PHAsset>? {
+        get { fetchResultLock.sync { _currentAssetFetchResult } }
+        set { fetchResultLock.sync { _currentAssetFetchResult = newValue } }
+    }
     @Published var searchHistoryKeywords: [String] = []
     
     @Published var searchText: String = ""
@@ -519,7 +535,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         guard !isAdded else { return }
         
         // Paths in bundle: "Sample/demo-video.MOV" and "Sample/demo-srt.srt"
-        guard let videoBundleURL = Bundle.main.url(forResource: "demo-video", withExtension: "MOV"),
+        guard let videoBundleURL = Bundle.main.url(forResource: "demo-video", withExtension: "mp4"),
               let srtBundleURL = Bundle.main.url(forResource: "demo-srt", withExtension: "srt") else {
             print("❌ Demo files not found in bundle at 'Sample/'")
             return
@@ -529,14 +545,14 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         
         // 1. Copy to ImportedVideos
         let importedDir = importedVideosDirectory
-        let destinationVideoURL = importedDir.appendingPathComponent("demo-video.MOV")
+        let destinationVideoURL = importedDir.appendingPathComponent("demo-video.mp4")
         let destinationSrtURL = importedDir.appendingPathComponent("demo-video.srt") // Name it same as video for auto-pick
         
         // 2. Create Folders/demo and copy there
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let foldersDir = documentsURL.appendingPathComponent("Folders", isDirectory: true)
         let demoFolderDir = foldersDir.appendingPathComponent("demo", isDirectory: true)
-        let demoFolderVideoURL = demoFolderDir.appendingPathComponent("demo-video.MOV")
+        let demoFolderVideoURL = demoFolderDir.appendingPathComponent("demo-video.mp4")
         let demoFolderSrtURL = demoFolderDir.appendingPathComponent("demo-video.srt") // Name it same as video
         
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -589,17 +605,54 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         PHPhotoLibrary.shared().unregisterChangeObserver(self)
     }
     
-    // PHPhotoLibraryChangeObserver implementation
+    // PHPhotoLibraryChangeObserver — called on a background thread by the system.
     func photoLibraryDidChange(_ changeInstance: PHChange) {
-        // Debounce photo library changes
-        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(debouncedFetch), object: nil)
-        self.perform(#selector(debouncedFetch), with: nil, afterDelay: 0.5)
-    }
-    
-    @objc private func debouncedFetch() {
-        DispatchQueue.main.async { [weak self] in
-            self?.fetchAssets()
-            self?.fetchAlbums()
+        // Use PHChange.changeDetails to compute ONLY what changed (deleted/inserted)
+        // instead of re-enumerating all 10,000 assets on every library event.
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+
+            guard let fetchResult = self.currentAssetFetchResult,
+                  let details = changeInstance.changeDetails(for: fetchResult) else {
+                // No stored result yet, or change cannot be diffed — full refresh.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                    self?.fetchAssets()
+                    self?.fetchAlbums()
+                }
+                return
+            }
+
+            // Advance the stored snapshot to the latest fetch result.
+            self.currentAssetFetchResult = details.fetchResultAfterChanges
+
+            guard details.hasIncrementalChanges else {
+                // No video-level changes (e.g., album metadata only) — just refresh albums.
+                DispatchQueue.main.async { [weak self] in self?.fetchAlbums() }
+                return
+            }
+
+            // Build lightweight delta: only the IDs/items that actually changed.
+            let removedIds = Set(details.removedObjects.map { self.stableUUID(from: $0.localIdentifier) })
+            let insertedItems = details.insertedObjects.map { self.videoItem(from: $0) }
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+
+                // 1. Remove deleted videos from gallery list and master search list.
+                if !removedIds.isEmpty {
+                    self.allGalleryVideos.removeAll { removedIds.contains($0.id) }
+                    self.videos.removeAll { removedIds.contains($0.id) }
+                }
+
+                // 2. Prepend newly added videos (our sort is newest-first).
+                if !insertedItems.isEmpty {
+                    self.allGalleryVideos.insert(contentsOf: insertedItems, at: 0)
+                    self.preFetchTitles(for: insertedItems)
+                }
+
+                // 3. Refresh album cards (counts / cover images may have changed).
+                self.fetchAlbums()
+            }
         }
     }
     
@@ -611,7 +664,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 self?.updateGroupedVideos()
             }
             .store(in: &cancellables)
-        
+
         // Master list observer for combined videos (Search/etc) - uses DEFAULT (videoSortOptionRaw)
         Publishers.CombineLatest3($importedVideos, $allGalleryVideos, $videoSortOptionRaw)
             .debounce(for: .milliseconds(400), scheduler: DispatchQueue.global(qos: .userInitiated))
@@ -621,6 +674,19 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 let sortedAll = self.sortVideos(all, by: self.videoSortOption)
                 DispatchQueue.main.async {
                     self.videos = sortedAll
+                }
+            }
+            .store(in: &cancellables)
+
+        // Pre-sort allGalleryVideos for the "All Videos" FolderDetailView.
+        // Runs on background so displayVideos never sorts on the main thread.
+        Publishers.CombineLatest($allGalleryVideos, $gallerySortOptionRaw)
+            .debounce(for: .milliseconds(200), scheduler: DispatchQueue.global(qos: .userInitiated))
+            .sink { [weak self] videos, _ in
+                guard let self = self else { return }
+                let sorted = self.sortVideos(videos, by: self.gallerySortOption)
+                DispatchQueue.main.async {
+                    self.sortedAllGalleryVideos = sorted
                 }
             }
             .store(in: &cancellables)
@@ -965,32 +1031,40 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         }
     }
     
+    // Static formatters for fallbackTitle — called per video when title resolution fails.
+    private static let screenRecordingDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM yyyy, HH:mm"
+        return f
+    }()
+    private static let fallbackVideoDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        return f
+    }()
+
     private func fallbackTitle(for asset: PHAsset, video: VideoItem, bestFilename: String?, completion: @escaping (String) -> Void) {
         // 1. If we found a valid filename (even generic), use it.
         if let filename = bestFilename, !filename.isEmpty {
             DispatchQueue.main.async { completion(filename) }
             return
         }
-        
+
         // 2. Check for screen recordings specifically
         if asset.mediaSubtypes.contains(.videoScreenRecording) {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "d MMM yyyy, HH:mm"
-            let dateStr = formatter.string(from: asset.creationDate ?? Date())
+            let dateStr = Self.screenRecordingDateFormatter.string(from: asset.creationDate ?? Date())
             DispatchQueue.main.async { completion("Screen Recording \(dateStr)") }
             return
         }
-        
+
         // 3. If we have any existing title that isn't a placeholder, keep it
         if video.title != VideoItem.titlePlaceholder && !video.title.isEmpty {
             DispatchQueue.main.async { completion(video.title) }
             return
         }
-        
+
         // 4. Ultimate fallback: Date-based title
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        let fallback = "Video " + formatter.string(from: asset.creationDate ?? Date())
+        let fallback = "Video " + Self.fallbackVideoDateFormatter.string(from: asset.creationDate ?? Date())
         DispatchQueue.main.async { completion(fallback) }
     }
     
@@ -2404,63 +2478,97 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     }
     
     func fetchAssets() {
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
-        
-        let fetchResult = PHAsset.fetchAssets(with: fetchOptions)
-        var newVideos: [VideoItem] = []
-        
-        fetchResult.enumerateObjects { asset, _, _ in
-            newVideos.append(self.videoItem(from: asset))
-        }
-        
-        DispatchQueue.main.async {
-            self.allGalleryVideos = newVideos
-            
-            // Start pre-fetching titles in small batches to avoid overhead
-            self.preFetchTitles(for: newVideos)
-            
-            // Pre-warm thumbnail cache for gallery videos
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
-                ThumbnailCacheManager.shared.prewarmCache(for: newVideos)
+        // Move ALL work to background — with 10,000+ gallery videos, enumerating PHAssets
+        // on the main thread freezes the UI for hundreds of milliseconds.
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+
+            let fetchOptions = PHFetchOptions()
+            fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
+
+            let fetchResult = PHAsset.fetchAssets(with: fetchOptions)
+
+            // Store the live result so photoLibraryDidChange can compute deltas
+            // instead of re-enumerating all assets on every library change.
+            self.currentAssetFetchResult = fetchResult
+
+            var newVideos: [VideoItem] = []
+            newVideos.reserveCapacity(fetchResult.count) // Avoid repeated array reallocations
+
+            fetchResult.enumerateObjects { asset, _, _ in
+                newVideos.append(self.videoItem(from: asset))
+            }
+
+            DispatchQueue.main.async {
+                self.allGalleryVideos = newVideos
+
+                // Start pre-fetching titles in small batches to avoid overhead
+                self.preFetchTitles(for: newVideos)
+
+                // Pre-warm thumbnail cache for gallery videos
+                DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
+                    ThumbnailCacheManager.shared.prewarmCache(for: newVideos)
+                }
             }
         }
     }
     
     func preFetchTitles(for videos: [VideoItem]) {
-        // Only pre-fetch the first 30 videos to avoid overwhelming the system
-        // The rest will be loaded on-demand when the view appears.
+        // Only pre-fetch the first 30 videos to avoid overwhelming the system.
         let limit = min(videos.count, 30)
         let prioritizedVideos = Array(videos.prefix(limit))
-        
+
         DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self = self else { return }
-            
+
+            // Collect all resolved titles concurrently, then apply in ONE batch on main thread.
+            // Previously each title fired a separate DispatchQueue.main.async, causing
+            // 30 separate @Published updates → 30 SwiftUI re-renders + 30 Combine pipeline
+            // executions on a 10,000-item list. Now it's a single update.
+            let lock = NSLock()
+            var resolved: [(id: UUID, title: String)] = []
+            resolved.reserveCapacity(limit)
+            let group = DispatchGroup()
+
             for video in prioritizedVideos {
+                group.enter()
                 self.loadTitle(for: video) { resolvedTitle in
-                    DispatchQueue.main.async {
-                        // Update in allGalleryVideos
-                        if let index = self.allGalleryVideos.firstIndex(where: { $0.id == video.id }) {
-                            self.allGalleryVideos[index].title = resolvedTitle
+                    lock.lock()
+                    resolved.append((id: video.id, title: resolvedTitle))
+                    lock.unlock()
+                    group.leave()
+                }
+            }
+
+            group.notify(queue: .main) { [weak self] in
+                guard let self = self else { return }
+                // Build a lookup dict from the resolved entries (O(1) per lookup).
+                // Previously used firstIndex(where:) per entry × each collection —
+                // O(30 × 10,000) = 300,000 comparisons on the main thread causing lag.
+                // Now it's one pass per collection = O(collection_size) total.
+                let resolvedTitles = Dictionary(uniqueKeysWithValues: resolved.map { ($0.id, $0.title) })
+
+                for i in 0..<self.allGalleryVideos.count {
+                    if let title = resolvedTitles[self.allGalleryVideos[i].id] {
+                        self.allGalleryVideos[i].title = title
+                    }
+                }
+                for i in 0..<self.importedVideos.count {
+                    if let title = resolvedTitles[self.importedVideos[i].id] {
+                        self.importedVideos[i].title = title
+                    }
+                }
+                for i in 0..<self.folders.count {
+                    for j in 0..<self.folders[i].videos.count {
+                        if let title = resolvedTitles[self.folders[i].videos[j].id] {
+                            self.folders[i].videos[j].title = title
                         }
-                        
-                        // Update in importedVideos (for mixed local/gallery collections)
-                        if let index = self.importedVideos.firstIndex(where: { $0.id == video.id }) {
-                            self.importedVideos[index].title = resolvedTitle
-                        }
-                        
-                        // Update in folders
-                        for i in 0..<self.folders.count {
-                            if let vIndex = self.folders[i].videos.firstIndex(where: { $0.id == video.id }) {
-                                self.folders[i].videos[vIndex].title = resolvedTitle
-                            }
-                        }
-                        
-                        // Master list for search
-                        if let index = self.videos.firstIndex(where: { $0.id == video.id }) {
-                            self.videos[index].title = resolvedTitle
-                        }
+                    }
+                }
+                for i in 0..<self.videos.count {
+                    if let title = resolvedTitles[self.videos[i].id] {
+                        self.videos[i].title = title
                     }
                 }
             }
@@ -2790,7 +2898,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             var userDestinations: [PHAssetCollection] = []
             var albumCounts: [String: Int] = [:]
             var firstAssetIDs: [String: String] = [:]
-            
+            var allVideosId: String? = nil
+
             let processCollections = { (fetchResult: PHFetchResult<PHAssetCollection>, isUserAlbum: Bool) in
                 fetchResult.enumerateObjects { collection, _, _ in
                     let title = collection.localizedTitle ?? ""
@@ -2798,18 +2907,23 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                     if lowerTitle == "recents" || lowerTitle == "recent" || lowerTitle == "recently saved" || lowerTitle == "favorites" || collection.assetCollectionSubtype == .smartAlbumFavorites {
                         return
                     }
-                    
+
+                    // Track "All Videos" smart album so FolderDetailView can skip the fetch
+                    if collection.assetCollectionSubtype == .smartAlbumVideos {
+                        allVideosId = collection.localIdentifier
+                    }
+
                     if isUserAlbum {
                         userDestinations.append(collection)
                     }
-                    
+
                     let options = PHFetchOptions()
                     options.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
                     // Get first asset for thumb verification
                     options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-                    
+
                     let assets = PHAsset.fetchAssets(in: collection, options: options)
-                    
+
                     if assets.count > 0 {
                         videoAlbums.append(collection)
                         albumCounts[collection.localIdentifier] = assets.count
@@ -2817,18 +2931,23 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                     }
                 }
             }
-            
+
             processCollections(smartAlbums, false)
             processCollections(userAlbums, true)
-            
+
             // Calculate state signature - include count and first asset ID
-            let newSignature = videoAlbums.map { 
-                "\($0.localIdentifier)_\(albumCounts[$0.localIdentifier] ?? 0)_\(firstAssetIDs[$0.localIdentifier] ?? "")" 
+            let newSignature = videoAlbums.map {
+                "\($0.localIdentifier)_\(albumCounts[$0.localIdentifier] ?? 0)_\(firstAssetIDs[$0.localIdentifier] ?? "")"
             }.joined(separator: "|")
-            
+
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                
+
+                // Always update allVideosAlbumIdentifier so FolderDetailView can use the fast path
+                if self.allVideosAlbumIdentifier == nil, let id = allVideosId {
+                    self.allVideosAlbumIdentifier = id
+                }
+
                 // Only update and trigger UI refresh if data actually changed
                 if self.galleryStateSignature != newSignature {
                     self.galleryStateSignature = newSignature

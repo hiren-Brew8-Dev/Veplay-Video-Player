@@ -661,6 +661,13 @@ struct VideoSectionView: View {
         }
     }
     
+    // Static formatter — reuse instead of allocating on every section header render.
+    private static let sectionDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM"
+        return f
+    }()
+
     private func formattedSectionDate(_ date: Date) -> String {
         let calendar = Calendar.current
         if calendar.isDateInToday(date) {
@@ -668,9 +675,7 @@ struct VideoSectionView: View {
         } else if calendar.isDateInYesterday(date) {
             return "Yesterday"
         } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "d MMM"
-            return formatter.string(from: date)
+            return Self.sectionDateFormatter.string(from: date)
         }
     }
 

@@ -54,22 +54,24 @@ struct FolderDetailView: View {
     }
     
     private var displayVideos: [VideoItem] {
-        let baseVideos = (folder.videos.isEmpty && !asyncVideos.isEmpty) ? asyncVideos : folder.videos
-        
-        // 1. Resolve live metadata (titles, etc) from master list
-        let liveVideos = baseVideos.map { liveVideo($0) }
-        
-        // 2. Final sanity check: filter out any videos that might have been deleted globally
-        let filtered = liveVideos.filter { v in
-            if v.asset != nil {
-                return viewModel.allGalleryVideos.contains(where: { $0.id == v.id })
-            } else {
-                return viewModel.videos.contains(where: { $0.id == v.id }) || 
-                       viewModel.allVideosAcrossFolders.contains(where: { $0.id == v.id })
+        if let albumId = folder.albumIdentifier {
+            // "All Videos" smart album: read sortedAllGalleryVideos — pre-sorted on background thread
+            // by Combine. Zero main-thread sorting, zero fetch latency, stays live via photoLibraryDidChange.
+            if albumId == viewModel.allVideosAlbumIdentifier {
+                let pre = viewModel.sortedAllGalleryVideos
+                // Fallback to allGalleryVideos (already creationDate-sorted) while Combine fires
+                return pre.isEmpty ? viewModel.allGalleryVideos : pre
             }
+            // Other album: use asyncVideos populated by the background GCD fetch.
+            let baseVideos = asyncVideos.isEmpty ? folder.videos : asyncVideos
+            return viewModel.sortVideos(baseVideos, by: sortOption)
         }
-        
-        // 3. Apply sorting
+
+        // File folder: O(1) Set lookup to filter against valid video IDs.
+        let baseVideos = (folder.videos.isEmpty && !asyncVideos.isEmpty) ? asyncVideos : folder.videos
+        var validIds = Set(viewModel.videos.map { $0.id })
+        for v in viewModel.allVideosAcrossFolders { validIds.insert(v.id) }
+        let filtered = baseVideos.filter { validIds.contains($0.id) }
         return viewModel.sortVideos(filtered, by: sortOption)
     }
     
@@ -480,7 +482,7 @@ struct FolderDetailView: View {
                         ForEach(groupedVideos, id: \.id) { section in
                             Section(header: sectionHeader(for: section.date)) {
                                 ForEach(section.videos, id: \.id) { video in
-                                    gridVideoItem(liveVideo(video), isLandscape: isLandscape, width: currentWidth)
+                                    gridVideoItem(video, isLandscape: isLandscape, width: currentWidth)
                                 }
                             }
                         }
@@ -538,7 +540,7 @@ struct FolderDetailView: View {
                     ForEach(groupedVideos, id: \.id) { section in
                         Section {
                             ForEach(section.videos, id: \.id) { video in
-                                videoRow(liveVideo(video))
+                                videoRow(video)
                                     .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                                     .padding(.bottom, 12)
                             }
@@ -837,6 +839,12 @@ struct FolderDetailView: View {
         }
     }
     
+    private static let sectionHeaderDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM"
+        return f
+    }()
+
     func sectionHeaderTitle(for date: Date) -> String {
         let calendar = Calendar.current
         if calendar.isDateInToday(date) {
@@ -844,37 +852,56 @@ struct FolderDetailView: View {
         } else if calendar.isDateInYesterday(date) {
             return "Yesterday"
         } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "d MMM"
-            return formatter.string(from: date)
-        
+            return Self.sectionHeaderDateFormatter.string(from: date)
         }
     }
     
     private func fetchAlbumVideos() async {
-        guard let albumId = folder.albumIdentifier, folder.videos.isEmpty else { return }
-        
-        await MainActor.run { isLoading = true }
-        
-        // Fetch on background
-        let fetchResult = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [albumId], options: nil)
-        guard let album = fetchResult.firstObject else { 
-            await MainActor.run { isLoading = false }
-            return 
+        guard let albumId = folder.albumIdentifier, folder.videos.isEmpty, asyncVideos.isEmpty else { return }
+
+        // Fast path: "All Videos" is exactly viewModel.allGalleryVideos — already loaded, instant.
+        if let allVidsId = viewModel.allVideosAlbumIdentifier, albumId == allVidsId {
+            asyncVideos = viewModel.allGalleryVideos
+            return
         }
-        
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.predicate = NSPredicate(format: "mediaType = %d", PHAssetMediaType.video.rawValue)
-        let assets = PHAsset.fetchAssets(in: album, options: fetchOptions)
-        
-        var videos: [VideoItem] = []
-        assets.enumerateObjects { asset, _, _ in
-            videos.append(viewModel.videoItem(from: asset))
-        }
-        
-        await MainActor.run {
-            self.asyncVideos = videos
-            self.isLoading = false
+
+        isLoading = true
+        let vm = viewModel
+
+        // Pure GCD fire-and-forget: returns immediately so @MainActor (main thread) is never blocked.
+        // DispatchQueue.global guarantees execution outside @MainActor regardless of Swift concurrency context.
+        DispatchQueue.global(qos: .userInitiated).async {
+            let collectionResult = PHAssetCollection.fetchAssetCollections(
+                withLocalIdentifiers: [albumId], options: nil)
+
+            guard let collection = collectionResult.firstObject else {
+                DispatchQueue.main.async { self.isLoading = false }
+                return
+            }
+
+            let options = PHFetchOptions()
+            options.predicate = NSPredicate(
+                format: "mediaType = %d", PHAssetMediaType.video.rawValue)
+            options.sortDescriptors = [
+                NSSortDescriptor(key: "creationDate", ascending: false)]
+            let assets = PHAsset.fetchAssets(in: collection, options: options)
+
+            var result: [VideoItem] = []
+            result.reserveCapacity(assets.count)
+            assets.enumerateObjects { asset, _, _ in
+                var item = vm.videoItem(from: asset)
+                // Resolve real filename so A-Z / Z-A sort works correctly.
+                if let resource = PHAssetResource.assetResources(for: asset).first,
+                   !resource.originalFilename.isEmpty {
+                    item.title = resource.originalFilename
+                }
+                result.append(item)
+            }
+
+            DispatchQueue.main.async {
+                self.asyncVideos = result
+                self.isLoading = false
+            }
         }
     }
     @ViewBuilder
