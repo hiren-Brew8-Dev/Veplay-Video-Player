@@ -2692,10 +2692,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 
                 DispatchQueue.main.async {
                     self.isInitialLoading = false // Videos ready
-                    withAnimation {
-                        self.importedVideos = loadedVideos
-                        self.isImporting = false
-                    }
+                    // No withAnimation{} — animating 1700-item LazyVGrid diff blocks main thread for frames
+                    self.importedVideos = loadedVideos
+                    self.isImporting = false
                     
                     // Start background metadata fetching (Titles, Durations, and Actual Creation Dates)
                     self.backgroundFetchTitles(for: loadedVideos)
@@ -2775,66 +2774,125 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         }
     }
     
+    /// backgroundFetchMetadata
+    /// - Description: Loads duration + creation date from AVURLAsset for every local video.
+    ///   Results are collected into a batch on background threads, then applied in ONE
+    ///   main-thread call — preventing the N-renders-per-copy lag spike.
+    /// - How to use: Called after loadImportedVideos() and loadUserFolders().
     private func backgroundFetchMetadata(for videos: [VideoItem]) {
-        // We fetch for all local videos to ensure actual creation date is retrieved
         let localVideos = videos.filter { $0.url != nil }
         guard !localVideos.isEmpty else { return }
         
-        DispatchQueue.global(qos: .utility).async {
+        // Tuple type aligns with applyBatchedMetadata signature — no conversion needed
+        typealias MetaUpdate = (id: UUID, duration: Double?, date: Date?)
+        
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self = self else { return }
+            
+            let lock = NSLock()
+            var updates: [MetaUpdate] = []
+            updates.reserveCapacity(localVideos.count)
+            let group = DispatchGroup()
+            
             for video in localVideos {
                 guard let url = video.url else { continue }
-                
                 let ext = url.pathExtension.lowercased()
                 let nativeExtensions = ["mp4", "mov", "m4v"]
                 
+                group.enter()
+                
                 if !nativeExtensions.contains(ext) {
-                    // VLC/Non-native: Only duration for now as metadata date extraction is tougher for these
+                    // VLC/non-native: fetch duration only
                     let helper = VLCDurationHelper()
-                    Task {
+                    Task { [weak self] in
+                        guard self != nil else { group.leave(); return }
                         let duration = await helper.fetchDuration(for: url)
                         if duration > 0 {
-                            await MainActor.run {
-                                self.updateVideoMetadata(for: video.id, duration: duration, creationDate: nil)
+                            lock.lock()
+                            updates.append(MetaUpdate(id: video.id, duration: duration, date: nil))
+                            lock.unlock()
+                        }
+                        group.leave()
+                    }
+                } else {
+                    // Native formats: fetch duration + creation date
+                    let asset = AVURLAsset(url: url)
+                    Task { [weak self] in
+                        guard self != nil else { group.leave(); return }
+                        var fetchedDuration: Double? = nil
+                        var fetchedDate: Date? = nil
+                        
+                        if let d = try? await asset.load(.duration) {
+                            fetchedDuration = CMTimeGetSeconds(d)
+                        }
+                        if let metadata = try? await asset.load(.metadata) {
+                            if let item = AVMetadataItem.metadataItems(from: metadata, withKey: AVMetadataKey.commonKeyCreationDate, keySpace: .common).first,
+                               let str = item.value as? String {
+                                fetchedDate = self?.parseISO8601Date(str)
+                            }
+                            if fetchedDate == nil,
+                               let item = AVMetadataItem.metadataItems(from: metadata, withKey: AVMetadataKey.quickTimeMetadataKeyCreationDate, keySpace: .quickTimeMetadata).first,
+                               let str = item.value as? String {
+                                fetchedDate = self?.parseISO8601Date(str)
                             }
                         }
-                    }
-                    continue
-                }
-                
-                // Native Formats: Fetch Duration and Creation Date
-                let asset = AVURLAsset(url: url)
-                Task {
-                    var fetchedDuration: Double? = nil
-                    var fetchedDate: Date? = nil
-                    
-                    // 1. Load Duration
-                    if let d = try? await asset.load(.duration) {
-                        fetchedDuration = CMTimeGetSeconds(d)
-                    }
-                    
-                    // 2. Load Creation Date from Metadata
-                    if let metadata = try? await asset.load(.metadata) {
-                        // Priority 1: Common Key Creation Date
-                        if let dateItem = AVMetadataItem.metadataItems(from: metadata, withKey: AVMetadataKey.commonKeyCreationDate, keySpace: .common).first,
-                           let dateString = dateItem.value as? String {
-                            fetchedDate = self.parseISO8601Date(dateString)
+                        if fetchedDuration != nil || fetchedDate != nil {
+                            lock.lock()
+                            updates.append(MetaUpdate(id: video.id, duration: fetchedDuration, date: fetchedDate))
+                            lock.unlock()
                         }
-                        
-                        // Priority 2: QuickTime Creation Date
-                        if fetchedDate == nil,
-                           let dateItem = AVMetadataItem.metadataItems(from: metadata, withKey: AVMetadataKey.quickTimeMetadataKeyCreationDate, keySpace: .quickTimeMetadata).first,
-                           let dateString = dateItem.value as? String {
-                            fetchedDate = self.parseISO8601Date(dateString)
-                        }
-                    }
-                    
-                    if fetchedDuration != nil || fetchedDate != nil {
-                        await MainActor.run {
-                            self.updateVideoMetadata(for: video.id, duration: fetchedDuration, creationDate: fetchedDate)
-                        }
+                        group.leave()
                     }
                 }
             }
+            
+            // Wait for ALL tasks to finish, then apply in one single main-thread batch.
+            // Previously: N tasks × N updateVideoMetadata() × N updateGroupedVideos() = N full re-renders.
+            // Now: 1 applyBatchedMetadata() = 1 re-sort + 1 SwiftUI invalidation.
+            group.notify(queue: .main) { [weak self] in
+                guard let self = self, !updates.isEmpty else { return }
+                self.applyBatchedMetadata(updates)
+            }
+        }
+    }
+    
+    /// applyBatchedMetadata
+    /// - Description: Applies all collected metadata updates in one pass across importedVideos,
+    ///   allGalleryVideos, videos, and folders — then fires updateGroupedVideos() and
+    ///   objectWillChange exactly once. Eliminates the N-render spike after large imports.
+    /// - How to use: Called from backgroundFetchMetadata's group.notify on main thread.
+    private func applyBatchedMetadata(_ updates: [(id: UUID, duration: Double?, date: Date?)]) {
+        guard !updates.isEmpty else { return }
+        
+        // Build a lookup for O(1) access per video
+        var lookup: [UUID: (duration: Double?, date: Date?)] = Dictionary(minimumCapacity: updates.count)
+        for u in updates { lookup[u.id] = (u.duration, u.date) }
+        
+        var didChange = false
+        
+        // Helper: apply to a single VideoItem in-place
+        func apply(to item: inout VideoItem) {
+            guard let meta = lookup[item.id] else { return }
+            if let d = meta.duration, d > 0 { item.duration = d; didChange = true }
+            if let date = meta.date { item.creationDate = date; didChange = true }
+        }
+        
+        // Update all sources in one pass each
+        for i in importedVideos.indices   { apply(to: &importedVideos[i]) }
+        for i in allGalleryVideos.indices { apply(to: &allGalleryVideos[i]) }
+        for i in videos.indices           { apply(to: &videos[i]) }
+        
+        // Recursive folder update
+        func updateFolder(_ folder: inout Folder) {
+            for i in folder.videos.indices    { apply(to: &folder.videos[i]) }
+            for i in folder.subfolders.indices { updateFolder(&folder.subfolders[i]) }
+        }
+        for i in folders.indices { updateFolder(&folders[i]) }
+        
+        if didChange {
+            // Single re-sort and single SwiftUI render — replaces N calls that ran before
+            updateGroupedVideos()
+            objectWillChange.send()
         }
     }
     
