@@ -147,8 +147,14 @@ struct VideoCardView: View {
         )
         .contentShape(RoundedRectangle(cornerRadius: 20))
         .onAppear {
-            loadThumbnail()
-            loadTitle()
+            // Skip if already loaded — cells can reappear after light scroll without needing reload
+            if thumbnail == nil { loadThumbnail() }
+            if resolvedTitle == nil { loadTitle() }
+        }
+        .onDisappear {
+            // Cancel any in-flight thumbnail request — prevents stale completions from
+            // triggering extra SwiftUI renders after the cell has left the viewport
+            ThumbnailCacheManager.shared.cancelRequest(for: video.id)
         }
     }
     
@@ -203,8 +209,7 @@ struct VideoCardView: View {
     }
     
     private func loadThumbnail() {
-        // Use the persistent cache manager for instant loading
-        ThumbnailCacheManager.shared.getThumbnail(for: video) { [self] image in
+        ThumbnailCacheManager.shared.getThumbnail(for: video, requestId: video.id) { image in
             DispatchQueue.main.async {
                 self.thumbnail = image
             }
