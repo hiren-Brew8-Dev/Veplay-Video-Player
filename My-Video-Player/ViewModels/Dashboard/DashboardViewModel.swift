@@ -82,6 +82,8 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     @Published var homeSelectedTab: String = "Video"
     
     var allVideosAcrossFolders: [VideoItem] {
+        // Fast path: return cached version when available (avoids recursive tree walk on every read)
+        if !cachedAllVideosAcrossFolders.isEmpty { return cachedAllVideosAcrossFolders }
         func getVideos(from folder: Folder) -> [VideoItem] {
             return folder.videos + folder.subfolders.flatMap { getVideos(from: $0) }
         }
@@ -99,7 +101,9 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     
     // Data Sources
     @Published var videos: [VideoItem] = []
-    @Published var folders: [Folder] = []
+    @Published var folders: [Folder] = [] {
+        didSet { updateFolderCache() } // re-cache sort+group whenever folder list changes
+    }
     @Published var historyVideos: [VideoItem] = []
     @Published var importedVideos: [VideoItem] = []
     @Published var isInitialLoading: Bool = true
@@ -143,8 +147,19 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         didSet { UserDefaults.standard.set(gallerySortOptionRaw, forKey: "gallerySortOptionRaw") }
     }
     @Published var folderSortOptionRaw: String = UserDefaults.standard.string(forKey: "folderSortOptionRaw") ?? "Newest First" {
-        didSet { UserDefaults.standard.set(folderSortOptionRaw, forKey: "folderSortOptionRaw") }
+        didSet {
+            UserDefaults.standard.set(folderSortOptionRaw, forKey: "folderSortOptionRaw")
+            updateFolderCache() // re-sort on background when sort pref changes
+        }
     }
+
+    // Pre-sorted/grouped folder caches — updated on background thread whenever folders or sort option changes.
+    // FolderSectionView reads these directly: zero main-thread sort on every tab switch.
+    @Published var cachedSortedFolders: [Folder] = []
+    @Published var cachedGroupedFolders: [FolderSection] = []
+    /// Pre-flattened across all folder levels. Updated together with folder cache to avoid
+    /// recursive tree walks on every computed-property read.
+    @Published var cachedAllVideosAcrossFolders: [VideoItem] = []
   
     // Performance
     let imageManager = PHCachingImageManager()
@@ -348,6 +363,63 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
         
         return sortedDates.map { date in
             FolderSection(date: date, folders: grouped[date] ?? [])
+        }
+    }
+    
+    /// updateFolderCache
+    /// - Description: Sorts and groups `folders` entirely on a background thread, then publishes
+    ///   the results to `cachedSortedFolders`, `cachedGroupedFolders`, and `cachedAllVideosAcrossFolders`.
+    ///   FolderSectionView reads these cached arrays — zero main-thread sort on every tab switch.
+    /// - How to use: Called automatically from `folders.didSet` and `folderSortOptionRaw.didSet`.
+    private func updateFolderCache() {
+        let currentFolders = self.folders
+        let currentSortRaw = self.folderSortOptionRaw
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            
+            let option = SortOption(rawValue: currentSortRaw) ?? .dateDesc
+            
+            // 1. Sort folders
+            let sorted = currentFolders.sorted { f1, f2 in
+                switch option {
+                case .recents:
+                    let d1 = f1.lastAccessedDate ?? f1.creationDate
+                    let d2 = f2.lastAccessedDate ?? f2.creationDate
+                    return d1 > d2
+                case .nameAsc: return f1.name.localizedStandardCompare(f2.name) == .orderedAscending
+                case .nameDesc: return f1.name.localizedStandardCompare(f2.name) == .orderedDescending
+                case .dateAsc: return f1.creationDate < f2.creationDate
+                default: return f1.creationDate > f2.creationDate
+                }
+            }
+            
+            // 2. Group folders into sections
+            let grouped: [FolderSection]
+            if option == .recents || option == .dateDesc || option == .dateAsc {
+                let calendar = Calendar.current
+                let byDate = Dictionary(grouping: sorted) { folder -> Date in
+                    let date = option == .recents ? (folder.lastAccessedDate ?? folder.creationDate) : folder.creationDate
+                    return calendar.startOfDay(for: date)
+                }
+                let sortedDates = byDate.keys.sorted { option == .dateAsc ? $0 < $1 : $0 > $1 }
+                grouped = sortedDates.map { FolderSection(date: $0, folders: byDate[$0] ?? []) }
+            } else {
+                grouped = [FolderSection(date: .distantPast, folders: sorted)]
+            }
+            
+            // 3. Flatten all videos across folders (replaces recursive computed var)
+            func collectVideos(from folder: Folder) -> [VideoItem] {
+                return folder.videos + folder.subfolders.flatMap { collectVideos(from: $0) }
+            }
+            let allVideos = currentFolders.flatMap { collectVideos(from: $0) }
+            
+            // 4. Publish results atomically on main thread
+            DispatchQueue.main.async {
+                self.cachedSortedFolders = sorted
+                self.cachedGroupedFolders = grouped
+                self.cachedAllVideosAcrossFolders = allVideos
+            }
         }
     }
     

@@ -443,7 +443,7 @@ struct FolderSectionView: View {
     
     private func foldersGrid(isLandscape: Bool, currentWidth: CGFloat) -> some View {
         LazyVGrid(columns: GridLayout.gridColumns(isLandscape: isLandscape), spacing: GridLayout.spacing(isLandscape: isLandscape)) {
-            ForEach(viewModel.groupedFolders) { section in
+            ForEach(viewModel.cachedGroupedFolders) { section in
                 Section(header: sectionHeader(for: section.date)) {
                     ForEach(section.folders) { folder in
                         Button(action: {
@@ -480,7 +480,7 @@ struct FolderSectionView: View {
     
     private func foldersList(isLandscape: Bool) -> some View {
         LazyVStack(spacing: 12, pinnedViews: [.sectionHeaders]) {
-            ForEach(viewModel.groupedFolders) { section in
+            ForEach(viewModel.cachedGroupedFolders) { section in
                 Section(header: sectionHeader(for: section.date)) {
                     ForEach(section.folders) { folder in
                         Button(action: {

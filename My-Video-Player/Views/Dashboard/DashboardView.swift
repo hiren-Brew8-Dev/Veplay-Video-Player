@@ -8,6 +8,8 @@ struct DashboardView: View {
     @Environment(\.scenePhase) var scenePhase
     @AppStorage("isDarkMode") private var isDarkMode = true
     @EnvironmentObject var navigationManager: NavigationManager
+    /// Tracks when fetchAlbums() last ran so scenePhase.onChange can throttle it to max once per 60s.
+    @State private var lastAlbumFetchDate: Date = .distantPast
     
     init() {
         // Configure system tab bar appearance
@@ -103,8 +105,17 @@ struct DashboardView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
-                viewModel.fetchAlbums()
-                viewModel.fetchAssets()
+                // Throttle fetchAlbums to max once per 60s — it enumerates all PHAssetCollections
+                // which takes 10-50ms. Without this it fires on every multitasking switch.
+                let now = Date()
+                if now.timeIntervalSince(lastAlbumFetchDate) > 60 {
+                    lastAlbumFetchDate = now
+                    viewModel.fetchAlbums()
+                }
+                // fetchAssets is heavy (full PHAsset enumeration) — only needed on first launch
+                if viewModel.allGalleryVideos.isEmpty {
+                    viewModel.fetchAssets()
+                }
             }
         }
     }

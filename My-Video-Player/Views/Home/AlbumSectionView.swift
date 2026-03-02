@@ -62,7 +62,12 @@ struct AlbumSectionView: View {
                     )
             }
             .onAppear {
-                viewModel.fetchAlbums()
+                // Only fetch on first appearance — albums stay live via photoLibraryDidChange.
+                // TabView re-fires .onAppear on every tab switch; without this guard each tap
+                // back to Gallery ran the full PHAssetCollection enumeration.
+                if viewModel.galleryAlbums.isEmpty {
+                    viewModel.fetchAlbums()
+                }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
