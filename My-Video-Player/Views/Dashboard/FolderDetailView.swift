@@ -68,7 +68,7 @@ struct FolderDetailView: View {
                     if isLoading {
                         ProgressView()
                             .padding(.top, 100)
-                    } else if displayVideos.isEmpty && folder.subfolders.isEmpty {
+                    } else if sortedDisplayVideos.isEmpty && folder.subfolders.isEmpty {
                         VStack(spacing: 0) {
                             Spacer()
                             emptyStateView
@@ -96,7 +96,7 @@ struct FolderDetailView: View {
                             mainHeader
                                 .padding(.top, safeAreaTop)
                             
-                            if !displayVideos.isEmpty {
+                            if !sortedDisplayVideos.isEmpty {
                                 utilityRow
                                     .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                                     .padding(.top, 0)
@@ -242,6 +242,8 @@ struct FolderDetailView: View {
             }
         }
     }
+    
+    
     
     // MARK: - Subviews
     
@@ -389,10 +391,10 @@ struct FolderDetailView: View {
             
             Spacer()
             
-            if !displayVideos.isEmpty {
+            if !sortedDisplayVideos.isEmpty {
                 Button(action: {
                     HapticsManager.shared.generate(.medium)
-                    let updatedVideos = displayVideos.map { liveVideo($0) }
+                    let updatedVideos = sortedDisplayVideos.map { liveVideo($0) }
                     navigationManager.push(.search(contextTitle: folder.name, initialVideos: updatedVideos))
                 }) {
                     Image(systemName: "magnifyingglass")
@@ -415,7 +417,7 @@ struct FolderDetailView: View {
                 if isAllSelected {
                     selectedVideoIds.removeAll()
                 } else {
-                    selectedVideoIds = Set(displayVideos.map { $0.id })
+                    selectedVideoIds = Set(sortedDisplayVideos.map { $0.id })
                 }
             }) {
                 ZStack {
@@ -437,7 +439,7 @@ struct FolderDetailView: View {
             
             Spacer()
             
-            Text("Selected (\(selectedVideoIds.count)/\(displayVideos.count))")
+            Text("Selected (\(selectedVideoIds.count)/\(sortedDisplayVideos.count))")
                 .font(.system(size: isIpad ? 22 : 17, weight: .bold))
                 .foregroundColor(.white)
             
@@ -492,7 +494,7 @@ struct FolderDetailView: View {
                     } else {
                         // FOLDER MODE: Flat List (User Preference)
                         Section {
-                            ForEach(displayVideos, id: \.id) { video in
+                            ForEach(sortedDisplayVideos, id: \.id) { video in
                                 gridVideoItem(video, isLandscape: isLandscape, width: currentWidth)
                             }
                         }
@@ -554,7 +556,7 @@ struct FolderDetailView: View {
                 } else {
                     // Video list - ALL in ONE section card
                     Section {
-                        ForEach(displayVideos, id: \.id) { video in
+                        ForEach(sortedDisplayVideos, id: \.id) { video in
                             videoRow(video)
                                 .padding(.horizontal, AppDesign.Icons.horizontalPadding)
                                 .padding(.bottom, 12)
@@ -712,7 +714,7 @@ struct FolderDetailView: View {
         } else {
             // Setup playlist context: All videos in this folder/album
             HapticsManager.shared.generate(.medium)
-            viewModel.currentPlaylist = displayVideos
+            viewModel.currentPlaylist = sortedDisplayVideos
             viewModel.playingVideo = video
         }
     }
@@ -733,12 +735,12 @@ struct FolderDetailView: View {
     // MARK: - Grouping Logic
     
     var isAllSelected: Bool {
-        return !displayVideos.isEmpty && selectedVideoIds.count == displayVideos.count
+        return !sortedDisplayVideos.isEmpty && selectedVideoIds.count == sortedDisplayVideos.count
     }
     
     var groupedVideos: [VideoSection] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: displayVideos) { video -> Date in
+        let grouped = Dictionary(grouping: sortedDisplayVideos) { video -> Date in
             calendar.startOfDay(for: video.importDate)
         }
         let sortedDates = grouped.keys.sorted {
