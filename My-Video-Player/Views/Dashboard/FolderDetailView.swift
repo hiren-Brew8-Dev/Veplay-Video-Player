@@ -43,36 +43,17 @@ struct FolderDetailView: View {
     @State private var asyncVideos: [VideoItem] = []
     @State private var isLoading = false
     
+    // Cached async sort — replaces the old computed var that sorted 1700+ items on the main thread
+    // on every SwiftUI re-render. Now updated via background Task only when inputs change.
+    @State private var sortedDisplayVideos: [VideoItem] = []
+    @State private var isSortingVideos: Bool = false
 
-    
     // Derived
     var sortOption: DashboardViewModel.SortOption {
         if folder.url == nil {
             return viewModel.gallerySortOption
         }
         return viewModel.folderSortOption
-    }
-    
-    private var displayVideos: [VideoItem] {
-        if let albumId = folder.albumIdentifier {
-            // "All Videos" smart album: read sortedAllGalleryVideos — pre-sorted on background thread
-            // by Combine. Zero main-thread sorting, zero fetch latency, stays live via photoLibraryDidChange.
-            if albumId == viewModel.allVideosAlbumIdentifier {
-                let pre = viewModel.sortedAllGalleryVideos
-                // Fallback to allGalleryVideos (already creationDate-sorted) while Combine fires
-                return pre.isEmpty ? viewModel.allGalleryVideos : pre
-            }
-            // Other album: use asyncVideos populated by the background GCD fetch.
-            let baseVideos = asyncVideos.isEmpty ? folder.videos : asyncVideos
-            return viewModel.sortVideos(baseVideos, by: sortOption)
-        }
-
-        // File folder: O(1) Set lookup to filter against valid video IDs.
-        let baseVideos = (folder.videos.isEmpty && !asyncVideos.isEmpty) ? asyncVideos : folder.videos
-        var validIds = Set(viewModel.videos.map { $0.id })
-        for v in viewModel.allVideosAcrossFolders { validIds.insert(v.id) }
-        let filtered = baseVideos.filter { validIds.contains($0.id) }
-        return viewModel.sortVideos(filtered, by: sortOption)
     }
     
     var body: some View {
@@ -240,6 +221,20 @@ struct FolderDetailView: View {
         }
         .task {
             await fetchAlbumVideos()
+            await resolveDisplayVideos()
+        }
+        // Re-resolve whenever the raw inputs change (asyncVideos, sort option, or folder.videos)
+        .onChange(of: asyncVideos) { _, _ in
+            Task { await resolveDisplayVideos() }
+        }
+        .onChange(of: viewModel.folderSortOptionRaw) { _, _ in
+            Task { await resolveDisplayVideos() }
+        }
+        .onChange(of: viewModel.gallerySortOptionRaw) { _, _ in
+            Task { await resolveDisplayVideos() }
+        }
+        .onChange(of: viewModel.folders) { _, _ in
+            Task { await resolveDisplayVideos() }
         }
         .onChange(of: viewModel.isSelectionMode) { oldVal, isSelectionMode in
             if !isSelectionMode {
@@ -864,6 +859,50 @@ struct FolderDetailView: View {
         }
     }
     
+    /// resolveDisplayVideos
+    /// - Description: Computes the sorted, filtered video list on a background Task and publishes
+    ///   the result to `sortedDisplayVideos`. Prevents the O(n log n) sort from blocking the main
+    ///   thread on every re-render — critical for folders with 1700+ videos.
+    /// - How to use: Called from .task{} on appear and from .onChange handlers when sort/filter inputs change.
+    @MainActor
+    private func resolveDisplayVideos() async {
+        isSortingVideos = true
+        defer { isSortingVideos = false }
+        
+        // Snapshot all needed inputs on main thread before going to background
+        let albumIdentifier = folder.albumIdentifier
+        let allVideosAlbumId = viewModel.allVideosAlbumIdentifier
+        let sortedGallery = viewModel.sortedAllGalleryVideos
+        let allGallery = viewModel.allGalleryVideos
+        let currentAsyncVideos = asyncVideos
+        let folderVideos = folder.videos
+        let currentSortOption = sortOption
+        let allVideosAcrossFolders = viewModel.allVideosAcrossFolders
+        let vmVideos = viewModel.videos
+        let vm = viewModel
+        
+        let result: [VideoItem] = await Task.detached(priority: .userInitiated) {
+            if let albumId = albumIdentifier {
+                // "All Videos" smart album — already pre-sorted by Combine, zero work needed
+                if let allVidsId = allVideosAlbumId, albumId == allVidsId {
+                    return sortedGallery.isEmpty ? allGallery : sortedGallery
+                }
+                // Other album: use asyncVideos from background GCD fetch
+                let baseVideos = currentAsyncVideos.isEmpty ? folderVideos : currentAsyncVideos
+                return vm.sortVideos(baseVideos, by: currentSortOption)
+            }
+            
+            // File folder: O(1) Set lookup to filter against valid video IDs
+            let baseVideos = (folderVideos.isEmpty && !currentAsyncVideos.isEmpty) ? currentAsyncVideos : folderVideos
+            var validIds = Set(vmVideos.map { $0.id })
+            for v in allVideosAcrossFolders { validIds.insert(v.id) }
+            let filtered = baseVideos.filter { validIds.contains($0.id) }
+            return vm.sortVideos(filtered, by: currentSortOption)
+        }.value
+        
+        sortedDisplayVideos = result
+    }
+
     private func fetchAlbumVideos() async {
         guard let albumId = folder.albumIdentifier, folder.videos.isEmpty, asyncVideos.isEmpty else { return }
 

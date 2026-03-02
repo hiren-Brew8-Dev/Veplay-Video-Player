@@ -70,7 +70,7 @@ struct ImportingOverlay: View {
                 }
             }
             
-            // Status Message
+            // Status Message + Spinner
             VStack(spacing: 12) {
                 Text(viewModel.importStatusMessage)
                     .font(.system(size: 15, weight: .medium))
@@ -83,6 +83,24 @@ struct ImportingOverlay: View {
                     .progressViewStyle(CircularProgressViewStyle(tint: .homeAccent))
                     .scaleEffect(0.8)
             }
+            .padding(.horizontal, 20)
+            
+            // Cancel Button — stops copying remaining files; already-imported files are kept
+            Button(action: {
+                HapticsManager.shared.generate(.medium)
+                viewModel.cancelImport()
+            }) {
+                Text(viewModel.isImportCancelled ? "Cancelling…" : "Cancel Import")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(viewModel.isImportCancelled ? .white.opacity(0.4) : .red)
+                    .frame(height: 44)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.07))
+                    )
+            }
+            .disabled(viewModel.isImportCancelled)
             .padding(.horizontal, 20)
         }
         .padding(.vertical, 40)

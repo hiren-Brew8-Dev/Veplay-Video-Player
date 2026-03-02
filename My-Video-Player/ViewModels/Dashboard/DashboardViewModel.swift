@@ -77,6 +77,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     @Published var importStatusMessage: String = ""
     @Published var importCount: Int = 0
     @Published var importCurrentIndex: Int = 0
+    @Published var isImportCancelled: Bool = false
     @Published var isShowingSearch: Bool = false
     @Published var homeSelectedTab: String = "Video"
     
@@ -2205,6 +2206,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     
     func startImportSession(count: Int) {
         self.isImporting = true
+        self.isImportCancelled = false  // always reset before a new session
         self.importCount = count
         self.importCurrentIndex = 0
         self.importProgress = 0.0
@@ -2214,9 +2216,19 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
     func finalizeImportSession() {
         self.loadData()
         self.isImporting = false
+        self.isImportCancelled = false
         self.importProgress = 0.0
         self.importStatusMessage = ""
         self.isSelectionMode = false
+    }
+    
+    /// cancelImport
+    /// - Description: Signals the running importVideos loop to stop after the current file. Already-copied
+    ///   files remain in the library (user keeps partial progress).
+    /// - How to use: Called from the Cancel button in ImportingOverlay.
+    func cancelImport() {
+        isImportCancelled = true
+        importStatusMessage = "Cancelling…"
     }
     
     @discardableResult
@@ -2239,6 +2251,7 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
                 self.importProgress = 0.0
                 self.importStatusMessage = "Starting import..."
                 self.isImporting = true
+                self.isImportCancelled = false  // reset so a new session always starts clean
             }
         }
         
@@ -2252,6 +2265,11 @@ class DashboardViewModel: NSObject, ObservableObject, PHPhotoLibraryChangeObserv
             let context = CDManager.shared.container.viewContext 
             
             for (index, url) in urls.enumerated() {
+                // Check cancellation before starting each new file.
+                // Already-copied files are kept; only the remaining queue is skipped.
+                let cancelled = await MainActor.run { self.isImportCancelled }
+                if cancelled { break }
+                
                 var filename: String
                 if let names = names, index < names.count {
                     filename = names[index]
